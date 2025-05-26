@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tianhai.warn.mapper.DormitoryManagerMapper">
+    
+    <!-- 结果映射 -->
+    <resultMap id="BaseResultMap" type="com.tianhai.warn.model.DormitoryManager">
+        <id column="id" property="id"/>
+        <result column="manager_id" property="managerId"/>
+        <result column="name" property="name"/>
+        <result column="building" property="building"/>
+        <result column="phone" property="phone"/>
+        <result column="email" property="email"/>
+        <result column="status" property="status"/>
+        <result column="password" property="password"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="last_login_time" property="lastLoginTime"/>
+    </resultMap>
+    
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        id, manager_id, name, building, phone, email, status, password,
+        create_time, update_time, last_login_time
+    </sql>
+    
+    <!-- 根据ID查询 -->
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List"/>
+        FROM dormitory_manager
+        WHERE id = #{id}
+    </select>
+    
+    <!-- 根据工号查询 -->
+    <select id="selectByManagerId" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List"/>
+        FROM dormitory_manager
+        WHERE manager_id = #{managerId}
+    </select>
+    
+    <!-- 根据用户名查询 -->
+    <select id="selectByUsername" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List"/>
+        FROM dormitory_manager
+        WHERE name = #{name}
+    </select>
+    
+    <!-- 查询所有 -->
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List"/>
+        FROM dormitory_manager
+    </select>
+    
+    <!-- 根据条件查询 -->
+    <select id="selectByCondition" resultMap="BaseResultMap" parameterType="com.tianhai.warn.model.DormitoryManager">
+        SELECT 
+        <include refid="Base_Column_List"/>
+        FROM dormitory_manager
+        <where>
+            <if test="id != null">
+                AND id = #{id}
+            </if>
+            <if test="managerId != null and managerId != ''">
+                AND manager_id = #{managerId}
+            </if>
+            <if test="name != null and name != ''">
+                AND name LIKE CONCAT('%', #{name}, '%')
+            </if>
+            <if test="building != null and building != ''">
+                AND building = #{building}
+            </if>
+            <if test="phone != null and phone != ''">
+                AND phone = #{phone}
+            </if>
+            <if test="status != null and status != ''">
+                AND status = #{status}
+            </if>
+            <if test="email != null and email != ''">
+                AND email = #{email}
+            </if>
+            <if test="lastLoginTime != null">
+                AND last_login_time = #{lastLoginTime}
+            </if>
+        </where>
+    </select>
+    
+    <!-- 插入 -->
+    <insert id="insert" parameterType="com.tianhai.warn.model.DormitoryManager" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO dormitory_manager (
+            manager_id, name, building, phone, email, status, password,
+            create_time, update_time, last_login_time
+        ) VALUES (
+            #{managerId}, #{name}, #{building}, #{phone}, #{email}, #{status}, #{password},
+            NOW(), NOW(), NOW()
+        )
+    </insert>
+    
+    <!-- 更新 -->
+    <update id="update" parameterType="com.tianhai.warn.model.DormitoryManager">
+        UPDATE dormitory_manager
+        <set>
+            <if test="managerId != null">manager_id = #{managerId},</if>
+            <if test="name != null">name = #{name},</if>
+            <if test="building != null">building = #{building},</if>
+            <if test="phone != null">phone = #{phone},</if>
+            <if test="email != null">email = #{email},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="password != null">password = #{password},</if>
+            update_time = NOW()
+        </set>
+        WHERE id = #{id}
+    </update>
+    
+    <!-- 删除 -->
+    <delete id="deleteById">
+        DELETE FROM dormitory_manager WHERE id = #{id}
+    </delete>
+    
+    <!-- 根据宿舍楼查询 -->
+    <select id="selectByBuilding" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List"/>
+        FROM dormitory_manager
+        WHERE building = #{building}
+    </select>
+    
+    <!-- 根据邮箱查询 -->
+    <select id="selectByEmail" parameterType="java.lang.String" resultMap="BaseResultMap">
+        select 
+        <include refid="Base_Column_List" />
+        from dormitory_manager
+        where email = #{email}
+    </select>
+    
+    <!-- 更新最后登录时间 -->
+    <update id="updateLastLoginTime">
+        UPDATE dormitory_manager
+        SET last_login_time = NOW(),
+            update_time = NOW()
+        WHERE id = #{id}
+    </update>
+</mapper> 

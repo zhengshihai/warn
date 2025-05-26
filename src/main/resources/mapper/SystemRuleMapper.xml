@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tianhai.warn.mapper.SystemRuleMapper">
+    
+    <!-- 结果映射 -->
+    <resultMap id="BaseResultMap" type="com.tianhai.warn.model.SystemRule">
+        <id column="id" property="id"/>
+        <result column="rule_key" property="ruleKey"/>
+        <result column="rule_value" property="ruleValue"/>
+        <result column="description" property="description"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+    
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        id, rule_key, rule_value, description, create_time, update_time
+    </sql>
+    
+    <!-- 根据ID查询 -->
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List"/>
+        FROM system_rule
+        WHERE id = #{id}
+    </select>
+    
+    <!-- 根据规则键查询 -->
+    <select id="selectByRuleKey" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List"/>
+        FROM system_rule
+        WHERE rule_key = #{ruleKey}
+    </select>
+    
+    <!-- 查询所有 -->
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List"/>
+        FROM system_rule
+        ORDER BY create_time DESC
+    </select>
+    
+    <!-- 根据条件查询 -->
+    <select id="selectByCondition" resultMap="BaseResultMap" parameterType="com.tianhai.warn.model.SystemRule">
+        SELECT 
+        <include refid="Base_Column_List"/>
+        FROM system_rule
+        <where>
+            <if test="ruleKey != null and ruleKey != ''">
+                AND rule_key LIKE CONCAT('%', #{ruleKey}, '%')
+            </if>
+            <if test="ruleValue != null and ruleValue != ''">
+                AND rule_value LIKE CONCAT('%', #{ruleValue}, '%')
+            </if>
+            <if test="description != null and description != ''">
+                AND description LIKE CONCAT('%', #{description}, '%')
+            </if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+    
+    <!-- 插入 -->
+    <insert id="insert" parameterType="com.tianhai.warn.model.SystemRule" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO system_rule (
+            rule_key, rule_value, description, create_time, update_time
+        ) VALUES (
+            #{ruleKey}, #{ruleValue}, #{description}, NOW(), NOW()
+        )
+    </insert>
+    
+    <!-- 更新 -->
+    <update id="update" parameterType="com.tianhai.warn.model.SystemRule">
+        UPDATE system_rule
+        <set>
+            <if test="ruleKey != null">rule_key = #{ruleKey},</if>
+            <if test="ruleValue != null">rule_value = #{ruleValue},</if>
+            <if test="description != null">description = #{description},</if>
+            update_time = NOW()
+        </set>
+        WHERE id = #{id}
+    </update>
+    
+    <!-- 删除 -->
+    <delete id="deleteById">
+        DELETE FROM system_rule WHERE id = #{id}
+    </delete>
+    
+    <!-- 根据规则键更新规则值 -->
+    <update id="updateRuleValue">
+        UPDATE system_rule
+        SET rule_value = #{ruleValue},
+            update_time = NOW()
+        WHERE rule_key = #{ruleKey}
+    </update>
+</mapper> 

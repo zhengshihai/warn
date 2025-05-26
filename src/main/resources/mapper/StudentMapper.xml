@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tianhai.warn.mapper.StudentMapper">
+    
+    <!-- 结果映射 -->
+    <resultMap id="BaseResultMap" type="com.tianhai.warn.model.Student">
+        <id column="id" property="id"/>
+        <result column="student_no" property="studentNo"/>
+        <result column="name" property="name"/>
+        <result column="college" property="college"/>
+        <result column="class_name" property="className"/>
+        <result column="dormitory" property="dormitory"/>
+        <result column="phone" property="phone"/>
+        <result column="father_name" property="fatherName"/>
+        <result column="father_phone" property="fatherPhone"/>
+        <result column="mother_name" property="motherName"/>
+        <result column="mother_phone" property="motherPhone"/>
+        <result column="email" property="email"/>
+        <result column="password" property="password"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="last_login_time" property="lastLoginTime"/>
+    </resultMap>
+    
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        id, student_no, name, college, class_name, dormitory, phone, 
+        father_name, father_phone, mother_name, mother_phone, email, password,
+        create_time, update_time, last_login_time
+    </sql>
+    
+    <!-- 根据ID查询 -->
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List"/>
+        FROM student
+        WHERE id = #{id}
+    </select>
+    
+    <!-- 根据学号查询 -->
+    <select id="selectByStudentNo" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List"/>
+        FROM student
+        WHERE student_no = #{studentNo}
+    </select>
+    
+    <!-- 查询所有 -->
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List"/>
+        FROM student
+    </select>
+    
+    <!-- 根据条件查询 -->
+    <select id="selectByCondition" resultMap="BaseResultMap" parameterType="com.tianhai.warn.model.Student">
+        SELECT 
+        <include refid="Base_Column_List"/>
+        FROM student
+        <where>
+            <if test="id != null">
+                AND id = #{id}
+            </if>
+            <if test="studentNo != null and studentNo != ''">
+                AND student_no = #{studentNo}
+            </if>
+            <if test="name != null and name != ''">
+                AND name LIKE CONCAT('%', #{name}, '%')
+            </if>
+            <if test="college != null and college != ''">
+                AND college = #{college}
+            </if>
+            <if test="email != null and email != ''">
+                AND email = #{email}
+            </if>
+            <if test="className != null and className != ''">
+                AND class_name = #{className}
+            </if>
+            <if test="dormitory != null and dormitory != ''">
+                AND dormitory = #{dormitory}
+            </if>
+            <if test="phone != null and phone != ''">
+                AND phone = #{phone}
+            </if>
+            <if test="lastLoginTime != null">
+                AND last_login_time = #{lastLoginTime}
+            </if>
+        </where>
+    </select>
+    
+    <!-- 插入 -->
+    <insert id="insert" parameterType="com.tianhai.warn.model.Student" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO student (
+            student_no, name, college, class_name, dormitory, phone,
+            father_name, father_phone, mother_name, mother_phone, email, password,
+            create_time, update_time, last_login_time
+        ) VALUES (
+            #{studentNo}, #{name}, #{college}, #{className}, #{dormitory}, #{phone},
+            #{fatherName}, #{fatherPhone}, #{motherName}, #{motherPhone}, #{email}, #{password},
+            NOW(), NOW(), NOW()
+        )
+    </insert>
+    
+    <!-- 更新 -->
+    <update id="update" parameterType="com.tianhai.warn.model.Student">
+        UPDATE student
+        <set>
+            <if test="studentNo != null">student_no = #{studentNo},</if>
+            <if test="name != null">name = #{name},</if>
+            <if test="college != null">college = #{college},</if>
+            <if test="className != null">class_name = #{className},</if>
+            <if test="dormitory != null">dormitory = #{dormitory},</if>
+            <if test="phone != null">phone = #{phone},</if>
+            <if test="fatherName != null">father_name = #{fatherName},</if>
+            <if test="fatherPhone != null">father_phone = #{fatherPhone},</if>
+            <if test="motherName != null">mother_name = #{motherName},</if>
+            <if test="motherPhone != null">mother_phone = #{motherPhone},</if>
+            <if test="email != null">email = #{email},</if>
+            <if test="password != null">password = #{password},</if>
+            update_time = NOW()
+        </set>
+        WHERE id = #{id}
+    </update>
+    
+    <!-- 删除 -->
+    <delete id="deleteById">
+        DELETE FROM student WHERE id = #{id}
+    </delete>
+    
+    <!-- 根据宿舍号查询 -->
+    <select id="selectByDormitory" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List"/>
+        FROM student
+        WHERE dormitory = #{dormitory}
+    </select>
+    
+    <!-- 根据班级查询 -->
+    <select id="selectByClassName" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List"/>
+        FROM student
+        WHERE class_name = #{className}
+    </select>
+    
+    <!-- 根据邮箱查询 -->
+    <select id="selectByEmail" parameterType="java.lang.String" resultMap="BaseResultMap">
+        select 
+        <include refid="Base_Column_List" />
+        from student
+        where email = #{email}
+    </select>
+
+    <!-- 根据班级名称列表更新学生班级信息 -->
+    <update id="updateStudentClassByClassNames">
+        UPDATE student
+        SET class_name = #{newClassName},
+        update_time = NOW()
+        WHERE class_name IN
+        <foreach collection="classNames" item="className" open="(" separator="," close=")">
+            #{className}
+        </foreach>
+    </update>
+
+    <!-- 根据单个班级名称更新学生班级信息 -->
+    <update id="updateStudentClassByClassName">
+        UPDATE student
+        SET class_name = #{newClassName},
+            update_time = NOW()
+        WHERE class_name = #{className}
+    </update>
+
+    <!-- 更新最后登录时间 -->
+    <update id="updateLastLoginTime">
+        UPDATE student
+        SET last_login_time = NOW(),
+            update_time = NOW()
+        WHERE id = #{id}
+    </update>
+
+</mapper> 

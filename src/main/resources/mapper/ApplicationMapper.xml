@@ -1,0 +1,230 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tianhai.warn.mapper.ApplicationMapper">
+    
+    <!-- 结果映射 -->
+    <resultMap id="BaseResultMap" type="com.tianhai.warn.model.Application">
+        <id column="id" property="id"/>
+        <result column="application_id" property="applicationId"/>
+        <result column="student_no" property="studentNo"/>
+        <result column="expected_return_time" property="expectedReturnTime" jdbcType="TIMESTAMP"/>
+        <result column="reason" property="reason"/>
+        <result column="destination" property="destination"/>
+        <result column="description" property="description"/>
+        <result column="attachment_url" property="attachmentUrl"/>
+        <result column="apply_time" property="applyTime"/>
+        <result column="audit_status" property="auditStatus"/>
+        <result column="audit_time" property="auditTime"/>
+        <result column="audit_person" property="auditPerson"/>
+        <result column="audit_remark" property="auditRemark"/>
+        
+         <result column="student_name" property="studentName"/>
+        <result column="college" property="college"/>
+        <result column="dormitory" property="dormitory"/>
+    </resultMap>
+    
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        id, application_id, student_no, expected_return_time, reason, destination, description, attachment_url, 
+        apply_time, audit_status, audit_time, audit_person, audit_remark,
+        student_name, college, dormitory
+    </sql>
+    
+    <!-- 根据ID查询 -->
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List"/>
+        FROM application
+        WHERE id = #{id}
+    </select>
+    
+    <!-- 根据学号查询 -->
+    <select id="selectByStudentNo" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List"/>
+        FROM application
+        WHERE student_no = #{studentNo}
+        ORDER BY apply_time DESC
+    </select>
+    
+    <!-- 查询所有 -->
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List"/>
+        FROM application
+        ORDER BY apply_time DESC
+    </select>
+    
+    <!-- 根据条件查询 -->
+    <select id="selectByCondition" resultMap="BaseResultMap">
+        SELECT 
+            a.id, a.application_id, a.student_no, a.expected_return_time, a.reason, 
+            a.destination, a.description, a.attachment_url, a.apply_time, a.audit_status, 
+            a.audit_time, a.audit_person, a.audit_remark,
+            s.name as student_name, s.college, s.dormitory
+        FROM application a
+        LEFT JOIN student s ON a.student_no = s.student_no
+        <where>
+            <if test="id != null">
+                AND a.id = #{id}
+            </if>
+            <if test="applicationId != null and applicationId != ''">
+                AND a.application_id = #{applicationId}
+            </if>
+            <if test="studentNo != null and studentNo != ''">
+                AND a.student_no = #{studentNo}
+            </if>
+            <if test="expectedReturnTime != null">
+                AND a.expected_return_time = #{expectedReturnTime}
+            </if>
+            <if test="reason != null and reason != ''">
+                AND a.reason = #{reason}
+            </if>
+            <if test="attachmentUrl != null and attachmentUrl != ''">
+                AND a.attachment_url = #{attachmentUrl}
+            </if>
+            <if test="applyTime != null">
+                AND a.apply_time = #{applyTime}
+            </if>
+            <if test="auditStatus != null">
+                AND a.audit_status = #{auditStatus}
+            </if>
+            <if test="auditTime != null">
+                AND a.audit_time = #{auditTime}
+            </if>
+            <if test="auditPerson != null and auditPerson != ''">
+                AND a.audit_person = #{auditPerson}
+            </if>
+            <if test="auditRemark != null and auditRemark != ''">
+                AND a.audit_remark = #{auditRemark}
+            </if>
+
+            <!-- 批量查询条件 -->
+            <if test="studentNos != null and studentNos.size() > 0">
+                AND a.student_no IN
+                <foreach collection="studentNos" item="item" open="(" separator="," close=")">
+                    #{item}
+                </foreach>
+            </if>
+            <if test="auditStatuses != null and auditStatuses.size() > 0">
+                AND a.audit_status IN
+                <foreach collection="auditStatuses" item="item" open="(" separator="," close=")">
+                    #{item}
+                </foreach>
+            </if>
+            <if test="auditPersons != null and auditPersons.size() > 0">
+                AND a.audit_person IN
+                <foreach collection="auditPersons" item="item" open="(" separator="," close=")">
+                    #{item}
+                </foreach>
+            </if>
+
+            <!-- 时间范围查询 -->
+            <if test="expectedReturnTimeStart != null">
+                AND a.expected_return_time >= #{expectedReturnTimeStart}
+            </if>
+            <if test="expectedReturnTimeEnd != null">
+                AND a.expected_return_time &lt;= #{expectedReturnTimeEnd}
+            </if>
+            <if test="applyTimeStart != null">
+                AND a.apply_time >= #{applyTimeStart}
+            </if>
+            <if test="applyTimeEnd != null">
+                AND a.apply_time &lt;= #{applyTimeEnd}
+            </if>
+            <if test="auditTimeStart != null">
+                AND a.audit_time >= #{auditTimeStart}
+            </if>
+            <if test="auditTimeEnd != null">
+                AND a.audit_time &lt;= #{auditTimeEnd}
+            </if>
+
+            <!-- 模糊查询 -->
+            <if test="reasonLike != null and reasonLike != ''">
+                AND a.reason LIKE CONCAT('%', #{reasonLike}, '%')
+            </if>
+        </where>
+        ORDER BY a.apply_time DESC
+    </select>
+    
+    <!-- 插入 -->
+    <insert id="insert" parameterType="com.tianhai.warn.model.Application" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO application (
+            application_id, student_no, expected_return_time, reason, destination, description, attachment_url,
+            apply_time, audit_status
+        ) VALUES (
+            #{applicationId}, #{studentNo}, #{expectedReturnTime}, #{reason}, #{destination}, #{description}, #{attachmentUrl},
+            NOW(), 0
+        )
+        ON DUPLICATE KEY UPDATE
+            reason = VALUES(reason),
+            destination = VALUES(destination),
+            description = VALUES(description),
+            attachment_url = VALUES(attachment_url),
+            apply_time = NOW()
+    </insert>
+    
+    <!-- 更新 -->
+    <update id="update" parameterType="com.tianhai.warn.model.Application">
+        UPDATE application
+        <set>
+            <if test="expectedReturnTime != null">
+                expected_return_time = #{expectedReturnTime},
+            </if>
+            <if test="reason != null">
+                reason = #{reason},
+            </if>
+            <if test="destination != null">
+                destination = #{destination},
+            </if>
+            <if test="description != null">
+                description = #{description},
+            </if>
+            <if test="attachmentUrl != null">
+                attachment_url = #{attachmentUrl},
+            </if>
+            <if test="auditStatus != null">
+                audit_status = #{auditStatus},
+                audit_time = NOW(),
+            </if>
+            <if test="auditPerson != null">
+                audit_person = #{auditPerson},
+            </if>
+            <if test="auditRemark != null">
+                audit_remark = #{auditRemark},
+            </if>
+        </set>
+        WHERE id = #{id}
+    </update>
+    
+    <!-- 删除 -->
+    <delete id="deleteById">
+        DELETE FROM application WHERE id = #{id}
+    </delete>
+    
+    <!-- 根据审核状态查询 -->
+    <select id="selectByAuditStatus" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List"/>
+        FROM application
+        WHERE audit_status = #{auditStatus}
+        ORDER BY apply_time DESC
+    </select>
+    
+    <!-- 根据预期回校时间范围查询 -->
+    <select id="selectByExpectedReturnTimeRange" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List"/>
+        FROM application
+        WHERE expected_return_time BETWEEN #{startTime} AND #{endTime}
+        ORDER BY expected_return_time ASC
+    </select>
+    
+    <!-- 根据applicationId查询 -->
+    <select id="selectByApplicationId" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List"/>
+        FROM application
+        WHERE application_id = #{applicationId}
+    </select>
+</mapper> 

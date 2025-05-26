@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tianhai.warn.mapper.ExplanationMapper">
+    
+    <!-- 结果映射 -->
+    <resultMap id="BaseResultMap" type="com.tianhai.warn.model.Explanation">
+        <id column="id" property="id"/>
+        <result column="explanation_id" property="explanationId"/>
+        <result column="late_return_id" property="lateReturnId"/>
+        <result column="student_no" property="studentNo"/>
+        <result column="description" property="description"/>
+        <result column="attachment_url" property="attachmentUrl"/>
+        <result column="submit_time" property="submitTime"/>
+        <result column="audit_status" property="auditStatus"/>
+        <result column="audit_time" property="auditTime"/>
+        <result column="audit_person" property="auditPerson"/>
+        <result column="audit_remark" property="auditRemark"/>
+    </resultMap>
+    
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        id, explanation_id, late_return_id, student_no, description, attachment_url,
+        submit_time, audit_status, audit_time, audit_person, audit_remark
+    </sql>
+    
+    <!-- 根据ID查询 -->
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List"/>
+        FROM explanation
+        WHERE id = #{id}
+    </select>
+    
+    <!-- 根据晚归记录ID查询 -->
+    <select id="selectByLateReturnId" resultType="com.tianhai.warn.model.Explanation">
+        SELECT * FROM explanation WHERE late_return_id = #{lateReturnId}
+    </select>
+    
+    <!-- 根据学号查询 -->
+    <select id="selectByStudentNo" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List"/>
+        FROM explanation
+        WHERE student_no = #{studentNo}
+    </select>
+    
+    <!-- 查询所有 -->
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List"/>
+        FROM explanation
+    </select>
+    
+    <!-- 根据条件查询 -->
+    <select id="selectByCondition" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List"/>
+        FROM explanation
+        <where>
+            <if test="id != null and id !=''">
+                AND id = #{id}
+            </if>
+            <if test="lateReturnId != null and lateReturnId != ''">
+                AND late_return_id = #{lateReturnId}
+            </if>
+            <if test="explanationId != null and explanationId != ''">
+                AND explanation_id = #{explanationId}
+            </if>
+            <if test="studentNo != null and studentNo != ''">
+                AND student_no = #{studentNo}
+            </if>
+            <if test="auditStatus != null">
+                AND audit_status = #{auditStatus}
+            </if>
+            <if test="attachmentUrl != null and attachmentUrl != ''">
+                AND attachment_url = #{attachmentUrl}
+            </if>
+            
+            <!-- 批量查询条件 -->
+            <if test="lateReturnIds != null and lateReturnIds.size() > 0">
+                AND late_return_id IN
+                <foreach collection="lateReturnIds" item="item" open="(" separator="," close=")">
+                    #{item}
+                </foreach>
+            </if>
+            <if test="explanationIds != null and explanationIds.size() > 0">
+                AND explanation_id IN
+                <foreach collection="explanationIds" item="item" open="(" separator="," close=")">
+                    #{item}
+                </foreach>
+            </if>
+            <if test="studentNos != null and studentNos.size() > 0">
+                AND student_no IN
+                <foreach collection="studentNos" item="item" open="(" separator="," close=")">
+                    #{item}
+                </foreach>
+            </if>
+            <if test="auditStatuses != null and auditStatuses.size() > 0">
+                AND audit_status IN
+                <foreach collection="auditStatuses" item="item" open="(" separator="," close=")">
+                    #{item}
+                </foreach>
+            </if>
+            <if test="auditPersons != null and auditPersons.size() > 0">
+                AND audit_person IN
+                <foreach collection="auditPersons" item="item" open="(" separator="," close=")">
+                    #{item}
+                </foreach>
+            </if>
+            
+            <!-- 模糊查询 -->
+            <if test="descriptionLike != null and descriptionLike != ''">
+                AND description LIKE CONCAT('%', #{descriptionLike}, '%')
+            </if>
+        </where>
+        ORDER BY submit_time DESC
+    </select>
+    
+    <!-- 插入 -->
+    <insert id="insert" parameterType="com.tianhai.warn.model.Explanation" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO explanation (
+            explanation_id, late_return_id, student_no, description, attachment_url,
+            submit_time, audit_status
+        ) VALUES (
+            #{explanationId}, #{lateReturnId}, #{studentNo}, #{description}, #{attachmentUrl},
+            #{submitTime}, #{auditStatus}
+        )
+        ON DUPLICATE KEY UPDATE
+            description = VALUES(description),
+            attachment_url = VALUES(attachment_url),
+            submit_time = NOW()
+    </insert>
+    
+    <!-- 更新 -->
+    <update id="update" parameterType="com.tianhai.warn.query.ExplanationQuery">
+        UPDATE explanation
+        <set>
+            <if test="description != null">
+                description = #{description},
+            </if>
+            <if test="attachmentUrl != null">
+                attachment_url = #{attachmentUrl},
+            </if>
+            <if test="auditStatus != null">
+                audit_status = #{auditStatus},
+            </if>
+            <if test="auditTime != null">
+                audit_time = #{auditTime},
+            </if>
+            <if test="auditPerson != null">
+                audit_person = #{auditPerson},
+            </if>
+            <if test="auditRemark != null">
+                audit_remark = #{auditRemark},
+            </if>
+        </set>
+        <where>
+            <choose>
+                <when test="id != null and id != ''">
+                    id = #{id}
+                </when>
+                <when test="lateReturnId != null and lateReturnId != ''">
+                    late_return_id = #{lateReturnId}
+                </when>
+                <otherwise>
+                    1 = 0  <!-- 防止没有条件更新  批量更新走xxxBatch-->
+                </otherwise>
+            </choose>
+        </where>
+    </update>
+    
+    <!-- 删除 -->
+    <delete id="deleteById">
+        DELETE FROM explanation WHERE id = #{id}
+    </delete>
+    
+    <!-- 根据审核状态查询 -->
+    <select id="selectByAuditStatus" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List"/>
+        FROM explanation
+        WHERE audit_status = #{auditStatus}
+    </select>
+    
+    <!-- 根据explanationId查询 -->
+    <select id="selectByExplanationId" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List"/>
+        FROM explanation
+        WHERE explanation_id = #{explanationId}
+    </select>
+</mapper> 

@@ -1,0 +1,418 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tianhai.warn.mapper.LateReturnMapper">
+    
+    <!-- 结果映射 -->
+    <resultMap id="BaseResultMap" type="com.tianhai.warn.model.LateReturn">
+        <id column="id" property="id"/>
+        <result column="late_return_id" property="lateReturnId"/>
+        <result column="student_no" property="studentNo"/>
+        <result column="late_time" property="lateTime"/>
+        <result column="reason" property="reason"/>
+        <result column="process_status" property="processStatus"/>
+        <result column="process_result" property="processResult"/>
+        <result column="process_remark" property="processRemark"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="student_name" property="studentName"/>
+        <result column="college" property="college"/>
+        <result column="dormitory" property="dormitory"/>
+    </resultMap>
+    
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        lr.id, lr.late_return_id, lr.student_no, lr.late_time, lr.reason, lr.process_status, lr.process_result,
+        lr.process_remark, lr.create_time, lr.update_time, s.name as student_name, s.college, s.dormitory
+    </sql>
+    
+    <!-- 根据ID查询 -->
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List"/>
+        FROM late_return lr
+        LEFT JOIN student s ON lr.student_no = s.student_no
+        WHERE lr.id = #{id}
+    </select>
+    
+    <!-- 根据lateReturnId查询 -->
+    <select id="selectByLateReturnId" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List"/>
+        FROM late_return lr
+        LEFT JOIN student s ON lr.student_no = s.student_no
+        WHERE lr.late_return_id = #{lateReturnId}
+    </select>
+    
+    <!-- 查询所有 -->
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List"/>
+        FROM late_return lr
+        LEFT JOIN student s ON lr.student_no = s.student_no
+        ORDER BY lr.late_time DESC
+    </select>
+    
+    <!-- 根据条件查询 -->
+    <select id="selectByCondition" resultMap="BaseResultMap" parameterType="com.tianhai.warn.query.LateReturnQuery">
+        SELECT 
+        <include refid="Base_Column_List"/>
+        FROM late_return lr
+        LEFT JOIN student s ON lr.student_no = s.student_no
+        <where>
+            <if test="id != null and id != ''">
+                AND lr.id = #{id}
+            </if>
+            <if test="lateReturnId != null and lateReturnId != ''">
+                AND lr.late_return_id = #{lateReturnId}
+            </if>
+            <if test="studentNo != null and studentNo != ''">
+                AND lr.student_no = #{studentNo}
+            </if>
+            <if test="processStatus != null and processStatus != ''">
+                AND lr.process_status = #{processStatus}
+            </if>
+            <if test="processResult != null and processResult != ''">
+                AND lr.process_result = #{processResult}
+            </if>
+            <if test="studentName != null and studentName != ''">
+                AND s.name LIKE CONCAT('%', #{studentName}, '%')
+            </if>
+            <if test="college != null and college != ''">
+                AND s.college = #{college}
+            </if>
+            <if test="dormitory != null and dormitory != ''">
+                AND s.dormitory = #{dormitory}
+            </if>
+            <if test="dormitoryLike != null and dormitoryLike !=''">
+                AND s.dormitory LIKE CONCAT(#{dormitoryLike}, '%')
+            </if>
+            <if test="startLateTime != null">
+                AND lr.late_time &gt;= #{startLateTime}
+            </if>
+            <if test="endLateTime != null">
+                AND lr.late_time &lt;= #{endLateTime}
+            </if>
+
+            <!-- 批量查询条件 -->
+            <if test="studentNos != null and studentNos.size() > 0">
+                AND lr.student_no IN
+                <foreach collection="studentNos" item="studentNo" open="(" separator="," close=")">
+                    #{studentNo}
+                </foreach>
+            </if>
+
+            <if test="colleges != null and colleges.size() > 0">
+                AND s.college IN
+                <foreach collection="colleges" item="college" open="(" separator="," close=")">
+                    #{college}
+                </foreach>
+            </if>
+
+            <if test="dormitories != null and dormitories.size() > 0">
+                AND s.dormitory IN
+                <foreach collection="dormitories" item="dormitory" open="(" separator="," close=")">
+                    #{dormitory}
+                </foreach>
+            </if>
+
+            <if test="classes != null and classes.size() > 0">
+                AND s.class_name IN
+                <foreach collection="classes" item="className" open="(" separator="," close=")">
+                    #{className}
+                </foreach>
+            </if>
+
+            <if test="processResults != null and processResults.size() > 0">
+                AND (
+                    lr.process_result IN
+                    <foreach collection="processResults" item="result" open="(" separator="," close=")">
+                        #{result}
+                    </foreach>
+                    OR lr.process_result IS NULL
+                )
+            </if>
+        </where>
+        ORDER BY lr.late_time DESC
+    </select>
+    
+    <!-- 根据学号查询 -->
+    <select id="selectByStudentNo" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List"/>
+        FROM late_return lr
+        LEFT JOIN student s ON lr.student_no = s.student_no
+        WHERE lr.student_no = #{studentNo}
+        ORDER BY lr.late_time DESC
+    </select>
+    
+    <!-- 根据处理状态查询 -->
+    <select id="selectByProcessStatus" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List"/>
+        FROM late_return lr
+        LEFT JOIN student s ON lr.student_no = s.student_no
+        WHERE lr.process_status = #{processStatus}
+        ORDER BY lr.late_time DESC
+    </select>
+    
+    <!-- 根据处理结果查询 -->
+    <select id="selectByProcessResult" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List"/>
+        FROM late_return lr
+        LEFT JOIN student s ON lr.student_no = s.student_no
+        WHERE lr.process_result = #{processResult}
+        ORDER BY lr.late_time DESC
+    </select>
+    
+    <!-- 根据时间范围查询 -->
+    <select id="selectByTimeRange" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List"/>
+        FROM late_return lr
+        LEFT JOIN student s ON lr.student_no = s.student_no
+        WHERE lr.late_time BETWEEN #{startTime} AND #{endTime}
+        ORDER BY lr.late_time DESC
+    </select>
+    
+    <!-- 插入 -->
+    <insert id="insert" parameterType="com.tianhai.warn.model.LateReturn" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO late_return (
+            late_return_id, student_no, late_time, reason, 
+            process_status, process_result, process_remark,
+             create_time, update_time
+        ) VALUES (
+            #{lateReturnId}, #{studentNo}, #{lateTime}, #{reason},
+            #{processStatus}, #{processResult}, #{processRemark},
+            NOW(), NOW()
+        )
+        ON DUPLICATE KEY UPDATE
+            reason = VALUES(reason),
+            process_status = VALUES(process_status),
+            process_result = VALUES(process_result),
+            process_remark = VALUES(process_remark),
+            update_time = NOW()
+    </insert>
+    
+    <!-- 更新 -->
+    <update id="update" parameterType="com.tianhai.warn.model.LateReturn">
+        UPDATE late_return
+        <set>
+            <if test="reason != null">reason = #{reason},</if>
+            <if test="processStatus != null">process_status = #{processStatus},</if>
+            <if test="processResult != null">process_result = #{processResult},</if>
+            <if test="processRemark != null">process_remark = #{processRemark},</if>
+            update_time = NOW()
+        </set>
+        WHERE id = #{id}
+    </update>
+    
+    <!-- 删除 -->
+    <delete id="deleteById">
+        DELETE FROM late_return WHERE id = #{id}
+    </delete>
+    
+    <!-- 更新处理状态 -->
+    <update id="updateProcessStatus">
+        UPDATE late_return
+        SET process_status = #{processStatus},
+            process_result = #{processResult},
+            process_remark = #{processRemark},
+            update_time = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 统计今日晚归人数 -->
+    <select id="countTodayLateReturns" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM late_return lr
+        WHERE DATE(lr.late_time) = CURDATE()
+    </select>
+
+    <!-- 统计所有处理状态（不是处理结果）的晚归记录 -->
+    <select id="countAllProcessStatus" resultType="java.util.Map" parameterType="com.tianhai.warn.query.LateReturnQuery">
+        SELECT
+        CAST(COUNT(1) AS SIGNED INTEGER) as total,
+        CAST(SUM(CASE WHEN lr.process_status = 'PENDING' THEN 1 ELSE 0 END) AS SIGNED INTEGER) as pending,
+        CAST(SUM(CASE WHEN lr.process_status = 'PROCESSING' THEN 1 ELSE 0 END) AS SIGNED INTEGER) as processing,
+        CAST(SUM(CASE WHEN lr.process_status = 'FINISHED' THEN 1 ELSE 0 END) AS SIGNED INTEGER) as finished
+        FROM late_return lr
+        <where>
+            <if test="startLateTime != null">
+                AND lr.late_time >= #{startLateTime}
+            </if>
+            <if test="endLateTime != null">
+                AND lr.late_time &lt;= #{endLateTime}
+            </if>
+            <if test="studentNos != null and studentNos.size() > 0">
+                AND lr.student_no IN
+                <foreach collection="studentNos" item="studentNo" open="(" separator="," close=")">
+                    #{studentNo}
+                </foreach>
+            </if>
+        </where>
+    </select>
+    
+
+    <!-- 统计指定时间范围内的（没正当理由）晚归次数 -->
+    <select id="countPeriodLateReturns" resultType="java.lang.Integer" parameterType="com.tianhai.warn.query.LateReturnQuery">
+        SELECT COUNT(*)
+        FROM late_return lr
+        <where>
+            <if test="startLateTime != null">
+                AND lr.late_time >= #{startLateTime}
+            </if>
+            <if test="endLateTime != null">
+                AND lr.late_time &lt;= #{endLateTime}
+            </if>
+            AND lr.process_status = 'FINISHED'
+            AND (
+                lr.process_result IS NULL
+                OR lr.process_result = 'REJECTED'
+            )
+        </where>
+    </select>
+
+    <!-- 统计指定时间范围内（没正当理由）的晚归记录 -->
+
+
+    <!-- 统计指定时间范围内的（没有正当理由）的晚归学生数 -->
+    <select id="countPeriodLateReturnStudents" resultType="java.lang.Integer" parameterType="com.tianhai.warn.query.LateReturnQuery">
+        SELECT COUNT(DISTINCT lr.student_no)
+        FROM late_return lr
+        <where>
+            <if test="startLateTime != null">
+                AND lr.late_time >= #{startLateTime}
+            </if>
+            <if test="endLateTime != null">
+                AND lr.late_time &lt;= #{endLateTime}
+            </if>
+            AND lr.process_status = 'FINISHED'
+            AND (
+            lr.process_result IS NULL
+            OR lr.process_result = 'REJECTED'
+            )
+        </where>
+    </select>
+
+    <!-- 统计指定时间范围内有违规晚归的学生的学号 -->
+    <select id="listPeriodLateReturnStudentNos" resultType="java.lang.String" parameterType="com.tianhai.warn.query.LateReturnQuery">
+        SELECT DISTINCT lr.student_no
+        FROM late_return lr
+        <where>
+            <if test="startLateTime != null">
+                AND lr.late_time >= #{startLateTime}
+            </if>
+            <if test="endLateTime != null">
+                AND lr.late_time &lt;= #{endLateTime}
+            </if>
+            AND lr.process_status = 'FINISHED'
+            AND (
+            lr.process_result IS NULL
+            OR lr.process_result = 'REJECTED'
+            )
+        </where>
+    </select>
+
+
+
+
+    <!-- 统计待处理晚归数量 -->
+    <select id="countPendingLateReturns" resultType="java.lang.Integer" parameterType="com.tianhai.warn.query.LateReturnQuery">
+        SELECT COUNT(*)
+        FROM late_return lr
+        <where>
+            lr.process_status = 'PENDING'
+            <if test="startLateTime != null">
+                AND lr.late_time >= #{startLateTime}
+            </if>
+            <if test="endLateTime != null">
+                AND lr.late_time &lt;= #{endLateTime}
+            </if>
+            <if test="studentNos != null and studentNos.size() > 0">
+                AND lr.student_no IN
+                <foreach collection="studentNos" item="studentNo" open="(" separator="," close=")">
+                    #{studentNo}
+                </foreach>
+            </if>
+        </where>
+    </select>
+
+    <!-- 统计待审核晚归数量 -->
+    <select id="countProcessingLateReturns" resultType="java.lang.Integer" parameterType="com.tianhai.warn.query.LateReturnQuery">
+        SELECT COUNT(*)
+        FROM late_return lr
+        <where>
+            lr.process_status = 'PROCESSING'
+            <if test="startLateTime != null">
+                AND lr.late_time >= #{startLateTime}
+            </if>
+            <if test="endLateTime != null">
+                AND lr.late_time &lt;= #{endLateTime}
+            </if>
+            <if test="studentNos != null and studentNos.size() > 0">
+                AND lr.student_no IN
+                <foreach collection="studentNos" item="studentNo" open="(" separator="," close=")">
+                    #{studentNo}
+                </foreach>
+            </if>
+        </where>
+    </select>
+
+    <!-- 统计已处理晚归数量 -->
+    <select id="countFinishedLateReturns" resultType="java.lang.Integer" parameterType="com.tianhai.warn.query.LateReturnQuery">
+        SELECT COUNT(*)
+        FROM late_return lr
+        <where>
+            lr.process_status = 'FINISHED'
+            <if test="startLateTime != null">
+                AND lr.late_time >= #{startLateTime}
+            </if>
+            <if test="endLateTime != null">
+                AND lr.late_time &lt;= #{endLateTime}
+            </if>
+            <if test="studentNos != null and studentNos.size() > 0">
+                AND lr.student_no IN
+                <foreach collection="studentNos" item="studentNo" open="(" separator="," close=")">
+                    #{studentNo}
+                </foreach>
+            </if>
+        </where>
+    </select>
+
+    <!-- 统计指定学生 在特定时间范围内的 没有正当理由的晚归记录数 -->
+    <select id="countStudentLateReturnsInPeriod" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM late_return lr
+        WHERE lr.student_no = #{studentNo}
+        AND lr.late_time BETWEEN #{startLateTime} AND #{endLateTime}
+        AND (
+            (lr.process_status = 'FINISHED' AND lr.process_result = 'REJECTED')
+            OR 
+            (lr.process_status = 'FINISHED' AND lr.process_result IS NULL)
+        )
+    </select>
+
+    <!-- 以班级和学院作为维度 统计学生在指定时间段内的晚归次数 -->
+    <select id="selectByStuLateQueryInPeriod" resultType="com.tianhai.warn.dto.StudentLateResultDTO">
+        SELECT
+            lr.student_no as studentNo,
+            s.name as studentName,
+            s.college as college,
+            s.class_name as className,
+            COUNT(lr.id) as lateReturnCount
+        FROM late_return lr
+        LEFT JOIN student s ON lr.student_no = s.student_no
+        WHERE lr.late_time BETWEEN #{startDate} AND #{endDate}
+        <if test="college != null and college !=''">
+            AND s.college = #{college}
+        </if>
+        <if test="className != null and className !=''">
+            AND s.class_name = #{className}
+        </if>
+        GROUP BY lr.student_no, s.name, s.college, s.class_name
+        ORDER BY lateReturnCount DESC
+    </select>
+
+    
+</mapper> 

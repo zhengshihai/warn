@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.tianhai.warn.mapper.SuperAdminMapper">
+
+    <resultMap id="BaseResultMap" type="com.tianhai.warn.model.SuperAdmin">
+        <id column="id" property="id" />
+        <result column="name" property="name" />
+        <result column="password" property="password" />
+        <result column="email" property="email" />
+        <result column="enabled" property="enabled" />
+        <result column="create_time" property="createTime" />
+        <result column="update_time" property="updateTime" />
+        <result column="version" property="version"/>
+        <result column="last_login_time" property="lastLoginTime"/>
+    </resultMap>
+
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT * FROM super_admin WHERE id = #{id}
+    </select>
+
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT * FROM super_admin ORDER BY id DESC
+    </select>
+
+    <insert id="insert" parameterType="com.tianhai.warn.model.SuperAdmin" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO super_admin (name, password, email, enabled, create_time, update_time, version, last_login_time)
+        VALUES (#{name}, #{password}, #{email}, #{enabled}, NOW(), NOW(), 0, NOW())
+    </insert>
+
+    <update id="update" parameterType="com.tianhai.warn.model.SuperAdmin">
+        UPDATE super_admin
+        SET name = #{name},
+            password = #{password},
+            email = #{email},
+            enabled = #{enabled},
+            update_time = NOW(),
+            version = version + 1
+        WHERE id = #{id} AND version = #{version}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM super_admin WHERE id = #{id}
+    </delete>
+
+    <select id="selectByCondition" parameterType="com.tianhai.warn.model.SuperAdmin" resultMap="BaseResultMap">
+        SELECT * FROM super_admin
+        <where>
+            <if test="id != null">
+                AND id = #{id}
+            </if>
+            <if test="name != null and name != ''">
+                AND name = #{name}
+            </if>
+            <if test="email != null and email != ''">
+                AND email = #{email}
+            </if>
+            <if test="enabled != null">
+                AND enabled = #{enabled}
+            </if>
+            <if test="createTime != null">
+                AND create_time = #{createTime}
+            </if>
+            <if test="updateTime != null">
+                AND update_time = #{updateTime}
+            </if>
+            <if test="lastLoginTime != null">
+                AND last_login_time = #{lastLoginTime}
+            </if>
+        </where>
+    </select>
+
+    <select id="countAll" resultType="int">
+        SELECT COUNT(*) FROM super_admin
+    </select>
+
+    <update id="updateLastLoginTime">
+        UPDATE super_admin
+        SET last_login_time = NOW(),
+            update_time = NOW(),
+            version = version + 1
+        WHERE id = #{id}
+    </update>
+
+</mapper>

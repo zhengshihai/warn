@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tianhai.warn.mapper.SysUserMapper">
+    
+    <resultMap id="BaseResultMap" type="com.tianhai.warn.model.SysUser">
+        <id column="id" property="id" />
+        <result column="sys_user_no" property="sysUserNo" />
+        <result column="password" property="password" />
+        <result column="name" property="name" />
+        <result column="phone" property="phone" />
+        <result column="email" property="email" />
+        <result column="job_role" property="jobRole" />
+        <result column="status" property="status" />
+        <result column="last_login_time" property="lastLoginTime" />
+        <result column="create_time" property="createTime" />
+        <result column="update_time" property="updateTime" />
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, sys_user_no, password, name, phone, email, job_role, status, last_login_time, create_time, update_time
+    </sql>
+
+    <!-- 根据工号查询用户 -->
+    <select id="selectBySysUserNo" parameterType="java.lang.String" resultMap="BaseResultMap">
+        select 
+        <include refid="Base_Column_List" />
+        from sys_user
+        where sys_user_no = #{sysUserNo}
+    </select>
+
+    <!-- 检查工号是否存在 -->
+    <select id="countBySysUserNo" parameterType="java.lang.String" resultType="int">
+        select count(*)
+        from sys_user
+        where sys_user_no = #{sysUserNo}
+    </select>
+
+    <select id="selectById" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+        select 
+        <include refid="Base_Column_List" />
+        from sys_user
+        where id = #{id}
+    </select>
+
+    <select id="selectByEmail" parameterType="java.lang.String" resultMap="BaseResultMap">
+        select 
+        <include refid="Base_Column_List" />
+        from sys_user
+        where email = #{email}
+    </select>
+
+    <select id="selectAll" resultMap="BaseResultMap">
+        select 
+        <include refid="Base_Column_List" />
+        from sys_user
+    </select>
+
+    <select id="selectByCondition" parameterType="com.tianhai.warn.query.SysUserQuery" resultMap="BaseResultMap">
+        select 
+        <include refid="Base_Column_List" />
+        from sys_user
+        <where>
+            <if test="id != null">
+                and id = #{id}
+            </if>
+            <if test="sysUserNo != null and sysUserNo != ''">
+                and sys_user_no = #{sysUserNo}
+            </if>
+            <if test="name != null and name != ''">
+                and name = #{name}
+            </if>
+            <if test="nameLike != null and nameLike != ''">
+                and name like concat('%', #{nameLike}, '%')
+            </if>
+            <if test="phone != null and phone != ''">
+                and phone = #{phone}
+            </if>
+            <if test="email != null and email != ''">
+                and email = #{email}
+            </if>
+            <if test="jobRole != null and jobRole != ''">
+                and job_role = #{jobRole}
+            </if>
+            <if test="status != null and status != ''">
+                and status = #{status}
+            </if>
+            <!-- 批量查询条件 -->
+            <if test="ids != null and ids.size() > 0">
+                and id in
+                <foreach collection="ids" item="id" open="(" separator="," close=")">
+                    #{id}
+                </foreach>
+            </if>
+            <if test="sysUserNos != null and sysUserNos.size() > 0">
+                and sys_user_no in
+                <foreach collection="sysUserNos" item="sysUserNo" open="(" separator="," close=")">
+                    #{sysUserNo}
+                </foreach>
+            </if>
+            <if test="emails != null and emails.size() > 0">
+                and email in
+                <foreach collection="emails" item="email" open="(" separator="," close=")">
+                    #{email}
+                </foreach>
+            </if>
+            <if test="jobRoles != null and jobRoles.size() > 0">
+                and job_role in
+                <foreach collection="jobRoles" item="jobRole" open="(" separator="," close=")">
+                    #{jobRole}
+                </foreach>
+            </if>
+        </where>
+    </select>
+
+    <insert id="insert" parameterType="com.tianhai.warn.model.SysUser" useGeneratedKeys="true" keyProperty="id">
+        insert into sys_user
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="sysUserNo != null">sys_user_no,</if>
+            <if test="password != null">password,</if>
+            <if test="name != null">name,</if>
+            <if test="phone != null">phone,</if>
+            <if test="email != null">email,</if>
+            <if test="jobRole != null">job_role,</if>
+            <if test="status != null">status,</if>
+            <if test="lastLoginTime != null">last_login_time,</if>
+            <if test="createTime != null">create_time,</if>
+            <if test="updateTime != null">update_time,</if>
+        </trim>
+
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="sysUserNo != null">#{sysUserNo},</if>
+            <if test="password != null">#{password},</if>
+            <if test="name != null">#{name},</if>
+            <if test="phone != null">#{phone},</if>
+            <if test="email != null">#{email},</if>
+            <if test="jobRole != null">#{jobRole},</if>
+            <if test="status != null">#{status},</if>
+            <if test="lastLoginTime != null">#{lastLoginTime},</if>
+            <if test="createTime != null">#{createTime},</if>
+            <if test="updateTime != null">#{updateTime},</if>
+        </trim>
+    </insert>
+
+    <update id="update" parameterType="com.tianhai.warn.model.SysUser">
+        update sys_user
+        <set>
+            <if test="sysUserNo != null">sys_user_no = #{sysUserNo},</if>
+            <if test="password != null">password = #{password},</if>
+            <if test="name != null">name = #{name},</if>
+            <if test="phone != null">phone = #{phone},</if>
+            <if test="email != null">email = #{email},</if>
+            <if test="jobRole != null">job_role = #{jobRole},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="lastLoginTime != null">last_login_time = #{lastLoginTime},</if>
+            update_time = now(),
+        </set>
+        where id = #{id}
+    </update>
+
+    <delete id="deleteById" parameterType="java.lang.Integer">
+        delete from sys_user
+        where id = #{id}
+    </delete>
+
+    <update id="updateLastLoginTime" parameterType="java.lang.Integer">
+        update sys_user
+        set last_login_time = now(),
+            update_time = now()
+        where id = #{id}
+    </update>
+
+    <select id="selectByRole" parameterType="java.lang.String" resultMap="BaseResultMap">
+        select 
+        <include refid="Base_Column_List" />
+        from sys_user
+        where job_role = #{jobRole}
+    </select>
+
+    <!-- 根据用户编号列表查询系统用户信息 -->
+    <select id="selectBySysUserNos" resultMap="BaseResultMap">
+        select 
+        <include refid="Base_Column_List" />
+        from sys_user
+        where sys_user_no in
+        <foreach collection="sysUserNos" item="sysUserNo" open="(" separator="," close=")">
+            #{sysUserNo}
+        </foreach>
+    </select>
+</mapper> 

@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tianhai.warn.mapper.StudentLateStatsMapper">
+
+    <resultMap id="BaseResultMap" type="com.tianhai.warn.model.StudentLateStats">
+        <id column="id" property="id" jdbcType="INTEGER"/>
+        <result column="stats_id" property="statsId" jdbcType="VARCHAR"/>
+        <result column="student_no" property="studentNo" jdbcType="VARCHAR"/>
+        <result column="late_return_count" property="lateReturnCount" jdbcType="INTEGER"/>
+        <result column="stats_period_start_date" property="statsPeriodStartDate" jdbcType="TIMESTAMP"/>
+        <result column="stats_period_end_date" property="statsPeriodEndDate" jdbcType="TIMESTAMP"/>
+        <result column="stats_period_type" property="statsPeriodType" jdbcType="VARCHAR"/>
+        <result column="last_updated_time" property="lastUpdatedTime" jdbcType="TIMESTAMP"/>
+        <result column="school_year" property="schoolYear" jdbcType="VARCHAR"/>
+        <result column="semester" property="semester" jdbcType="VARCHAR"/>
+        <result column="active_status" property="activeStatus" jdbcType="INTEGER"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, stats_id, student_no, late_return_count, stats_period_start_date, stats_period_end_date,
+        stats_period_type, last_updated_time, school_year, semester, stats_status
+    </sql>
+
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM student_late_stats
+        WHERE id = #{id}
+    </select>
+
+    <select id="selectByStatsId" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM student_late_stats
+        WHERE stats_id = #{statsId}
+    </select>
+
+    <sql id="Query_Conditions">
+        <where>
+            <if test="id != null">
+                AND id = #{id}
+            </if>
+            <if test="studentNo != null and studentNo != ''">
+                AND student_no = #{studentNo}
+            </if>
+            <if test="schoolYear != null and schoolYear != ''">
+                AND school_year = #{schoolYear}
+            </if>
+            <if test="semester != null and semester != ''">
+                AND semester = #{semester}
+            </if>
+            <if test="statsPeriodType != null and statsPeriodType != ''">
+                AND stats_period_type = #{statsPeriodType}
+            </if>
+            <if test="statsPeriodStartDate != null">
+                AND stats_period_start_date >= #{statsPeriodStartDate,jdbcType=TIMESTAMP}
+            </if>
+            <if test="statsPeriodEndDate != null">
+                AND stats_period_end_date &lt;= #{statsPeriodEndDate,jdbcType=TIMESTAMP}
+            </if>
+            <if test="statsStatus != null">
+                AND active_status = #{activeStatus,jdbcType=INTEGER}
+            </if>
+            <if test="studentNos != null and studentNos.size() > 0">
+                AND student_no IN
+                <foreach collection="studentNos" item="item" open="(" separator="," close=")">
+                    #{item}
+                </foreach>
+            </if>
+            <if test="statsIds != null and statsIds.size() > 0">
+                AND stats_id IN
+                <foreach collection="statsIds" item="item" open="(" separator="," close=")">
+                    #{item}
+                </foreach>
+            </if>
+        </where>
+    </sql>
+
+    <select id="selectListByQuery" resultMap="BaseResultMap" parameterType="com.tianhai.warn.query.StudentLateStatsQuery">
+        SELECT <include refid="Base_Column_List"/>
+        FROM student_late_stats
+        <include refid="Query_Conditions"/>
+        <!-- 可根据 BaseQuery 中的排序参数添加 ORDER BY 子句 -->
+        <if test="sortField != null and sortField != '' and sortOrder != null and sortOrder != ''">
+            ORDER BY ${sortField} ${sortOrder}
+        </if>
+    </select>
+
+
+
+    <insert id="insert" parameterType="com.tianhai.warn.model.StudentLateStats" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO student_late_stats (
+            stats_id, student_no, late_return_count,
+            stats_period_start_date, stats_period_end_date, stats_period_type,
+            last_updated_time, school_year, semester, active_status
+        ) VALUES (
+                     #{statsId,jdbcType=VARCHAR}, #{studentNo,jdbcType=VARCHAR}, #{lateReturnCount,jdbcType=INTEGER},
+                     #{statsPeriodStartDate,jdbcType=TIMESTAMP}, #{statsPeriodEndDate,jdbcType=TIMESTAMP}, #{statsPeriodType,jdbcType=VARCHAR},
+                     #{lastUpdatedTime,jdbcType=TIMESTAMP}, #{schoolYear,jdbcType=VARCHAR}, #{semester,jdbcType=VARCHAR}, #{activeStatus,jdbcType=INTEGER}
+                 )
+    </insert>
+
+    <insert id="batchInsert" parameterType="java.util.List">
+        INSERT INTO student_late_stats (
+        stats_id, student_no, late_return_count,
+        stats_period_start_date, stats_period_end_date, stats_period_type,
+        last_updated_time, school_year, semester, active_status
+        ) VALUES
+        <foreach collection="statsList" item="item" separator=",">
+            (
+            #{item.statsId,jdbcType=VARCHAR}, #{item.studentNo,jdbcType=VARCHAR}, #{item.lateReturnCount,jdbcType=INTEGER},
+            #{item.statsPeriodStartDate,jdbcType=TIMESTAMP}, #{item.statsPeriodEndDate,jdbcType=TIMESTAMP}, #{item.statsPeriodType,jdbcType=VARCHAR},
+            #{item.lastUpdatedTime,jdbcType=TIMESTAMP}, #{item.schoolYear,jdbcType=VARCHAR}, #{item.semester,jdbcType=VARCHAR}, #{item.activeStatus,jdbcType=INTEGER}
+            )
+        </foreach>
+    </insert>
+
+    <update id="updateById" parameterType="com.tianhai.warn.model.StudentLateStats">
+        UPDATE student_late_stats
+        <set>
+            <if test="statsId != null">stats_id = #{statsId,jdbcType=VARCHAR},</if>
+            <if test="studentNo != null">student_no = #{studentNo,jdbcType=VARCHAR},</if>
+            <if test="lateReturnCount != null">late_return_count = #{lateReturnCount,jdbcType=INTEGER},</if>
+            <if test="statsPeriodStartDate != null">stats_period_start_date = #{statsPeriodStartDate,jdbcType=TIMESTAMP},</if>
+            <if test="statsPeriodEndDate != null">stats_period_end_date = #{statsPeriodEndDate,jdbcType=TIMESTAMP},</if>
+            <if test="statsPeriodType != null">stats_period_type = #{statsPeriodType,jdbcType=VARCHAR},</if>
+            <if test="lastUpdatedTime != null">last_updated_time = #{lastUpdatedTime,jdbcType=TIMESTAMP},</if>
+            <if test="schoolYear != null">school_year = #{schoolYear,jdbcType=VARCHAR},</if>
+            <if test="semester != null">semester = #{semester,jdbcType=VARCHAR},</if>
+            <if test="activeStatus != null">active_status = #{activeStatus,jdbcType=INTEGER},</if>
+        </set>
+        WHERE id = #{id,jdbcType=INTEGER}
+    </update>
+
+    <update id="batchUpdateIsActive">
+        UPDATE student_late_stats
+        SET active_status = #{activeStatus,jdbcType=INTEGER}, last_updated_time = NOW()
+        WHERE stats_period_type = #{statsPeriodType,jdbcType=VARCHAR}
+        AND active_status != #{activeStatus,jdbcType=INTEGER}
+        <if test="studentNos != null and studentNos.size() > 0">
+            AND student_no IN
+            <foreach collection="studentNos" item="sNo" open="(" separator="," close=")">
+                #{sNo}
+            </foreach>
+        </if>
+        <if test="schoolYear != null and schoolYear != ''">
+            AND school_year = #{schoolYear,jdbcType=VARCHAR}
+        </if>
+        <if test="semester != null and semester != ''">
+            AND semester = #{semester,jdbcType=VARCHAR}
+        </if>
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM student_late_stats WHERE id = #{id}
+    </delete>
+
+    <delete id="deleteByStatsId">
+        DELETE FROM student_late_stats WHERE stats_id = #{statsId}
+    </delete>
+
+    <delete id="deleteByQuery" parameterType="com.tianhai.warn.query.StudentLateStatsQuery">
+        DELETE FROM student_late_stats
+        <include refid="Query_Conditions"/>
+    </delete>
+
+</mapper>

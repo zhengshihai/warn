@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:mvc="http://www.springframework.org/schema/mvc"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       https://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/context
+       https://www.springframework.org/schema/context/spring-context.xsd
+       http://www.springframework.org/schema/mvc
+       https://www.springframework.org/schema/mvc/spring-mvc.xsd">
+
+    <!-- 加载属性文件 -->
+    <context:property-placeholder location="classpath:file-upload-dev.properties" ignore-unresolvable="true"/>
+
+    <!-- 开启SpringMVC注解模式 -->
+    <mvc:annotation-driven>
+        <mvc:message-converters>
+            <bean class="org.springframework.http.converter.StringHttpMessageConverter">
+                <property name="supportedMediaTypes">
+                    <list>
+                        <value>text/plain;charset=UTF-8</value>
+                        <value>text/html;charset=UTF-8</value>
+                        <value>application/json;charset=UTF-8</value>
+                    </list>
+                </property>
+            </bean>
+            <bean class="org.springframework.http.converter.json.MappingJackson2HttpMessageConverter">
+                <property name="supportedMediaTypes">
+                    <list>
+                        <value>application/json;charset=UTF-8</value>
+                    </list>
+                </property>
+            </bean>
+        </mvc:message-converters>
+    </mvc:annotation-driven>
+
+    <!-- 静态资源默认servlet配置 -->
+    <mvc:default-servlet-handler/>
+
+    <!-- 配置文件上传路径 -->
+    <bean id="uploadPath" class="java.lang.String">
+        <constructor-arg value="E:/Warning/Warn/uploads"/>
+    </bean>
+
+    <!-- 配置静态资源映射 -->
+    <mvc:resources mapping="/uploads/**" location="file:#{uploadPath}/"/>
+
+    <!-- 开启注解扫描 -->
+    <context:component-scan base-package="com.tianhai.warn"/>
+
+    <!-- 配置文件上传解析器 -->
+    <bean id="multipartResolver" class="org.springframework.web.multipart.support.StandardServletMultipartResolver">
+    </bean>
+
+    <!-- 配置文件上传属性 -->
+    <bean id="multipartProperties" class="org.springframework.beans.factory.config.PropertiesFactoryBean">
+        <property name="properties">
+            <props>
+                <prop key="maxFileSize">5MB</prop>
+                <prop key="maxRequestSize">100MB</prop>
+                <prop key="fileSizeThreshold">0</prop>
+            </props>
+        </property>
+    </bean>
+
+    <beans profile="dev">
+        <bean id="uploadPath" class="java.lang.String">
+            <constructor-arg value="E:/Warning/Warn/uploads"/>
+        </bean>
+    </beans>
+
+    <!-- todo 生产环境待配置 -->
+    <beans profile="prod">
+        <bean id="uploadPath" class="java.lang.String">
+            <constructor-arg value="/data/uploads"/>
+        </bean>
+    </beans>
+
+</beans> 

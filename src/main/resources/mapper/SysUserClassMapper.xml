@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tianhai.warn.mapper.SysUserClassMapper">
+
+    <!-- 结果映射 -->
+    <resultMap id="BaseResultMap" type="com.tianhai.warn.model.SysUserClass">
+        <id column="id" property="id" />
+        <result column="sys_user_no" property="sysUserNo" />
+        <result column="class_name" property="className" />
+        <result column="job_role" property="jobRole" />
+        <result column="create_time" property="createTime" />
+        <result column="update_time" property="updateTime" />
+    </resultMap>
+
+    <!-- 基础列 -->
+    <sql id="Base_Column_List">
+        id, sys_user_no, class_name, job_role, create_time, update_time
+    </sql>
+
+    <!-- 根据班级管理员编号查询班级列表 -->
+    <select id="selectClassesByUserNo" resultType="string">
+        SELECT class_name
+        FROM sys_user_class
+        WHERE sys_user_no = #{sysUserNo}
+    </select>
+
+    <!-- 根据用户编号删除关联数据 -->
+    <delete id="deleteByUserNo">
+        DELETE FROM sys_user_class
+        WHERE sys_user_no = #{sysUserNo}
+    </delete>
+
+    <!-- 批量插入用户-班级关联 -->
+    <insert id="batchInsert" parameterType="java.util.List">
+        INSERT INTO sys_user_class (
+            sys_user_no,
+            class_name,
+            job_role,
+            create_time,
+            update_time
+        ) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+            #{item.sysUserNo},
+            #{item.className},
+            #{item.jobRole},
+            NOW(),
+            NOW()
+            )
+        </foreach>
+    </insert>
+
+    <!-- 检查用户是否有权限管理指定班级 -->
+    <select id="countBySysUserNoAndClass" resultType="int">
+        SELECT COUNT(*)
+        FROM sys_user_class
+        WHERE sys_user_no = #{sysUserNo}
+          AND class_name = #{className}
+    </select>
+
+    <!-- 根据ID查询 -->
+    <select id="selectById" resultType="com.tianhai.warn.model.SysUserClass">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM sys_user_class
+        WHERE id = #{id}
+    </select>
+
+    <!-- 根据用户编号查询所有关联记录 -->
+    <select id="selectByUserNo" resultType="com.tianhai.warn.model.SysUserClass">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM sys_user_class
+        WHERE sys_user_no = #{sysUserNo}
+    </select>
+
+    <!-- 根据班级查询所有关联记录 -->
+    <select id="selectByClassName" resultType="com.tianhai.warn.model.SysUserClass">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM sys_user_class
+        WHERE class_name = #{className}
+    </select>
+
+    <!-- 根据条件查询 -->
+    <select id="selectByCondition" parameterType="com.tianhai.warn.model.SysUserClass"
+            resultType="com.tianhai.warn.model.SysUserClass">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM sys_user_class
+        <where>
+            <if test="sysUserNo != null and sysUserNo != ''">
+                AND sys_user_no = #{sysUserNo}
+            </if>
+            <if test="className != null and className != ''">
+                AND class_name = #{className}
+            </if>
+            <if test="jobRole != null and jobRole != ''">
+                AND job_role = #{jobRole}
+            </if>
+        </where>
+    </select>
+
+    <!-- 根据班级查询所有关联记录 -->
+    <select id="selectByClassNameAll" resultType="com.tianhai.warn.model.SysUserClass">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM sys_user_class
+        WHERE class_name = #{className}
+    </select>
+
+    <!-- 根据ID删除 -->
+    <delete id="deleteById">
+        DELETE FROM sys_user_class
+        WHERE id = #{id}
+    </delete>
+
+    <!-- 根据班级删除 -->
+    <delete id="deleteByClassName">
+        DELETE FROM sys_user_class
+        WHERE class_name = #{className}
+    </delete>
+
+    <!-- 更新记录 -->
+    <update id="update" parameterType="com.tianhai.warn.model.SysUserClass">
+        UPDATE sys_user_class
+        <set>
+            <if test="sysUserNo != null">
+                sys_user_no = #{sysUserNo},
+            </if>
+            <if test="className != null">
+                class_name = #{className},
+            </if>
+            <if test="jobRole != null">
+                job_role = #{jobRole},
+            </if>
+            update_time = NOW()
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <!-- 根据角色查询所有关联记录 -->
+    <select id="selectByJobRole" resultType="com.tianhai.warn.model.SysUserClass">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM sys_user_class
+        WHERE job_role = #{jobRole}
+    </select>
+
+</mapper>

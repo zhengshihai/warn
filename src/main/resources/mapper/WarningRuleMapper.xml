@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tianhai.warn.mapper.WarningRuleMapper">
+    
+    <!-- 结果映射 -->
+    <resultMap id="BaseResultMap" type="com.tianhai.warn.model.WarningRule">
+        <id column="id" property="id"/>
+        <result column="rule_name" property="ruleName"/>
+        <result column="time_range_days" property="timeRangeDays"/>
+        <result column="max_late_times" property="maxLateTimes"/>
+        <result column="notify_target" property="notifyTarget"/>
+        <result column="notify_method" property="notifyMethod"/>
+        <result column="status" property="status"/>
+        <result column="description" property="description"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+    
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        id, rule_name, time_range_days, max_late_times, notify_target,
+        notify_method, status, description, create_time, update_time
+    </sql>
+    
+    <!-- 根据ID查询 -->
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List"/>
+        FROM warning_rule
+        WHERE id = #{id}
+    </select>
+    
+    <!-- 查询所有 -->
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List"/>
+        FROM warning_rule
+        ORDER BY create_time DESC
+    </select>
+    
+    <!-- 根据条件查询 -->
+    <select id="selectByCondition" resultMap="BaseResultMap" parameterType="com.tianhai.warn.model.WarningRule">
+        SELECT 
+        <include refid="Base_Column_List"/>
+        FROM warning_rule
+        <where>
+            <if test="ruleName != null and ruleName != ''">
+                AND rule_name LIKE CONCAT('%', #{ruleName}, '%')
+            </if>
+            <if test="notifyTarget != null and notifyTarget != ''">
+                AND notify_target = #{notifyTarget}
+            </if>
+            <if test="notifyMethod != null and notifyMethod != ''">
+                AND notify_method = #{notifyMethod}
+            </if>
+            <if test="status != null and status != ''">
+                AND status = #{status}
+            </if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+    
+    <!-- 根据状态查询 -->
+    <select id="selectByStatus" resultMap="BaseResultMap">
+        SELECT 
+        <include refid="Base_Column_List"/>
+        FROM warning_rule
+        WHERE status = #{status}
+        ORDER BY create_time DESC
+    </select>
+    
+    <!-- 插入 -->
+    <insert id="insert" parameterType="com.tianhai.warn.model.WarningRule" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO warning_rule (
+            rule_name, time_range_days, max_late_times, notify_target,
+            notify_method, status, description, create_time, update_time
+        ) VALUES (
+            #{ruleName}, #{timeRangeDays}, #{maxLateTimes}, #{notifyTarget},
+            #{notifyMethod}, #{status}, #{description}, NOW(), NOW()
+        )
+    </insert>
+    
+    <!-- 更新 -->
+    <update id="update" parameterType="com.tianhai.warn.model.WarningRule">
+        UPDATE warning_rule
+        <set>
+            <if test="ruleName != null">rule_name = #{ruleName},</if>
+            <if test="timeRangeDays != null">time_range_days = #{timeRangeDays},</if>
+            <if test="maxLateTimes != null">max_late_times = #{maxLateTimes},</if>
+            <if test="notifyTarget != null">notify_target = #{notifyTarget},</if>
+            <if test="notifyMethod != null">notify_method = #{notifyMethod},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="description != null">description = #{description},</if>
+            update_time = NOW()
+        </set>
+        WHERE id = #{id}
+    </update>
+    
+    <!-- 删除 -->
+    <delete id="deleteById">
+        DELETE FROM warning_rule WHERE id = #{id}
+    </delete>
+    
+    <!-- 更新状态 -->
+    <update id="updateStatus">
+        UPDATE warning_rule
+        SET status = #{status},
+            update_time = NOW()
+        WHERE id = #{id}
+    </update>
+</mapper> 
