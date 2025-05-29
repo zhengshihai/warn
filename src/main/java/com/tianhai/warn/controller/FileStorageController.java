@@ -1,5 +1,6 @@
 package com.tianhai.warn.controller;
 
+import com.tianhai.warn.annotation.LogOperation;
 import com.tianhai.warn.annotation.RequirePermission;
 import com.tianhai.warn.enums.ResultCode;
 import com.tianhai.warn.exception.BusinessException;
@@ -54,6 +55,7 @@ public class FileStorageController {
 
     @GetMapping("/download/**")
     @RequirePermission
+    @LogOperation("下载文件")
     public ResponseEntity<Resource> downloadFile(HttpServletRequest request) {
         String filePath = extractFilePath(request);
         if (StringUtils.isBlank(filePath)) {
@@ -90,6 +92,7 @@ public class FileStorageController {
 
     @GetMapping("/preview/**")
     @RequirePermission
+    @LogOperation("在线预览文件")
     public ResponseEntity<Resource> previewFile(HttpServletRequest request) {
         String filePath = extractFilePath(request);
         if (StringUtils.isBlank(filePath)) {

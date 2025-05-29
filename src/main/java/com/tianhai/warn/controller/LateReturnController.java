@@ -1,5 +1,6 @@
 package com.tianhai.warn.controller;
 
+import com.tianhai.warn.annotation.LogOperation;
 import com.tianhai.warn.annotation.RequirePermission;
 import com.tianhai.warn.constants.Constants;
 import com.tianhai.warn.enums.ResultCode;
@@ -70,6 +71,7 @@ public class LateReturnController {
     @PostMapping("/pageList")
     @ResponseBody
     @RequirePermission
+    @LogOperation("分页查询晚归记录")
     public Result<PageResult<LateReturn>> pageList(@RequestBody LateReturnQuery query) {
         try {
             // 参数校验
@@ -105,6 +107,7 @@ public class LateReturnController {
     @PostMapping("/time")
     @ResponseBody
     @RequirePermission
+    @LogOperation("根据时间范围查询晚归记录")
     public Result<List<LateReturn>> searchByTimeRange(@RequestBody LateReturnQuery lateReturnQuery) {
         Date startTime = lateReturnQuery.getStartLateTime();
         Date endTime = lateReturnQuery.getEndLateTime();
@@ -127,6 +130,7 @@ public class LateReturnController {
     @PostMapping("/stats")
     @ResponseBody
     @RequirePermission
+    @LogOperation("统计晚归记录")
     public Result<Map<String, Object>> getStatistics(
             @RequestParam(required = false) String startDateStr,
             @RequestParam(required = false) String endTimeStr,
@@ -195,6 +199,7 @@ public class LateReturnController {
     @PostMapping("/update")
     @ResponseBody
     @RequirePermission( roles = {Constants.SYSTEM_USER, Constants.DORMITORY_MANAGER})
+    @LogOperation("更新晚归记录")
     public String update(@RequestParam String lateReturnId,
             @RequestParam String processStatus,
             @RequestParam String processResult,

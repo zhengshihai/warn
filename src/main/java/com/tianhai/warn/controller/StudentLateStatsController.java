@@ -1,5 +1,6 @@
 package com.tianhai.warn.controller;
 
+import com.tianhai.warn.annotation.LogOperation;
 import com.tianhai.warn.annotation.RequirePermission;
 import com.tianhai.warn.constants.Constants;
 import com.tianhai.warn.enums.ResultCode;
@@ -13,6 +14,7 @@ import com.tianhai.warn.utils.PageResult;
 import com.tianhai.warn.utils.Result;
 import com.tianhai.warn.utils.RoleObjectCaster;
 import jakarta.servlet.http.HttpSession;
+import lombok.extern.java.Log;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,6 +44,7 @@ public class StudentLateStatsController {
      */
     @GetMapping("/{id}")
     @RequirePermission(roles = Constants.SYSTEM_USER)
+    @LogOperation("获取晚归统计详情")
     public Result<StudentLateStats> getStatsById(@PathVariable Integer id) {
         if (id == null || id == 0) {
             throw new BusinessException(ResultCode.VALIDATE_FAILED);
@@ -58,6 +61,7 @@ public class StudentLateStatsController {
      */
     @GetMapping("/{statsId}")
     @RequirePermission(roles = Constants.SYSTEM_USER)
+    @LogOperation("获取晚归统计详情")
     public Result<StudentLateStats> getStatsByStatsId(@PathVariable String statsId) {
         if (StringUtils.isBlank(statsId) || statsId.startsWith("ST")) {
             logger.error("statsId:{}不合法", statsId);
@@ -77,6 +81,7 @@ public class StudentLateStatsController {
     @PostMapping("/pageList")
     @ResponseBody
     @RequirePermission(roles = Constants.SYSTEM_USER)
+    @LogOperation("分页查询晚归统计")
     public Result<PageResult<StudentLateStats>> pageList(StudentLateStatsQuery query) {
         if (query.getPageNum() == null || query.getPageNum() <= 0) {
             query.setPageNum(Constants.DEFAULT_PAGE_NUM);
@@ -96,6 +101,7 @@ public class StudentLateStatsController {
      */
     @PostMapping("/trigger-stats")
     @RequirePermission(roles = Constants.SYSTEM_USER)
+    @LogOperation("手动触发周期性统计任务")
     public Result<Void> triggerPeriodicStats(HttpSession session) {
         Object currentUser = session.getAttribute(Constants.SESSION_ATTRIBUTE_USER);
         SysUser currentSysUser = RoleObjectCaster.cast(Constants.SYSTEM_USER, currentUser);
@@ -115,6 +121,7 @@ public class StudentLateStatsController {
      */
     @PostMapping("/create")
     @RequirePermission(roles = Constants.SYSTEM_USER)
+    @LogOperation("创建晚归统计记录")
     public Result<StudentLateStats> createStatsRecord(@RequestBody StudentLateStats stats) {
         if (stats == null) {
             logger.error("提交的统计记录不能为空");
@@ -133,6 +140,7 @@ public class StudentLateStatsController {
      */
     @PostMapping("/batch-create")
     @RequirePermission(roles = Constants.SYSTEM_USER)
+    @LogOperation("批量创建晚归统计记录")
     public Result<Void> batchCreateStatsRecords(@RequestBody List<StudentLateStats> statsList) {
         if (statsList == null || statsList.isEmpty()) {
             logger.error("提交数据不能为空");
@@ -150,6 +158,7 @@ public class StudentLateStatsController {
      */
     @PutMapping("/update/{statsId}")
     @RequirePermission(roles = Constants.SYSTEM_USER)
+    @LogOperation("更新晚归统计记录")
     public Result<StudentLateStats> updateStatsRecord(@RequestBody StudentLateStats stats) {
         if (stats == null || StringUtils.isBlank(stats.getStatsId())) {
             logger.error("修改的统计记录不合法");
@@ -164,6 +173,7 @@ public class StudentLateStatsController {
     //todo
     @PostMapping("/batch-update")
     @RequirePermission(roles = Constants.SYSTEM_USER)
+    @LogOperation("批量更新晚归统计记录")
     public Result<Integer> batchUpdateStatsRecords(@RequestBody List<StudentLateStats> statsList) {
         if (statsList == null || statsList.isEmpty()) {
             logger.error("批量修改的统计记录不合法");

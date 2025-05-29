@@ -1,6 +1,8 @@
 package com.tianhai.warn.controller;
 
+import com.tianhai.warn.annotation.LogOperation;
 import com.tianhai.warn.annotation.RequirePermission;
+import com.tianhai.warn.constants.Constants;
 import com.tianhai.warn.enums.ResultCode;
 import com.tianhai.warn.exception.BusinessException;
 import com.tianhai.warn.model.Application;
@@ -43,6 +45,7 @@ public class ApplicationController {
     @GetMapping("/{applicationId}")
     @ResponseBody
     @RequirePermission
+    @LogOperation("查询晚归申请")
     public Result<Application> getByApplicationId(@PathVariable String applicationId) {
         if (applicationId == null) {
             throw new BusinessException(ResultCode.VALIDATE_FAILED);
@@ -61,6 +64,7 @@ public class ApplicationController {
     @GetMapping("/student/{studentNo}")
     @ResponseBody
     @RequirePermission
+    @LogOperation("查询晚归申请")
     public List<Application> getByStudentNo(@PathVariable String studentNo) {
         return applicationService.selectByStudentNo(studentNo);
     }
@@ -68,6 +72,7 @@ public class ApplicationController {
     @PostMapping("/pageList")
     @ResponseBody
     @RequirePermission
+    @LogOperation("分页查询晚归申请")
     public Result<PageResult<Application>> searchPageList(@RequestBody ApplicationQuery query) {
         if (query.getPageNum() == null || query.getPageNum() <= 0) {
             query.setPageNum(1);
@@ -85,6 +90,7 @@ public class ApplicationController {
     @PostMapping("/list")
     @ResponseBody
     @RequirePermission
+    @LogOperation("查询晚归申请")
     public Result<List<Application>> searchConditionalList(@RequestBody ApplicationQuery query) {
         List<Application> applicationList = applicationService.selectByCondition(query);
 
@@ -115,6 +121,7 @@ public class ApplicationController {
     @PostMapping("/add")
     @ResponseBody
     @RequirePermission
+    @LogOperation("添加晚归申请")
     public Result<String> add(@RequestParam("expectedReturnTime") String expectedReturnTime,
             @RequestParam("reason") String reason,
             @RequestParam("destination") String destination,
@@ -225,6 +232,8 @@ public class ApplicationController {
      */
     @PostMapping("/audit")
     @ResponseBody
+    @RequirePermission(roles = {Constants.SYSTEM_USER})
+    @LogOperation("审核晚归申请")
     public String audit(@RequestParam Long id,
             @RequestParam Integer auditStatus,
             @RequestParam String auditPerson,

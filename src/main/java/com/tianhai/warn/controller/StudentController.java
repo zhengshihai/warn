@@ -1,5 +1,6 @@
 package com.tianhai.warn.controller;
 
+import com.tianhai.warn.annotation.LogOperation;
 import com.tianhai.warn.annotation.RequirePermission;
 import com.tianhai.warn.constants.Constants;
 import com.tianhai.warn.enums.ResultCode;
@@ -95,6 +96,7 @@ public class StudentController {
     @PostMapping("/update/per-info")
     @ResponseBody
     @RequirePermission
+    @LogOperation("更新学生信息")
     public Result<?> update(@RequestBody Student student) {
         try {
             // 获取当前登录的学生信息
@@ -157,6 +159,7 @@ public class StudentController {
     @GetMapping("/search/{studentNo}")
     @ResponseBody
     @RequirePermission
+    @LogOperation("查询学生信息")
     public Result<Student> searchByStudentNo(@RequestParam String studentNo) {
         Student student = studentService.selectByStudentNo(studentNo);
 

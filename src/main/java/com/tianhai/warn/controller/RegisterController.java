@@ -1,6 +1,7 @@
 package com.tianhai.warn.controller;
 
 import com.google.code.kaptcha.Producer;
+import com.tianhai.warn.annotation.LogOperation;
 import com.tianhai.warn.constants.Constants;
 import com.tianhai.warn.dto.RegisterDTO;
 import com.tianhai.warn.enums.BusinessType;
@@ -56,6 +57,7 @@ public class RegisterController {
     // 获取图形验证码
     @GetMapping("/captcha")
     @ResponseBody
+    @LogOperation("获取图形验证码")
     public void getCaptcha(HttpServletResponse response, HttpSession session) {
         try {
             // 设置响应类型
@@ -99,6 +101,7 @@ public class RegisterController {
     // 发送邮箱验证码
     @PostMapping("/send-email-code")
     @ResponseBody
+    @LogOperation("发送邮箱验证码")
     public Result<?> sendEmailCaptcha(@RequestParam String email,
             @RequestParam String antispamCaptcha,
             HttpSession session) {
@@ -157,6 +160,7 @@ public class RegisterController {
 
     // 注册接口 - 新的实现
     @PostMapping("/do-register")
+    @LogOperation("用户注册")
     public String register(@Valid @ModelAttribute RegisterDTO registerDTO,
             HttpSession session,
             Model model) {

@@ -1,5 +1,6 @@
 package com.tianhai.warn.controller;
 
+import com.tianhai.warn.annotation.LogOperation;
 import com.tianhai.warn.annotation.RequirePermission;
 import com.tianhai.warn.constants.Constants;
 import com.tianhai.warn.dto.LateReturnReportChartDTO;
@@ -54,6 +55,7 @@ public class ReportsController {
     @ResponseBody
     @GetMapping("/cardData")
     @RequirePermission(roles = Constants.SYSTEM_USER)
+    @LogOperation("获取报告卡片数据")
     public Result<ReportCardStatVO> getReportCardDataExcludeHighRisk(LateReturnReportChartDTO reportChartDTO) {
         // 校验参数
         validateCollegeAndDorm(reportChartDTO.getCollege(), reportChartDTO.getDormitoryBuilding());
@@ -81,8 +83,9 @@ public class ReportsController {
      * @return 计算结果
      */
     @ResponseBody
-    @GetMapping("/high-risk-count")  //todo 有bug
+    @GetMapping("/high-risk-count")
     @RequirePermission(roles = Constants.SYSTEM_USER)
+    @LogOperation("获取高危预警人数")
     public Result<CalculationResult> getHighRiskCount(LateReturnReportChartDTO reportChartDTO) {
         // 校验参数
         validateCollegeAndDorm(reportChartDTO.getCollege(), reportChartDTO.getDormitoryBuilding());
@@ -113,6 +116,7 @@ public class ReportsController {
     @ResponseBody
     @GetMapping("/task-status/{taskId}")
     @RequirePermission(roles = Constants.SYSTEM_USER)
+    @LogOperation("获取任务状态")
     public Result<CalculationResult> getTaskStats(@PathVariable String taskId) {
         if (StringUtils.isBlank(taskId)) {
             throw new BusinessException(ResultCode.VALIDATE_FAILED);
@@ -144,6 +148,7 @@ public class ReportsController {
     @ResponseBody
     @GetMapping("/chart/week/late-return")
     @RequirePermission(roles = Constants.SYSTEM_USER)
+    @LogOperation("获取统计图表数据-时间维度")
     public Result<List<WeekLateReturnStatVO>> getWeekChartLateReturnStatData(LateReturnReportChartDTO reportChartDTO) {
         // 校验参数
         validateCollegeAndDorm(reportChartDTO.getCollege(), reportChartDTO.getDormitoryBuilding());
@@ -167,6 +172,7 @@ public class ReportsController {
     @ResponseBody
     @GetMapping("/chart/college")
     @RequirePermission(roles = Constants.SYSTEM_USER)
+    @LogOperation("获取统计图表数据-学院维度")
     public Result<List<CollegeLateReturnStatVO>> getCollegeChartLateReturnStatData(LateReturnReportChartDTO reportChartDTO) {
         // 校验参数
         validateCollegeAndDorm(reportChartDTO.getCollege(), reportChartDTO.getDormitoryBuilding());
@@ -189,6 +195,7 @@ public class ReportsController {
     @ResponseBody
     @GetMapping("/chart/time")
     @RequirePermission(roles = Constants.SYSTEM_USER)
+    @LogOperation("获取统计图表数据-晚归时间段维度")
     public Result<List<TimeRangeLateReturnStatVO>> getTimeChartLateReturnStatData(LateReturnReportChartDTO reportChartDTO) {
         // 校验参数
         validateCollegeAndDorm(reportChartDTO.getCollege(), reportChartDTO.getDormitoryBuilding());
@@ -211,6 +218,7 @@ public class ReportsController {
     @ResponseBody
     @GetMapping("/chart/dormitory")
     @RequirePermission(roles = Constants.SYSTEM_USER)
+    @LogOperation("获取统计图表数据-宿舍维度")
     public Result<Map<String, List<DormitoryLateReturnStatVO>>> getDormitoryChartLateReturnStatData(
             LateReturnReportChartDTO reportChartDTO) {
         // 校验参数

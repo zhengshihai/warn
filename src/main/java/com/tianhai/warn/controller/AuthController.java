@@ -1,6 +1,7 @@
 package com.tianhai.warn.controller;
 
 import com.tianhai.warn.annotation.LogOperation;
+import com.tianhai.warn.annotation.RequirePermission;
 import com.tianhai.warn.aop.LogAspect;
 import com.tianhai.warn.constants.Constants;
 import com.tianhai.warn.enums.ResultCode;
@@ -65,8 +66,9 @@ public class AuthController {
     /**
      * 处理退出登录请求
      */
-    @LogOperation("用户退出")
+    @LogOperation("用户登出")
     @GetMapping("/logout")
+    @RequirePermission
     public String logout(HttpServletRequest request) {
         HttpSession session = request.getSession(false);
         if (session != null) {

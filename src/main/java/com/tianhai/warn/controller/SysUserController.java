@@ -1,5 +1,6 @@
 package com.tianhai.warn.controller;
 
+import com.tianhai.warn.annotation.LogOperation;
 import com.tianhai.warn.enums.ResultCode;
 import com.tianhai.warn.exception.BusinessException;
 import com.tianhai.warn.exception.SystemException;
@@ -97,10 +98,11 @@ public class SysUserController {
     }
 
     /**
-     * 更新系统用户信息
+     * 更新班级管理员信息
      */
     @PostMapping("/update/per-info")
     @ResponseBody
+    @LogOperation("更新班级管理员信息")
     public Result<?> updateSysUser(@RequestBody SysUser sysUser) {
         //获取当前登录的系统管理员信息
         HttpSession session = SessionUtils.getSession(false);

@@ -1,5 +1,6 @@
 package com.tianhai.warn.controller;
 
+import com.tianhai.warn.annotation.LogOperation;
 import com.tianhai.warn.annotation.RequirePermission;
 import com.tianhai.warn.constants.Constants;
 import com.tianhai.warn.enums.ResultCode;
@@ -43,6 +44,7 @@ public class NotificationController {
     @PostMapping("/unread-page-list")
     @ResponseBody
     @RequirePermission
+    @LogOperation("分页查询通知")
     public Result<PageResult<Notification>> getUnreadNotificationsPage(@RequestBody NotificationQuery query,
                                                                        HttpSession session) {
         if (query == null) {
@@ -92,6 +94,7 @@ public class NotificationController {
     @GetMapping("/student/unread/{studentNo}")
     @ResponseBody
     @RequirePermission(roles = {Constants.STUDENT})
+    @LogOperation("获取学生未读通知")
     public Result<List<Notification>> getStudentUnreadNotifications(@PathVariable String studentNo,
                                                             HttpSession session) {
         // 验证当前登录用户是否为该学生
@@ -119,6 +122,7 @@ public class NotificationController {
     @GetMapping("sys-user/unread/{sysUserNo}")
     @ResponseBody
     @RequirePermission(roles = {Constants.SYSTEM_USER})
+    @LogOperation("获取学生未读通知")
     public Result<List<Notification>> getSysUserUnreadNotifications(@PathVariable String sysUserNo,
                                                                     HttpSession session) {
         // 验证当前登录用户是否为该系统用户
@@ -145,6 +149,7 @@ public class NotificationController {
     @GetMapping("/dor-man/unread/{managerId}")
     @ResponseBody
     @RequirePermission(roles = {Constants.DORMITORY_MANAGER})
+    @LogOperation("获取宿管未读通知")
     public Result<List<Notification>> getDormitoryUnreadNotifications(@PathVariable String managerId,
                                                               HttpSession session) {
         // 验证当前登录用户是否为该宿管
@@ -172,6 +177,7 @@ public class NotificationController {
     @GetMapping("/mark-read/{noticeId}")
     @ResponseBody
     @RequirePermission
+    @LogOperation("标记通知为已读")
     public Result<String> markAsRead(@PathVariable String noticeId, HttpSession session) {
         Object currentUser = session.getAttribute(Constants.SESSION_ATTRIBUTE_USER);
         String userRoleStr = (String) session.getAttribute(Constants.SESSION_ATTRIBUTE_ROLE);
@@ -208,6 +214,7 @@ public class NotificationController {
     @PostMapping("/batch-mark-read")
     @ResponseBody
     @RequirePermission
+    @LogOperation("批量更新通知为已读")
     public Result<String> batchMarkAsRead(@RequestBody List<String> noticeIds,
                                           HttpSession httpSession) {
         Object currentUser = httpSession.getAttribute(Constants.SESSION_ATTRIBUTE_USER);
@@ -229,6 +236,7 @@ public class NotificationController {
     @GetMapping("/stats")
     @ResponseBody
     @RequirePermission
+    @LogOperation("获取通知统计信息")
     public Result<Map<String, Object>> getNotificationsStats(HttpSession session) {
         Object currentUser = session.getAttribute(Constants.SESSION_ATTRIBUTE_USER);
         if (currentUser == null) {

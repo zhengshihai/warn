@@ -1,6 +1,7 @@
 package com.tianhai.warn.controller;
 
 import cn.hutool.core.bean.BeanUtil;
+import com.tianhai.warn.annotation.LogOperation;
 import com.tianhai.warn.annotation.RequirePermission;
 import com.tianhai.warn.constants.Constants;
 import com.tianhai.warn.dto.AuditActionDTO;
@@ -53,6 +54,7 @@ public class ExplanationController {
     @GetMapping("/late-return/{lateReturnId}")
     @ResponseBody
     @RequirePermission
+    @LogOperation("查询晚归说明")
     public Result<Explanation> getByLateReturnId(@PathVariable String lateReturnId) {
         if (StringUtils.isBlank(lateReturnId)) {
             throw new BusinessException(ResultCode.VALIDATE_FAILED);
@@ -103,6 +105,7 @@ public class ExplanationController {
     @PostMapping("/add")
     @ResponseBody
     @RequirePermission(roles = {Constants.STUDENT})
+    @LogOperation("添加晚归说明")
     public Result<String> add(@RequestParam("studentNo") String studentNo,
             @RequestParam("reason") String reason,
             @RequestParam("description") String description,
@@ -174,6 +177,7 @@ public class ExplanationController {
     @PostMapping("/audit-action")
     @ResponseBody
     @RequirePermission(roles = {Constants.DORMITORY_MANAGER, Constants.SYSTEM_USER})
+    @LogOperation("审核晚归说明")
     public Result<?> auditAction(@Valid  @RequestBody AuditActionDTO auditActionDTO) {
         Integer updateResult = explanationService.auditExplanation(auditActionDTO);
         if (updateResult < 2) {

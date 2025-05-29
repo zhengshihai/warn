@@ -1,5 +1,7 @@
 package com.tianhai.warn.controller;
 
+import com.tianhai.warn.annotation.LogOperation;
+import com.tianhai.warn.annotation.RequirePermission;
 import com.tianhai.warn.constants.Constants;
 import com.tianhai.warn.enums.ResultCode;
 import com.tianhai.warn.exception.BusinessException;
@@ -8,6 +10,7 @@ import com.tianhai.warn.service.DormitoryManagerService;
 import com.tianhai.warn.utils.Result;
 import com.tianhai.warn.utils.SessionUtils;
 import jakarta.servlet.http.HttpSession;
+import lombok.extern.java.Log;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -95,6 +98,8 @@ public class DormitoryManagerController {
      */
     @PostMapping("/update/per-info")
     @ResponseBody
+    @RequirePermission(roles = {Constants.SYSTEM_USER, Constants.SUPER_ADMIN})
+    @LogOperation("更新宿管信息")
     public Result<?> update(@RequestBody DormitoryManager manager) {
         // 获取当前登录用户
         HttpSession session = SessionUtils.getSession(false);
