@@ -45,7 +45,7 @@ public class LogAspect {
                 ? session.getAttribute(Constants.SESSION_ATTRIBUTE_USER)
                 : null;
 
-        // 这里的用户角色分成三大类，学生 宿管 系统用户
+        // 这里的用户角色分成四大类，学生 宿管 班级管理员 超级管理员
         String userRoleStr = session != null
                 ? (String) session.getAttribute(Constants.SESSION_ATTRIBUTE_ROLE)
                 : null;
@@ -58,7 +58,7 @@ public class LogAspect {
                 .ip(request.getRemoteAddr())
                 .createTime(new Date());
 
-        // 处理三种用户类型
+        // 处理4种用户类型
         if (userRoleStr != null) {
             switch (userRoleStr) {
                 case STUDENT:

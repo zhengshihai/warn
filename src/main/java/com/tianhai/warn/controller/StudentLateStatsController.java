@@ -2,33 +2,25 @@ package com.tianhai.warn.controller;
 
 import com.tianhai.warn.annotation.RequirePermission;
 import com.tianhai.warn.constants.Constants;
-import com.tianhai.warn.enums.CollegeEnum;
 import com.tianhai.warn.enums.ResultCode;
 import com.tianhai.warn.exception.BusinessException;
 import com.tianhai.warn.model.*;
-import com.tianhai.warn.query.LateReturnQuery;
 import com.tianhai.warn.query.StudentLateStatsQuery;
 import com.tianhai.warn.service.LateReturnService;
 import com.tianhai.warn.service.StudentLateStatsService;
 import com.tianhai.warn.service.WarningRuleService;
-import com.tianhai.warn.utils.DateUtils;
 import com.tianhai.warn.utils.PageResult;
 import com.tianhai.warn.utils.Result;
 import com.tianhai.warn.utils.RoleObjectCaster;
-import com.tianhai.warn.vo.ReportVO;
 import jakarta.servlet.http.HttpSession;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping("/period-stats")

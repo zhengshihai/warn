@@ -1,7 +1,6 @@
 package com.tianhai.warn.query;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import java.io.Serial;
 import java.io.Serializable;

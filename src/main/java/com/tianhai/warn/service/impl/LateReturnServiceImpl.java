@@ -10,6 +10,7 @@ import com.tianhai.warn.dto.StudentLateResultDTO;
 import com.tianhai.warn.enums.ResultCode;
 import com.tianhai.warn.events.StatsEvent;
 import com.tianhai.warn.exception.BusinessException;
+
 import com.tianhai.warn.mapper.LateReturnMapper;
 import com.tianhai.warn.model.DormitoryManager;
 import com.tianhai.warn.model.LateReturn;
@@ -474,12 +475,18 @@ public class LateReturnServiceImpl implements LateReturnService {
     }
 
     /**
-     *  统计指定时间段内有出现违规晚归的学生的学号
+     *  统计指定时间段内的违规晚归记录
      * @param query 查询条件
-     * @return      学号集合
+     * @return      晚归记录集合
      */
     @Override
-    public Set<String> listPeriodLateReturnStudentNos(LateReturnQuery query) {
-        return lateReturnMapper.listPeriodLateReturnStudentNos(query);
+    public List<LateReturn> listPeriodLateReturns(LateReturnQuery query) {
+        if (query == null || query.getStartLateTime() == null || query.getEndLateTime() == null
+                     || query.getStartLateTime().after(query.getEndLateTime())) {
+            logger.error("晚归时间段参数不合法");
+            throw new BusinessException(ResultCode.VALIDATE_FAILED);
+        }
+
+        return lateReturnMapper.listPeriodLateReturns(query);
     }
 }

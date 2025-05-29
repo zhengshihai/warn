@@ -1,13 +1,17 @@
 package com.tianhai.warn.utils;
 
 import com.tianhai.warn.constants.Constants;
+import com.tianhai.warn.dto.LateReturnReportChartDTO;
 import com.tianhai.warn.enums.ResultCode;
 import com.tianhai.warn.exception.BusinessException;
+import lombok.Builder;
+import lombok.Data;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.*;
 import java.time.temporal.ChronoUnit;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -17,6 +21,10 @@ import java.util.Map;
  */
 public class DateUtils {
     private static final Logger logger = LoggerFactory.getLogger(DateUtils.class);
+
+    public static final String START_TIME = "startTime";
+    public static final String END_TIME = "endTime";
+
     /**
      * 获取指定日期的开始时间（00:00:00）
      * 
@@ -161,7 +169,7 @@ public class DateUtils {
     }
 
     /**
-     * 将指定的 Date 补全为当天的结束时间（23:59:59.999）
+     * 将指定的 Date 补全为当天的结束时间（23:59:59）
      */
     public static Date toEndOfDay(Date date) {
         if (date == null) {
@@ -171,20 +179,19 @@ public class DateUtils {
                 .atZone(ZoneId.systemDefault())
                 .toLocalDate();
 
-        // 当天 +1 天的 00:00:00，减 1 毫秒
-        LocalDateTime endOfDay = localDate.plusDays(1)
-                .atStartOfDay().minus(1, ChronoUnit.MILLIS);
+        // 当天的 23:59:59（精确到秒）
+        LocalDateTime endOfDay = localDate.atTime(23, 59, 59);
 
         return Date.from(endOfDay.atZone(ZoneId.systemDefault()).toInstant());
     }
 
     /**
-     * 获取精确到时分秒的时间范围
+     *  // 返回某天的年月日 以及补全起始时间和结束时间 00:00:00和23:59:59
      * @param startDate     起始日期
      * @param endDate       终止日期
      * @return              时间范围
      */
-    public static Map<String, Date> resolveDateRange(Date startDate, Date endDate) {
+    public static Map<String, Date> resolveSingleDayRange(Date startDate, Date endDate) {
         Map<String, Date> timeRangeMap = new HashMap<>();
         if (startDate == null || endDate == null) {
             logger.error("时间参数不合法");
@@ -196,8 +203,8 @@ public class DateUtils {
             throw new BusinessException(ResultCode.VALIDATE_FAILED);
         }
 
-        timeRangeMap.put(Constants.START_TIME, DateUtils.toStartOfDay(startDate));
-        timeRangeMap.put(Constants.END_TIME, DateUtils.toEndOfDay(endDate));
+        timeRangeMap.put(START_TIME, DateUtils.toStartOfDay(startDate));
+        timeRangeMap.put(END_TIME, DateUtils.toEndOfDay(endDate));
 
         return timeRangeMap;
     }

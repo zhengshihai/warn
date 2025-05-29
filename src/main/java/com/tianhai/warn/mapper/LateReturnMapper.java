@@ -3,6 +3,7 @@ package com.tianhai.warn.mapper;
 import com.tianhai.warn.dto.StudentLateResultDTO;
 import com.tianhai.warn.model.LateReturn;
 import com.tianhai.warn.query.LateReturnQuery;
+import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import java.util.List;
 import java.util.Date;
@@ -166,9 +167,9 @@ public interface LateReturnMapper {
     Integer countPeriodLateReturnStudents(LateReturnQuery query);
 
     /**
-     *  统计指定时间段内有出现违规晚归的学生的学号
+     *  统计指定时间段内的违规晚归记录
      * @param query 查询条件
-     * @return      学号集合
+     * @return      晚归记录集合
      */
-    Set<String> listPeriodLateReturnStudentNos(LateReturnQuery query);
+    List<LateReturn> listPeriodLateReturns (LateReturnQuery query);
 }

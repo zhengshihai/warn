@@ -5,13 +5,15 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.math.BigDecimal;
-
+/**
+ * 晚归卡片数据VO
+ * 包括总晚归次数 晚归学生数 处理完成率
+ */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ReportVO {
+public class ReportCardStatVO {
     private Integer totalLateReturns; // 没有正当理由的总晚归次数
 
     private Integer lateStudentCount; // 晚归学生数

@@ -42,6 +42,7 @@ public interface WarningRuleService {
      */
     List<WarningRule> selectByStatus(String status);
 
+
     /**
      * 插入预警规则
      * 
@@ -81,7 +82,7 @@ public interface WarningRuleService {
      * @param endTime       截至时间
      * @return              响应结果
      */
-    CalculationResult calculateHighRiskStudents(Date startTime, Date endTime);
+    CalculationResult calHighRiskStudents(Date startTime, Date endTime);
 
     /**
      * 获取任务状态
