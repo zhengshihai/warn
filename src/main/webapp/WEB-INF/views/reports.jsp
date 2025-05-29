@@ -455,7 +455,7 @@
             
             $.ajax({
                 url: '${pageContext.request.contextPath}/reports/cardData',
-                type: 'POST',
+                type: 'GET',
                 data: {
                     startDate: startDate,
                     endDate: endDate,

@@ -9,6 +9,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.core.task.AsyncTaskExecutor;
 import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
@@ -34,7 +35,6 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
         @Autowired
         private ApplicationContext applicationContext;
-
 
         @Override
         public void addInterceptors(InterceptorRegistry registry) {
@@ -100,8 +100,6 @@ public class WebMvcConfig implements WebMvcConfigurer {
                 controller.setBaseUrl(baseUrl);
                 return controller;
         }
-
-
 
         @Bean
         public ApplicationEventPublisher applicationEventPublisher() {

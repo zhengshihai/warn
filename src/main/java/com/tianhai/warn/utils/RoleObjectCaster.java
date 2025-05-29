@@ -2,6 +2,7 @@ package com.tianhai.warn.utils;
 
 import com.tianhai.warn.model.DormitoryManager;
 import com.tianhai.warn.model.Student;
+import com.tianhai.warn.model.SuperAdmin;
 import com.tianhai.warn.model.SysUser;
 
 import java.util.HashMap;
@@ -16,11 +17,14 @@ public class RoleObjectCaster {
 
     static {
         roleClassMap.put("student", Student.class);
+
         roleClassMap.put("systemUser", SysUser.class);
         roleClassMap.put("dormitoryManager", DormitoryManager.class);
+        roleClassMap.put("superAdmin", SuperAdmin.class);
 
         roleClassMap.put("systemuser", SysUser.class);
         roleClassMap.put("dormitorymanager", DormitoryManager.class);
+        roleClassMap.put("superadmin", SuperAdmin.class);
     }
 
     /**

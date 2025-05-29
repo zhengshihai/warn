@@ -3,42 +3,90 @@
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xmlns:context="http://www.springframework.org/schema/context"
        xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:aop="http://www.springframework.org/schema/aop"
        xsi:schemaLocation="http://www.springframework.org/schema/beans
        https://www.springframework.org/schema/beans/spring-beans.xsd
        http://www.springframework.org/schema/context
        https://www.springframework.org/schema/context/spring-context.xsd
        http://www.springframework.org/schema/tx
-       https://www.springframework.org/schema/tx/spring-tx.xsd">
+       https://www.springframework.org/schema/tx/spring-tx.xsd
+       http://www.springframework.org/schema/aop
+       https://www.springframework.org/schema/aop/spring-aop.xsd">
 
-    <context:component-scan base-package="com.tianhai.warn.*"/>
+    <!-- 扫描除controller外的所有包 -->
+    <context:component-scan base-package="com.tianhai.warn">
+        <context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
+    </context:component-scan>
 
-    <context:property-placeholder location="classpath:jdbc.properties,classpath:redis.properties"/>
+    <!-- 启用AspectJ自动代理 -->
+    <aop:aspectj-autoproxy proxy-target-class="true"/>
+
+    <!-- 配置相关参数 -->
+    <context:property-placeholder location="classpath:jdbc.properties,classpath:file-upload-dev.properties,classpath*:mail.properties,classpath:redis.properties" ignore-unresolvable="true"/>
 
     <bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource" init-method="init" destroy-method="close">
         <property name="driverClassName" value="${jdbc.driver}"/>
         <property name="url" value="${jdbc.url}"/>
         <property name="username" value="${jdbc.username}"/>
         <property name="password" value="${jdbc.password}"/>
-        <property name="initialSize" value="${jdbc.initialSize}"/>
-        <property name="maxActive" value="${jdbc.maxActive}"/>
-        <property name="minIdle" value="${jdbc.minIdle}"/>
-        <property name="maxWait" value="${jdbc.maxWait}"/>
+        <!-- 配置初始化大小、最小、最大 -->
+        <property name="initialSize" value="1"/>
+        <property name="minIdle" value="1"/>
+        <property name="maxActive" value="20"/>
+        <!-- 配置获取连接等待超时的时间 -->
+        <property name="maxWait" value="60000"/>
+        <!-- 配置间隔多久才进行一次检测，检测需要关闭的空闲连接，单位是毫秒 -->
+        <property name="timeBetweenEvictionRunsMillis" value="60000"/>
+        <!-- 配置一个连接在池中最小生存的时间，单位是毫秒 -->
+        <property name="minEvictableIdleTimeMillis" value="300000"/>
     </bean>
 
     <bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
         <property name="dataSource" ref="dataSource"/>
         <property name="mapperLocations" value="classpath:mapper/*.xml"/>
         <property name="configLocation" value="classpath:mybatis-config.xml"/>
+        <!-- 扫描model包 使用别名 -->
+        <property name="typeAliasesPackage" value="com.tianhai.warn.model"/>
     </bean>
 
+    <!-- 配置扫描Dao接口包，动态实现Dao接口，注入到spring容器中 -->
     <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
-        <property name="basePackage" value="com.tianhai.warn.mapper"/>
         <property name="sqlSessionFactoryBeanName" value="sqlSessionFactory"/>
+        <property name="basePackage" value="com.tianhai.warn.mapper"/>
     </bean>
 
+    <!-- 配置事务管理器 -->
     <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
         <property name="dataSource" ref="dataSource"/>
     </bean>
 
+    <!-- 配置基于注解的声明式事务 -->
     <tx:annotation-driven transaction-manager="transactionManager"/>
+
+    <!-- JavaMailSender bean -->
+    <bean id="mailSender" class="org.springframework.mail.javamail.JavaMailSenderImpl">
+        <!-- 基本属性 -->
+        <property name="host" value="smtp.qq.com" />
+        <property name="port" value="465" />
+        <property name="username" value="774538399@qq.com" />
+        <property name="password" value="qmyjrybvbztabdjh" /> <!-- 授权码 -->
+        <property name="defaultEncoding" value="UTF-8" />
+
+        <!-- JavaMail 特定属性 -->
+        <property name="javaMailProperties">
+            <props>
+                <!-- 启用 SMTP 认证 -->
+                <prop key="mail.smtp.auth">true</prop>
+                <!-- 启用 SSL 加密 -->
+                <prop key="mail.smtp.ssl.enable">true</prop>
+                <!-- 如果需要，可以禁用 STARTTLS (因为已经启用了SSL) -->
+                <prop key="mail.smtp.starttls.enable">false</prop>
+                <!-- 设置连接超时时间 -->
+                <prop key="mail.smtp.timeout">5000</prop>
+                <!-- 你也可以在这里设置 debug 模式，方便排查问题 -->
+                <!-- <prop key="mail.debug">true</prop> -->
+                <prop key="mail.transport.protocol">smtp</prop>
+            </props>
+        </property>
+    </bean>
 </beans> 

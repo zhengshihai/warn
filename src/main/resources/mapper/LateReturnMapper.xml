@@ -137,14 +137,14 @@
     
     <!-- 根据学号查询 -->
     <select id="selectByStudentNo" resultMap="BaseResultMap">
-        SELECT 
+        SELECT
         <include refid="Base_Column_List"/>
         FROM late_return lr
         LEFT JOIN student s ON lr.student_no = s.student_no
         WHERE lr.student_no = #{studentNo}
         ORDER BY lr.late_time DESC
     </select>
-    
+
     <!-- 根据处理状态查询 -->
     <select id="selectByProcessStatus" resultMap="BaseResultMap">
         SELECT 
@@ -295,10 +295,12 @@
         </where>
     </select>
 
-    <!-- 统计指定时间范围内有违规晚归的学生的学号 -->
-    <select id="listPeriodLateReturnStudentNos" resultType="java.lang.String" parameterType="com.tianhai.warn.query.LateReturnQuery">
-        SELECT DISTINCT lr.student_no
+    <!-- 统计指定时间范围内的违规晚归记录 -->
+    <select id="listPeriodLateReturns" resultMap="BaseResultMap" parameterType="com.tianhai.warn.query.LateReturnQuery">
+        SELECT
+        <include refid="Base_Column_List"/>
         FROM late_return lr
+        LEFT JOIN student s ON lr.student_no = s.student_no
         <where>
             <if test="startLateTime != null">
                 AND lr.late_time >= #{startLateTime}

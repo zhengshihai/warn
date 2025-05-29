@@ -1,5 +1,7 @@
 package com.tianhai.warn.controller;
 
+import com.tianhai.warn.annotation.LogOperation;
+import com.tianhai.warn.aop.LogAspect;
 import com.tianhai.warn.constants.Constants;
 import com.tianhai.warn.enums.ResultCode;
 import com.tianhai.warn.exception.BusinessException;
@@ -22,7 +24,8 @@ public class AuthController {
 
     @Autowired
     private AuthService authService;
-
+    @Autowired
+    private LogAspect logAspect;
 
 
     @RequestMapping("/login")
@@ -33,6 +36,7 @@ public class AuthController {
     /**
      * 处理使用邮箱的登录请求
      */
+    @LogOperation("用户登录")
     @PostMapping("/do-login") // zsh774538399@gmail.com ZSH774538399@gmail.com
     @ResponseBody
     public Result<Map<String, Object>> doLogin(
@@ -61,6 +65,7 @@ public class AuthController {
     /**
      * 处理退出登录请求
      */
+    @LogOperation("用户退出")
     @GetMapping("/logout")
     public String logout(HttpServletRequest request) {
         HttpSession session = request.getSession(false);

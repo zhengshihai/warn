@@ -84,7 +84,10 @@
         INSERT INTO system_log (
             log_id, user_no, username, user_role, operation, method, params, ip, status, error_msg, create_time
         ) VALUES (
-            #{logId}, #{userNo}, #{username}, #{userRole}, #{operation}, #{method}, #{params}, #{ip}, #{status}, #{errorMsg}, NOW()
+            #{logId,jdbcType=VARCHAR}, #{userNo,jdbcType=VARCHAR}, #{username,jdbcType=VARCHAR}, 
+            #{userRole,jdbcType=VARCHAR}, #{operation,jdbcType=VARCHAR}, #{method,jdbcType=VARCHAR}, 
+            #{params,jdbcType=VARCHAR}, #{ip,jdbcType=VARCHAR}, #{status,jdbcType=VARCHAR}, 
+            #{errorMsg,jdbcType=VARCHAR}, NOW()
         )
     </insert>
     

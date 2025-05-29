@@ -62,23 +62,23 @@ CREATE TABLE IF NOT EXISTS sys_user (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='系统用户表';
 
 -- 系统日志表
-CREATE TABLE IF NOT EXISTS sys_log (
-    id INT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID',
-    log_id VARCHAR(20) NOT NULL UNIQUE COMMENT '系统日志唯一ID',
-    user_no VARCHAR(20) NOT NULL COMMENT "用户ID（学号 工号）",
-    user_name VARCHAR(50) NOT NULL COMMENT '用户名',
-    user_role VARCHAR(20) NOT NULL COMMENT '用户角色',
-
-    operation VARCHAR(50) NOT NULL COMMENT '操作类型',
-    method VARCHAR(200) COMMENT '请求方法',
-    params TEXT COMMENT '请求参数',
-    time BIGINT NOT NULL COMMENT '执行时长(毫秒)',
-    ip VARCHAR(50) COMMENT 'IP地址',
-    create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    KEY idx_user_id (user_no),
-    KEY idx_create_time (create_time),
-    UNIQUE KEY uk_log_id (log_id)
-    -- CONSTRAINT fk_sys_log_user FOREIGN KEY (user_id) REFERENCES sys_user (id)
+CREATE TABLE `system_log` (
+    `id` INT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    `log_id` VARCHAR(40) NOT NULL COMMENT '系统日志唯一ID',
+    `user_no` VARCHAR(40) NOT NULL COMMENT '用户编号（学号 工号 等）',
+    `username` VARCHAR(50) NOT NULL COMMENT '用户名',
+    `user_role` VARCHAR(32) NOT NULL COMMENT '用户角色',
+    `operation` VARCHAR(255) NOT NULL COMMENT '操作内容',
+    `method` VARCHAR(255) NOT NULL COMMENT '请求方法',
+    `params` TEXT COMMENT '请求参数',
+    `ip` VARCHAR(50) NOT NULL COMMENT 'IP地址',
+    `status` VARCHAR(20) NOT NULL COMMENT '状态：成功/失败',
+    `error_msg` TEXT COMMENT '错误信息',
+    `create_time` DATETIME NOT NULL COMMENT '创建时间',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_log_id` (`log_id`),
+    KEY `idx_user_no` (`user_no`),
+    KEY `idx_create_time` (`create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='系统日志表';
 
 -- 预警规则表
