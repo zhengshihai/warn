@@ -55,6 +55,14 @@ public class SysUserServiceImpl implements SysUserService {
     }
 
     @Override
+    public SysUser selectById(Integer id) {
+        SysUser sysUser = sysUserMapper.selectById(id);
+        sysUser.setPassword(null);
+
+        return sysUser;
+    }
+
+    @Override
     public List<SysUser> selectByCondition(SysUserQuery query) {
         logger.debug("Selecting users by condition: {}", query);
         if (query.getSysUserNos() != null) {

@@ -80,9 +80,12 @@ public interface WarningRuleService {
      * 统计高危预警学号名单（重点关注对象名单）
      * @param startTime     起始时间
      * @param endTime       截至时间
+     * @param college       学院
+     * @param dormitoryBuilding 宿舍楼
      * @return              响应结果
      */
-    CalculationResult calHighRiskStudents(Date startTime, Date endTime);
+    CalculationResult calHighRiskStudents(Date startTime, Date endTime,
+                                           String college, String dormitoryBuilding);
 
     /**
      * 获取任务状态

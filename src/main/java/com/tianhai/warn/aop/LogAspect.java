@@ -79,7 +79,7 @@ public class LogAspect {
                 try {
                     user = session.getAttribute(Constants.SESSION_ATTRIBUTE_USER);
                     userRoleStr = (String) session.getAttribute(Constants.SESSION_ATTRIBUTE_ROLE);
-                    logger.debug("从session中获取到用户信息 - 用户: {}, 角色: {}",
+                    logger.debug("从session中获取到用户信息 - 用户{}, 角色: {}",
                             user != null ? "存在" : "不存在",
                             userRoleStr != null ? userRoleStr : "不存在");
                 } catch (Exception e) {

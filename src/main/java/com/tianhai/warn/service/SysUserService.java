@@ -74,4 +74,12 @@ public interface SysUserService {
      * @return 系统用户信息列表
      */
     List<SysUser> selectBySysUserNos(List<String> sysUserNos);
+
+    /**
+     * 根据主键ID查询系统用户信息
+     *
+     * @param id  主键id
+     * @return   班级管理员
+     */
+    SysUser selectById(Integer id);
 }

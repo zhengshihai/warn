@@ -119,10 +119,15 @@ public class WarningRuleServiceImpl implements WarningRuleService {
      * 
      * @param startTime 统计开始时间
      * @param endTime   统计结束时间
+     * @param college  学院
+     * @param dormitoryBuilding 宿舍楼
      * @return 计算结果，包含状态和人数
      */
     @Override
-    public CalculationResult calHighRiskStudents(Date startTime, Date endTime) {
+    public CalculationResult calHighRiskStudents(Date startTime,
+                                                 Date endTime,
+                                                 String college,
+                                                 String dormitoryBuilding) {
         logger.info("开始计算高危学生数量，时间范围: {} 到 {}", startTime, endTime);
 
         String cacheKey = HIGH_RISK_COUNT_CACHE_KEY + ":" + startTime.getTime() + ":" + endTime.getTime();
@@ -160,7 +165,7 @@ public class WarningRuleServiceImpl implements WarningRuleService {
         if (estimatedTime <= THRESHOLD_TIME) {
             logger.info("开始同步计算");
             try {
-                Integer count = doCalculateHighRiskStudents(startTime, endTime);
+                Integer count = doCalculateHighRiskStudents(startTime, endTime, college, dormitoryBuilding);
                 logger.info("同步计算完成，结果: {}", count);
 
                 // 缓存数据
@@ -188,7 +193,7 @@ public class WarningRuleServiceImpl implements WarningRuleService {
             asyncTaskExecutor.execute(() -> {
                 try {
                     // 执行计算
-                    Integer count = doCalculateHighRiskStudents(startTime, endTime);
+                    Integer count = doCalculateHighRiskStudents(startTime, endTime, college, dormitoryBuilding);
 
                     // 缓存结果
                     stringRedisTemplate.opsForValue().set(cacheKey, count.toString(), 1, TimeUnit.DAYS);
@@ -273,7 +278,10 @@ public class WarningRuleServiceImpl implements WarningRuleService {
     /**
      * 统计高危预警人数
      */
-    public Integer doCalculateHighRiskStudents(Date startTime, Date endTime) {
+    public Integer doCalculateHighRiskStudents(Date startTime,
+                                               Date endTime,
+                                               String college,
+                                               String dormitoryBuilding) {
         // 获取所有预警规则
         WarningRule query = WarningRule.builder()
                 .status(Constants.ENABLE_STR)
@@ -290,7 +298,8 @@ public class WarningRuleServiceImpl implements WarningRuleService {
         Set<String> highRiskStudents = new HashSet<>();
 
         // 获取 在特定时间段内 有出现违规晚归记录的学生学号列表
-        Set<String> studentNos = getStudentNosWithUnjustifiedLateReturns(startTime, endTime);
+        Set<String> studentNos =
+                getStudentNosWithUnjustifiedLateReturns(startTime, endTime, college, dormitoryBuilding);
         logger.info("查询时间范围: {} 到 {}", startTime, endTime);
         logger.info("违规晚归学生数量: {}", studentNos.size());
 
@@ -339,13 +348,17 @@ public class WarningRuleServiceImpl implements WarningRuleService {
      * 
      * @param startTime 开始时间
      * @param endTime   结束时间
+     * @param college 学院
+     * @param dormitoryBuilding 宿舍楼
      * @return 违规晚归学生学号集合
      */
-    private Set<String> getStudentNosWithUnjustifiedLateReturns(Date startTime, Date endTime) {
+    private Set<String> getStudentNosWithUnjustifiedLateReturns(Date startTime,
+                                                                Date endTime,
+                                                                String college,
+                                                                String dormitoryBuilding) {
         // 查询规定时间内所有违规晚归记录
-        LateReturnQuery query = new LateReturnQuery();
-        query.setStartLateTime(startTime);
-        query.setEndLateTime(endTime);
+        LateReturnQuery query = buildLateReturnQuery(startTime, endTime, college, dormitoryBuilding);
+
         List<LateReturn> lateReturns = lateReturnService.listPeriodLateReturns(query);
 
         logger.info("查询条件: startTime={}, endTime={}", startTime, endTime);
@@ -388,6 +401,46 @@ public class WarningRuleServiceImpl implements WarningRuleService {
         }
 
         return new HashSet<>();
+    }
+
+    /**
+     * 构建晚归查询条件
+     *
+     * @param startTime         起始时间
+     * @param endTime           结束时间
+     * @param college           学院
+     * @param dormitoryBuilding 宿舍楼栋 "A栋"
+     * @return 晚归查询条件
+     */
+    private LateReturnQuery buildLateReturnQuery(Date startTime, Date endTime,
+                                                 String college, String dormitoryBuilding) {
+        // 没有正当理由的总晚归次数
+        LateReturnQuery query = new LateReturnQuery();
+        query.setStartLateTime(startTime);
+        query.setEndLateTime(endTime);
+
+        // 处理宿舍楼的范围匹配
+        // 1. 如果为ALL 则改为 null，让sql语句匹配所有宿舍楼
+        if (dormitoryBuilding.equalsIgnoreCase(Constants.ALL)) {
+            dormitoryBuilding = null;
+        }
+        // 2. 用宿舍楼的首字母进行模糊查询
+        if (dormitoryBuilding != null && dormitoryBuilding.matches("^[A-Za-z]栋$")) {
+            char firstChar = dormitoryBuilding.charAt(0);
+            dormitoryBuilding = String.valueOf(Character.toUpperCase(firstChar));
+        }
+        // 3.设定条件
+        query.setDormitoryLike(dormitoryBuilding);
+
+        // 处理学院的范围匹配
+        // 1. 改为 null 让sql语句匹配所有学院
+        if (college.equalsIgnoreCase(Constants.ALL)) {
+            college = null;
+        }
+        // 2. 设定条件
+        query.setCollege(college);
+
+        return query;
     }
 
     /**

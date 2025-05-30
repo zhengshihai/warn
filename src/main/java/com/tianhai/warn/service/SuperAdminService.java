@@ -24,4 +24,6 @@ public interface SuperAdminService {
     SuperAdmin getByEmail(String email);
 
     void updateLastLoginTime(Integer id);
+
+    SuperAdmin selectById(Integer id);
 }

@@ -42,7 +42,10 @@ public class DormitoryManagerServiceImpl implements DormitoryManagerService {
 
     @Override
     public DormitoryManager selectById(Integer id) {
-        return dormitoryManagerMapper.selectById(id);
+        DormitoryManager dormitoryManager = dormitoryManagerMapper.selectById(id);
+        dormitoryManager.setPassword(null);
+
+        return dormitoryManager;
     }
 
     @Override

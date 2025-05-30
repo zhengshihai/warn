@@ -3,6 +3,7 @@ package com.tianhai.warn.config;
 import com.tianhai.warn.controller.FileStorageController;
 import com.tianhai.warn.interceptor.LoginInterceptor;
 import com.tianhai.warn.listeners.AuditEventListener;
+import jakarta.servlet.FilterRegistration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationEventPublisher;
@@ -91,6 +92,8 @@ public class WebMvcConfig implements WebMvcConfigurer {
                                 org.springframework.http.MediaType.APPLICATION_JSON));
                 converters.add(jsonConverter);
         }
+
+
 
         @Bean
         public FileStorageController fileStorageController() {

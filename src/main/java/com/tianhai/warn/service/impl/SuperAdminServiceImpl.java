@@ -27,6 +27,13 @@ public class SuperAdminServiceImpl implements SuperAdminService {
     @Autowired
     private SuperAdminMapper superAdminMapper;
 
+    @Override
+    public SuperAdmin selectById(Integer id) {
+        SuperAdmin superAdmin = superAdminMapper.selectById(id);
+        superAdmin.setPassword(null);
+
+        return superAdmin;
+    }
 
     @Override
     public SuperAdmin getById(Integer id) {

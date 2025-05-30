@@ -10,7 +10,7 @@ import java.util.List;
 public interface StudentService {
 
     /**
-     * 根据ID查询学生信息
+     * 根据主键ID查询学生信息
      * 
      * @param id 学生ID
      * @return 学生信息

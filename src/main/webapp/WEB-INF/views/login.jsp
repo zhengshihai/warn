@@ -96,9 +96,13 @@
                     type: 'POST',
                     url: '${pageContext.request.contextPath}/do-login',
                     data: formData,
+                    xhrFields: { withCredentials: true }, // 允许跨域携带cookie（如有需要）
                     success: function(response) {
-                        console.log('登录响应完整数据:', JSON.stringify(response, null, 2));  // 打印完整响应数据
                         if (response.success) {
+                            // 仅供调试，生产环境无需手动存储
+                            if (response.data && response.data.token) {
+                                console.log('JWT Token:', response.data.token);
+                            }
                             console.log('用户角色:', response.data.role);
                             console.log('职业角色:', response.data.job_role);
                             console.log('用户数据:', response.data);

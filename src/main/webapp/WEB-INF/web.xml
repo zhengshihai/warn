@@ -69,6 +69,17 @@
         <listener-class>com.tianhai.warn.listeners.JdbcDriverCleanupListener</listener-class>
     </listener>
 
-    
 
-</web-app> 
+    <!-- 注册 JwtRememberMeFilter 的 DelegatingFilterProxy -->
+    <filter>
+        <filter-name>jwtRememberMeFilter</filter-name>
+        <!-- DelegatingFilterProxy 会将doFilter委托给Spring应用上下文中同名的Bean -->
+        <filter-class>org.springframework.web.filter.DelegatingFilterProxy</filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>jwtRememberMeFilter</filter-name>
+        <url-pattern>/*</url-pattern> <!-- 拦截所有请求 -->
+
+    </filter-mapping>
+</web-app>
+

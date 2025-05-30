@@ -49,7 +49,7 @@ public class ReportsController {
      * 获取报告卡片数据
      * 如果最近天数和时间段都不为空，默认选择最近天数作为时间条件
      *
-     * @param reportChartDTO        晚归图标查询DTO
+     * @param reportChartDTO 晚归图标查询DTO
      * @return 卡片数据
      */
     @ResponseBody
@@ -79,7 +79,7 @@ public class ReportsController {
      * eg. 在一定时间范围内的滑动时间窗口中，学生在warning_rule表违反了超过3条规则，而system_rule规定的高危预警阈值是2 那就触发
      * todo 此处前端时间形式需要适配 以及处理学院 宿舍参数
      *
-     * @param reportChartDTO        晚归图标查询DTO
+     * @param reportChartDTO 晚归图标查询DTO
      * @return 计算结果
      */
     @ResponseBody
@@ -95,7 +95,10 @@ public class ReportsController {
                 reportChartDTO.getStartDate(), reportChartDTO.getEndDate());
 
         CalculationResult calculationResult = warningRuleService.calHighRiskStudents(
-                timeRange.get(DateUtils.START_TIME), timeRange.get(DateUtils.END_TIME));
+                timeRange.get(DateUtils.START_TIME),
+                timeRange.get(DateUtils.END_TIME),
+                reportChartDTO.getCollege(),
+                reportChartDTO.getDormitoryBuilding());
 
         // 根据状态设置相应的消息
         String message = switch (calculationResult.getStatus()) {
@@ -134,7 +137,6 @@ public class ReportsController {
         return Result.success(calculationResult, message);
     }
 
-
     // todo 待实现
     @ResponseBody
     @GetMapping("/chart/week/warn")
@@ -157,12 +159,11 @@ public class ReportsController {
         Map<String, Date> timeRange = DateUtils.resolveSingleDayRange(
                 reportChartDTO.getStartDate(), reportChartDTO.getEndDate());
 
-        List<WeekLateReturnStatVO> weekLateReturnStatVOList =
-                reportService.calWeekLateReturnStat(
-                        timeRange.get(DateUtils.START_TIME),
-                        timeRange.get(DateUtils.END_TIME),
-                        reportChartDTO.getCollege(),
-                        reportChartDTO.getDormitoryBuilding());
+        List<WeekLateReturnStatVO> weekLateReturnStatVOList = reportService.calWeekLateReturnStat(
+                timeRange.get(DateUtils.START_TIME),
+                timeRange.get(DateUtils.END_TIME),
+                reportChartDTO.getCollege(),
+                reportChartDTO.getDormitoryBuilding());
 
         return Result.success(weekLateReturnStatVOList);
     }
@@ -173,7 +174,8 @@ public class ReportsController {
     @GetMapping("/chart/college")
     @RequirePermission(roles = Constants.SYSTEM_USER)
     @LogOperation("获取统计图表数据-学院维度")
-    public Result<List<CollegeLateReturnStatVO>> getCollegeChartLateReturnStatData(LateReturnReportChartDTO reportChartDTO) {
+    public Result<List<CollegeLateReturnStatVO>> getCollegeChartLateReturnStatData(
+            LateReturnReportChartDTO reportChartDTO) {
         // 校验参数
         validateCollegeAndDorm(reportChartDTO.getCollege(), reportChartDTO.getDormitoryBuilding());
 
@@ -181,12 +183,11 @@ public class ReportsController {
         Map<String, Date> timeRange = DateUtils.resolveSingleDayRange(
                 reportChartDTO.getStartDate(), reportChartDTO.getEndDate());
 
-        List<CollegeLateReturnStatVO> collegeLateReturnStatVOList =
-                reportService.calCollegeLateReturnStat(
-                        timeRange.get(DateUtils.START_TIME),
-                        timeRange.get(DateUtils.END_TIME),
-                        reportChartDTO.getCollege(),
-                        reportChartDTO.getDormitoryBuilding());
+        List<CollegeLateReturnStatVO> collegeLateReturnStatVOList = reportService.calCollegeLateReturnStat(
+                timeRange.get(DateUtils.START_TIME),
+                timeRange.get(DateUtils.END_TIME),
+                reportChartDTO.getCollege(),
+                reportChartDTO.getDormitoryBuilding());
 
         return Result.success(collegeLateReturnStatVOList);
     }
@@ -196,7 +197,8 @@ public class ReportsController {
     @GetMapping("/chart/time")
     @RequirePermission(roles = Constants.SYSTEM_USER)
     @LogOperation("获取统计图表数据-晚归时间段维度")
-    public Result<List<TimeRangeLateReturnStatVO>> getTimeChartLateReturnStatData(LateReturnReportChartDTO reportChartDTO) {
+    public Result<List<TimeRangeLateReturnStatVO>> getTimeChartLateReturnStatData(
+            LateReturnReportChartDTO reportChartDTO) {
         // 校验参数
         validateCollegeAndDorm(reportChartDTO.getCollege(), reportChartDTO.getDormitoryBuilding());
 
@@ -204,12 +206,11 @@ public class ReportsController {
         Map<String, Date> timeRange = DateUtils.resolveSingleDayRange(
                 reportChartDTO.getStartDate(), reportChartDTO.getEndDate());
 
-        List<TimeRangeLateReturnStatVO> timeRangeLateReturnStatVOList =
-                reportService.calTimeLateReturnStat(
-                        timeRange.get(DateUtils.START_TIME),
-                        timeRange.get(DateUtils.END_TIME),
-                        reportChartDTO.getCollege(),
-                        reportChartDTO.getDormitoryBuilding());
+        List<TimeRangeLateReturnStatVO> timeRangeLateReturnStatVOList = reportService.calTimeLateReturnStat(
+                timeRange.get(DateUtils.START_TIME),
+                timeRange.get(DateUtils.END_TIME),
+                reportChartDTO.getCollege(),
+                reportChartDTO.getDormitoryBuilding());
 
         return Result.success(timeRangeLateReturnStatVOList);
     }
@@ -228,8 +229,8 @@ public class ReportsController {
         Map<String, Date> timeRange = DateUtils.resolveSingleDayRange(
                 reportChartDTO.getStartDate(), reportChartDTO.getEndDate());
 
-        Map<String, List<DormitoryLateReturnStatVO>> dormitoryLateReturnStatMap =
-                reportService.calDormitoryLateReturnStat(
+        Map<String, List<DormitoryLateReturnStatVO>> dormitoryLateReturnStatMap = reportService
+                .calDormitoryLateReturnStat(
                         timeRange.get(DateUtils.START_TIME),
                         timeRange.get(DateUtils.END_TIME),
                         reportChartDTO.getCollege(),
@@ -238,11 +239,11 @@ public class ReportsController {
         return Result.success(dormitoryLateReturnStatMap);
     }
 
-
     /**
      * 校验参数合法性
-     * @param college               学院 ALL代表全部学院
-     * @param dormitoryBuilding     宿舍楼栋 ALL代表全部宿舍楼
+     * 
+     * @param college           学院 ALL代表全部学院
+     * @param dormitoryBuilding 宿舍楼栋 ALL代表全部宿舍楼
      */
     private void validateCollegeAndDorm(String college, String dormitoryBuilding) {
 

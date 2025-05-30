@@ -10,7 +10,7 @@ import java.util.Objects;
 
 public enum UserRole {
     STUDENT("student", "学生"),
-    SYSTEM_USER("systemuser", "系统用户"), // 辅导员 班主任 院级领导等
+    SYSTEM_USER("systemuser", "班级管理员"), // 辅导员 班主任 院级领导等
     DORMITORY_MANAGER("dormitorymanager", "宿管"),
     SUPER_ADMIN("superadmin","超级管理员");
 

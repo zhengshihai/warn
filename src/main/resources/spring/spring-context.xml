@@ -22,7 +22,7 @@
     <aop:aspectj-autoproxy proxy-target-class="true"/>
 
     <!-- 配置相关参数 -->
-    <context:property-placeholder location="classpath:jdbc.properties,classpath:file-upload-dev.properties,classpath*:mail.properties,classpath:redis.properties" ignore-unresolvable="true"/>
+    <context:property-placeholder location="classpath:jdbc.properties,classpath:file-upload-dev.properties,classpath*:mail.properties,classpath:redis.properties,classpath:application.properties" ignore-unresolvable="true"/>
 
     <bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource" init-method="init" destroy-method="close">
         <property name="driverClassName" value="${jdbc.driver}"/>
@@ -66,25 +66,19 @@
     <!-- JavaMailSender bean -->
     <bean id="mailSender" class="org.springframework.mail.javamail.JavaMailSenderImpl">
         <!-- 基本属性 -->
-        <property name="host" value="smtp.qq.com" />
-        <property name="port" value="465" />
-        <property name="username" value="774538399@qq.com" />
-        <property name="password" value="qmyjrybvbztabdjh" /> <!-- 授权码 -->
+        <property name="host" value="${mail.host}" />
+        <property name="port" value="${mail.port}" />
+        <property name="username" value="${mail.username}" />
+        <property name="password" value="${mail.password}" /> <!-- 授权码 -->
         <property name="defaultEncoding" value="UTF-8" />
 
         <!-- JavaMail 特定属性 -->
         <property name="javaMailProperties">
             <props>
-                <!-- 启用 SMTP 认证 -->
-                <prop key="mail.smtp.auth">true</prop>
-                <!-- 启用 SSL 加密 -->
-                <prop key="mail.smtp.ssl.enable">true</prop>
-                <!-- 如果需要，可以禁用 STARTTLS (因为已经启用了SSL) -->
-                <prop key="mail.smtp.starttls.enable">false</prop>
-                <!-- 设置连接超时时间 -->
-                <prop key="mail.smtp.timeout">5000</prop>
-                <!-- 你也可以在这里设置 debug 模式，方便排查问题 -->
-                <!-- <prop key="mail.debug">true</prop> -->
+                <prop key="mail.smtp.auth">${mail.smtp.auth}</prop>
+                <prop key="mail.smtp.ssl.enable">${mail.smtp.ssl.enable}</prop>
+                <prop key="mail.smtp.starttls.enable">${mail.smtp.starttls.enable}</prop>
+                <prop key="mail.smtp.timeout">${mail.timeout}</prop>
                 <prop key="mail.transport.protocol">smtp</prop>
             </props>
         </property>

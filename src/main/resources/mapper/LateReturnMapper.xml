@@ -308,6 +308,12 @@
             <if test="endLateTime != null">
                 AND lr.late_time &lt;= #{endLateTime}
             </if>
+            <if test="dormitoryLike != null and dormitoryLike !=''">
+                AND s.dormitory LIKE CONCAT(#{dormitoryLike}, '%')
+            </if>
+            <if test="college != null and college != ''">
+                AND s.college = #{college}
+            </if>
             AND lr.process_status = 'FINISHED'
             AND (
             lr.process_result IS NULL

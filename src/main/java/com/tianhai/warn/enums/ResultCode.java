@@ -7,12 +7,15 @@ public enum ResultCode implements IResultCode {
     UNAUTHORIZED(401, "暂未登录或session已过期"),
     FORBIDDEN(403, "没有相关权限"),
 
+    LOGIN_FAILED(100, "登录失败，请检查邮箱或密码是否正确"),
+
     // 业务异常码
     USER_UPDATE_FAILED(1000, "更新用户信息失败"),
     USER_NOT_EXISTS(1001, "用户不存在"),
     USER_EXISTS(1002, "用户已存在"),
     USER_ROLE_DISABLE(1003, "无效的用户角色"),
     USER_NAME_PWD_FALSE(1004, "邮箱或密码错误"),
+    USER_LOCKED(1005, "用户状态暂不可用，请联系管理员"),
 
     CAPTCHA_VALIDATE_ERROR(2000, "验证码输入错误或已过期"),
     CAPTCHA_GENERATE_ERROR(2001, "生成验证码失败"),
