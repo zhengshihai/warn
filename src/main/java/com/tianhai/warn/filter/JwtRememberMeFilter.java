@@ -36,9 +36,9 @@ public class JwtRememberMeFilter implements Filter {
     private String jwtSecret;
 
     // 不需要Filter处理的路径模式列表
-    private List<String> excludeUrlPatterns;
+    private final List<String> excludeUrlPatterns;
 
-    private AntPathMatcher pathMatcher = new AntPathMatcher();
+    private final AntPathMatcher pathMatcher = new AntPathMatcher();
 
     @Autowired
     private AuthService authService;

@@ -169,6 +169,14 @@
         </div>
 
         <!-- 图表区域 -->
+        <div class="grid grid-cols-1 gap-6">
+            <!-- 宿舍门牌号统计图 -->
+            <div class="bg-white shadow rounded-lg p-6">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">宿舍门牌号晚归统计</h3>
+                <div id="dormRoomChart" style="width: 100%; height: 400px;"></div>
+            </div>
+            
+            <!-- 其他图表区域 -->
         <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
             <!-- 晚归趋势图 -->
             <div class="bg-white shadow rounded-lg p-6">
@@ -189,6 +197,7 @@
             <div class="bg-white shadow rounded-lg p-6">
                 <h3 class="text-lg font-medium text-gray-900 mb-4">宿舍楼晚归统计</h3>
                 <div id="dormChart" style="width: 100%; height: 400px;"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -203,46 +212,61 @@
 
         let startDate, endDate, rangeDays;
 
+        // 定义图表实例变量，使其可在外部访问
+        let trendChart = null;
+        let collegeChart = null;
+        let timeChart = null;
+        let dormChart = null;
+        let dormRoomChart = null;
+
         // 初始化日期选择器
         $(document).ready(function() {
             // 设置默认日期范围（最近30天）
             const today = new Date();
             const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
-            
+
             // 格式化日期
             const formattedToday = formatDate(today);
             const formattedThirtyDaysAgo = formatDate(thirtyDaysAgo);
-            
+
             // 设置日期输入框的默认值
             $('#startDate').val(formattedThirtyDaysAgo);
             $('#endDate').val(formattedToday);
-            
+
             // 初始化全局变量
             startDate = formattedThirtyDaysAgo;
             endDate = formattedToday;
             rangeDays = 30; // 初始化默认的 rangeDays
-            
+
             // 再次确认日期变量是否为有效格式
             if (!startDate || !endDate || !/^\d{4}-\d{2}-\d{2}$/.test(startDate) || !/^\d{4}-\d{2}-\d{2}$/.test(endDate)) {
                  startDate = '2000-01-01'; // 设置一个非常早的默认开始日期
                  endDate = formattedToday; // 结束日期仍然用今天
                  alert("日期初始化失败，已设置为默认范围。"); // 提示用户使用了默认范围
             }
-            
+
             // 获取默认选中的学院和宿舍楼值
             const initialCollege = $('#collegeSelect').val() === '全部' ? 'ALL' : $('#collegeSelect').val();
             const initialDormitory = $('#dormitorySelect').val() === '全部' ? 'ALL' : $('#dormitorySelect').val();
-            
+
             // 获取初始数据，传递所有必需参数
             getReportCardData(startDate, endDate, initialCollege, initialDormitory);
             getHighRiskCount(startDate, endDate, initialCollege, initialDormitory);
 
             // --- 添加这里：在页面加载完毕和初始日期设置好后，触发图表数据加载 ---
-            // 调用之前 init...Chart() 返回的加载函数
-            reloadTrendData();
-            reloadCollegeData();
-            reloadTimeData();
-            reloadDormData();
+            // 初始化图表实例并赋值给全局变量
+            trendChart = echarts.init(document.getElementById('trendChart'));
+            collegeChart = echarts.init(document.getElementById('collegeChart'));
+            timeChart = echarts.init(document.getElementById('timeChart'));
+            dormChart = echarts.init(document.getElementById('dormChart'));
+            dormRoomChart = echarts.init(document.getElementById('dormRoomChart'));
+
+            // 调用加载函数
+            loadTrendData();
+            loadCollegeData();
+            loadTimeData();
+            loadDormData();
+            loadDormRoomData(); // 加载宿舍门牌号数据
             // --- 结束添加 ---
         });
 
@@ -274,10 +298,11 @@
             getReportCardData(startDate, endDate, selectedCollege, selectedDormitory);
             getHighRiskCount(startDate, endDate, selectedCollege, selectedDormitory);
             // !!! 添加这里：触发图表加载 !!!
-            reloadTrendData();
-            reloadCollegeData();
-            reloadTimeData();
-            reloadDormData();
+            loadTrendData();
+            loadCollegeData();
+            loadTimeData();
+            loadDormData();
+            loadDormRoomData();
         });
 
         // 监听日期范围选择变化
@@ -313,7 +338,7 @@
                 }
                 startDate = formatDate(startDateObj);
                 endDate = formatDate(today);
-            
+
                 $('#startDate').val(startDate);
                 $('#endDate').val(endDate);
             }
@@ -345,10 +370,6 @@
                 startDate = startVal;
                 endDate = endVal;
                 rangeDays = Math.ceil((end - start) / (24 * 60 * 60 * 1000));
-
-                // !!! 移除这里的 getReportCardData() 和 getHighRiskCount() 调用 !!!
-                // getReportCardData();
-                // getHighRiskCount(startDate, endDate);
             } else {
                  // 如果有任何一个日期被清空，将全局日期变量设置为无效状态
                 startDate = undefined;
@@ -359,10 +380,6 @@
 
         // 监听学院和宿舍楼选择变化
         $('#collegeSelect, #dormitorySelect').change(function() {
-            // !!! 移除这里的 getReportCardData() 和 getHighRiskCount() 调用 !!!
-            // getReportCardData();
-            // getHighRiskCount(startDate, endDate);
-
             // 这里可以根据需要执行一些与数据请求无关的逻辑，比如更新全局变量
             // 但不应该在这里发起后端请求
         });
@@ -385,7 +402,7 @@
             return new Date('2024-02-01');
         }
 
-        // 定义 Ajax 请求函数 
+        // 定义 Ajax 请求函数
         function getHighRiskCount(startDate, endDate, college, dormitoryBuilding) {
             $.ajax({
                 url: '${pageContext.request.contextPath}/reports/high-risk-count',
@@ -462,10 +479,6 @@
 
         // 定义获取统计卡片数据的函数
         function getReportCardData(startDate, endDate, college, dormitoryBuilding) {
-            // 获取学院和宿舍楼的选择值
-            // const college = $('#collegeSelect').val() === '全部' ? 'ALL' : $('#collegeSelect').val();
-            // const dormitoryBuilding = $('#dormitorySelect').val() === '全部' ? 'ALL' : $('#dormitorySelect').val();
-            
             $.ajax({
                 url: '${pageContext.request.contextPath}/reports/cardData',
                 type: 'GET',
@@ -476,23 +489,24 @@
                     dormitoryBuilding: dormitoryBuilding
                 },
                 success: function(response) {
-                    if (!response.data.status === 'FAILED') {
+                    // 检查 Result 的 success 状态和 data 状态
+                    if (!response.success || (response.data && response.data.status === 'FAILED')) {
                         $('#totalLateCount').text('待修复');
                         $('#lateStudentCount').text('待修复');
                         $('#completionRate').text('待修复');
                         return;
                     }
-                    
+
                     const data = response.data;
-                    
+
                     // 更新总晚归次数
-                    $('#totalLateCount').text(data.totalLateReturns.toLocaleString());
-                    
+                    $('#totalLateCount').text(data.totalLateReturns !== undefined && data.totalLateReturns !== null ? data.totalLateReturns.toLocaleString() : '-');
+
                     // 更新晚归学生数
-                    $('#lateStudentCount').text(data.lateStudentCount.toLocaleString());
-                    
+                    $('#lateStudentCount').text(data.lateStudentCount !== undefined && data.lateStudentCount !== null ? data.lateStudentCount.toLocaleString() : '-');
+
                     // 更新处理完成率（后端已经加了百分号）
-                    $('#completionRate').text(data.completionRate);
+                    $('#completionRate').text(data.completionRate !== undefined && data.completionRate !== null ? data.completionRate : '-');
                 },
                 error: function() {
                     // 显示错误状态
@@ -503,33 +517,29 @@
             });
         }
 
-        // 晚归趋势图配置
-        function initTrendChart() {
-            var trendChart = echarts.init(document.getElementById('trendChart'));
-            
-            // 默认配置
+        // 晚归趋势图配置和加载数据函数
+        function loadTrendData() {
             var option = {
-                title: { text: '' },
-                tooltip: { trigger: 'axis' },
-                legend: { data: ['晚归人数'] },
-                xAxis: {
-                    type: 'category',
-                    data: ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
-                },
-                yAxis: { type: 'value' },
-                series: [
-                    {
-                        name: '晚归人数',
-                        type: 'line',
+            title: { text: '' },
+            tooltip: { trigger: 'axis' },
+            legend: { data: ['晚归人数'] },
+            xAxis: {
+                type: 'category',
+                data: ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
+            },
+            yAxis: { type: 'value' },
+            series: [
+                {
+                    name: '晚归人数',
+                    type: 'line',
                         data: []
                     }
                 ]
             };
-            
-            trendChart.setOption(option);
-            
-            // 加载数据
-            function loadTrendData() {
+
+            if (trendChart) { // 检查图表实例是否存在
+                trendChart.setOption(option);
+
                 $.ajax({
                     url: '${pageContext.request.contextPath}/reports/chart/week/late-return',
                     type: 'GET',
@@ -545,7 +555,7 @@
                             var data = response.data;
                             var weekdays = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
                             var counts = new Array(7).fill(0);
-                            
+
                             // 将后端返回的数据映射到对应的星期
                             data.forEach(function(item) {
                                 var index = getWeekdayIndex(item.weekday);
@@ -553,7 +563,7 @@
                                     counts[index] = item.lateReturnCount;
                                 }
                             });
-                            
+
                             trendChart.setOption({
                                 series: [{
                                     data: counts
@@ -571,35 +581,19 @@
                     }
                 });
             }
-            
-            // 将英文星期转换为索引
-            function getWeekdayIndex(weekday) {
-                var weekdayMap = {
-                    'Mon': 0, 'Tue': 1, 'Wed': 2, 'Thu': 3,
-                    'Fri': 4, 'Sat': 5, 'Sun': 6
-                };
-                return weekdayMap[weekday] !== undefined ? weekdayMap[weekday] : -1;
-            }
-            
-            // 监听窗口大小变化
-            window.addEventListener('resize', function() {
-                trendChart.resize();
-            });
-            
-            // 返回加载数据的函数，以便在需要时重新加载
-            return loadTrendData;
         }
 
-        // 初始化图表
-        var reloadTrendData = initTrendChart();
+        // 将英文星期转换为索引 (保留此函数)
+        function getWeekdayIndex(weekday) {
+            var weekdayMap = {
+                'Mon': 0, 'Tue': 1, 'Wed': 2, 'Thu': 3,
+                'Fri': 4, 'Sat': 5, 'Sun': 6
+            };
+            return weekdayMap[weekday] !== undefined ? weekdayMap[weekday] : -1;
+        }
 
-        // 初始化图表
-        const collegeChart = echarts.init(document.getElementById('collegeChart'));
-        const timeChart = echarts.init(document.getElementById('timeChart'));
-        const dormChart = echarts.init(document.getElementById('dormChart'));
-
-        // 学院分布图配置
-        function initCollegeChart() {
+        // 学院分布图配置和加载数据函数
+        function loadCollegeData() {
             var option = {
                 tooltip: {
                     trigger: 'item',
@@ -614,20 +608,19 @@
                     left: 'left',
                     data: []
                 },
-                series: [
-                    {
+            series: [
+                {
                         name: '晚归人数',
-                        type: 'pie',
-                        radius: '50%',
+                    type: 'pie',
+                    radius: '50%',
                         data: []
                     }
                 ]
             };
-            
-            collegeChart.setOption(option);
-            
-            // 加载数据
-            function loadCollegeData() {
+
+            if (collegeChart) { // 检查图表实例是否存在
+                collegeChart.setOption(option);
+
                 $.ajax({
                     url: '${pageContext.request.contextPath}/reports/chart/college',
                     type: 'GET',
@@ -648,7 +641,7 @@
                                     percentage: item.percentage
                                 };
                             });
-                            
+
                             collegeChart.setOption({
                                 tooltip: {
                                     trigger: 'item',
@@ -681,49 +674,37 @@
                     }
                 });
             }
-            
-            // 监听窗口大小变化
-            window.addEventListener('resize', function() {
-                collegeChart.resize();
-            });
-            
-            // 返回加载数据的函数，以便在需要时重新加载
-            return loadCollegeData;
         }
 
-        // 初始化学院分布图
-        var reloadCollegeData = initCollegeChart();
-
-        // 时间段分布图配置
-        function initTimeChart() {
-            var option = {
+        // 时间段分布图配置和加载数据函数
+        function loadTimeData() {
+             var option = {
                 tooltip: {
                     trigger: 'axis',
                     axisPointer: {
                         type: 'shadow'
                     }
                 },
-                xAxis: {
-                    type: 'category',
+            xAxis: {
+                type: 'category',
                     data: ['22:00-23:00', '23:00-00:00', '00:00-01:00', '01:00-02:00', '02:00-03:00', '03:00-04:00']
-                },
+            },
                 yAxis: {
                     type: 'value',
                     name: '晚归人数'
                 },
-                series: [
-                    {
+            series: [
+                {
                         name: '晚归人数',
-                        type: 'bar',
+                    type: 'bar',
                         data: []
                     }
                 ]
             };
-            
-            timeChart.setOption(option);
-            
-            // 加载数据
-            function loadTimeData() {
+
+            if (timeChart) { // 检查图表实例是否存在
+                timeChart.setOption(option);
+
                 $.ajax({
                     url: '${pageContext.request.contextPath}/reports/chart/time',
                     type: 'GET',
@@ -743,7 +724,7 @@
                                     value: item.lateReturnCount
                                 };
                             });
-                            
+
                             timeChart.setOption({
                                 tooltip: {
                                     formatter: function(params) {
@@ -755,7 +736,7 @@
                                 series: [{
                                     data: chartData
                                 }]
-                            });
+        });
                         } else {
                             console.error('获取时间段分布数据失败:', response.msg);
                         }
@@ -767,22 +748,11 @@
                     }
                 });
             }
-            
-            // 监听窗口大小变化
-            window.addEventListener('resize', function() {
-                timeChart.resize();
-            });
-            
-            // 返回加载数据的函数，以便在需要时重新加载
-            return loadTimeData;
         }
 
-        // 初始化时间段分布图
-        var reloadTimeData = initTimeChart();
-
-        // 宿舍楼统计图配置
-        function initDormChart() {
-            var option = {
+        // 宿舍楼统计图配置和加载数据函数
+        function loadDormData() {
+             var option = {
                 tooltip: {
                     trigger: 'axis',
                     axisPointer: {
@@ -792,27 +762,26 @@
                 legend: {
                     data: ['晚归次数']
                 },
-                xAxis: {
-                    type: 'category',
+            xAxis: {
+                type: 'category',
                     data: []
-                },
+            },
                 yAxis: {
                     type: 'value',
                     name: '晚归次数'
                 },
-                series: [
-                    {
+            series: [
+                {
                         name: '晚归次数',
-                        type: 'bar',
+                    type: 'bar',
                         data: []
                     }
                 ]
             };
-            
-            dormChart.setOption(option);
-            
-            // 加载数据
-            function loadDormData() {
+
+            if (dormChart) { // 检查图表实例是否存在
+                dormChart.setOption(option);
+
                 $.ajax({
                     url: '${pageContext.request.contextPath}/reports/chart/dormitory',
                     type: 'GET',
@@ -848,7 +817,7 @@
                                 series: [{
                                     data: buildingCounts
                                 }]
-                            });
+        });
                         } else {
                             console.error('获取宿舍楼统计数据失败:', response.msg);
                         }
@@ -860,27 +829,258 @@
                     }
                 });
             }
-            
-            // 监听窗口大小变化
-            window.addEventListener('resize', function() {
-                dormChart.resize();
-            });
-            
-            // 返回加载数据的函数，以便在需要时重新加载
-            return loadDormData;
         }
 
-        // 初始化宿舍楼统计图
-        var reloadDormData = initDormChart();
+        // 宿舍门牌号统计图配置和加载数据函数
+        function loadDormRoomData() {
+            var option = {
+                tooltip: {
+                    trigger: 'axis',
+                    axisPointer: {
+                        type: 'shadow'
+                    }
+                },
+                grid: {
+                    left: '3%',
+                    right: '4%',
+                    bottom: '15%',
+                    containLabel: true
+                },
+                xAxis: {
+                    type: 'category',
+                    data: [],
+                    axisLabel: {
+                        interval: 0,
+                        rotate: 45,
+                        textStyle: {
+                            fontSize: 12
+                        }
+                    }
+                },
+                yAxis: {
+                    type: 'value',
+                    name: '晚归次数'
+                },
+                dataZoom: [
+                    {
+                        type: 'slider',
+                        show: true,
+                        xAxisIndex: [0],
+                        start: 0,
+                        end: 100
+                    },
+                    {
+                        type: 'inside',
+                        xAxisIndex: [0],
+                        start: 0,
+                        end: 100
+                    }
+                ],
+                series: [
+                    {
+                        name: '晚归次数',
+                        type: 'line',
+                        data: [],
+                        markPoint: {
+                            data: [
+                                { type: 'max', name: '最大值' },
+                                { type: 'min', name: '最小值' }
+                            ]
+                        },
+                        markLine: {
+                            data: [
+                                { type: 'average', name: '平均值' }
+                            ]
+                        }
+                    }
+                ]
+            };
+
+             if (dormRoomChart) { // 检查图表实例是否存在
+                dormRoomChart.setOption(option);
+
+                $.ajax({
+                    url: '${pageContext.request.contextPath}/reports/chart/dormitory',
+                    type: 'GET',
+                    data: {
+                        startDate: $('#startDate').val(),
+                        endDate: $('#endDate').val(),
+                        college: $('#collegeSelect').val() === '全部' ? 'ALL' : $('#collegeSelect').val(),
+                        dormitoryBuilding: $('#dormitorySelect').val() === '全部' ? 'ALL' : $('#dormitorySelect').val()
+                    },
+                    dataType: 'json',
+                    success: function(response) {
+                        console.log('宿舍门牌号数据接口返回:', response); // 添加日志
+                        if (response.code === 200) {
+                            var dormRooms = [];
+                            var dormCounts = [];
+
+                            // 处理宿舍门牌号数据
+                            if (response.data && response.data.dormitory) {
+                                response.data.dormitory.forEach(function(dorm) {
+                                    // 确保 dormitory 和 totalCountByDormitory 存在且有效
+                                    if (dorm.dormitory && dorm.totalCountByDormitory != null) {
+                                        dormRooms.push(dorm.dormitory);
+                                        dormCounts.push(dorm.totalCountByDormitory);
+                                    }
+                                });
+                            }
+
+                            console.log('提取的宿舍门牌号:', dormRooms); // 添加日志
+                            console.log('提取的晚归次数:', dormCounts); // 添加日志
+
+                            dormRoomChart.setOption({
+                                xAxis: {
+                                    data: dormRooms
+                                },
+                                series: [{
+                                    data: dormCounts
+                                }]
+                            });
+                        } else {
+                            console.error('获取宿舍门牌号统计数据失败:', response.msg);
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('获取宿舍门牌号统计数据失败:', error);
+                        console.error('Status:', status);
+                        console.error('Response:', xhr.responseText);
+                    }
+                });
+            }
+        }
 
         // 响应窗口大小变化
         window.addEventListener('resize', function() {
-            collegeChart.resize();
-            timeChart.resize();
-            dormChart.resize();
-            // !!! 添加趋势图 resize !!!
-            trendChart.resize();
+            if (collegeChart) collegeChart.resize();
+            if (timeChart) timeChart.resize();
+            if (dormChart) dormChart.resize();
+            if (dormRoomChart) dormRoomChart.resize();
+            if (trendChart) trendChart.resize();
         });
+
+        // 导出Excel按钮点击事件
+        $('.bg-green-500').click(function() {
+            // 获取当前筛选条件
+            const dateRange = $('#dateRangeSelect').val();
+            let startDate, endDate;
+
+            if (dateRange === 'custom') {
+                startDate = $('#startDate').val();
+                endDate = $('#endDate').val();
+            } else {
+                const today = new Date();
+                if (dateRange === '7') {
+                    startDate = formatDate(new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000));
+                    endDate = formatDate(today);
+                } else if (dateRange === '30') {
+                    startDate = formatDate(new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000));
+                    endDate = formatDate(today);
+                } else if (dateRange === 'semester') {
+                    // 这里需要根据实际情况设置学期开始和结束日期
+                    startDate = '2024-02-26'; // 示例：本学期开始日期
+                    endDate = formatDate(today);
+                }
+            }
+
+            const college = $('#collegeSelect').val() === '全部' ? 'ALL' : $('#collegeSelect').val();
+            const dormitoryBuilding = $('#dormitorySelect').val() === '全部' ? 'ALL' : $('#dormitorySelect').val();
+
+            // 显示加载提示
+            const loadingToast = showLoadingToast('正在生成Excel文件，请稍候...');
+
+            // 发起AJAX请求
+            $.ajax({
+                url: '${pageContext.request.contextPath}/reports/export/excel',
+                method: 'GET',
+                data: {
+                    startDate: startDate,
+                    endDate: endDate,
+                    college: college,
+                    dormitoryBuilding: dormitoryBuilding
+                },
+                xhrFields: {
+                    responseType: 'blob' // 设置响应类型为blob
+                },
+                success: function(response, status, xhr) {
+                    // 关闭加载提示
+                    loadingToast.close();
+
+                    // 从响应头中获取文件名
+                    const contentDisposition = xhr.getResponseHeader('Content-Disposition');
+                    let filename = '报表统计.xlsx';
+                    if (contentDisposition) {
+                        const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+                        if (filenameMatch && filenameMatch[1]) {
+                            // 解码文件名
+                            filename = decodeURIComponent(filenameMatch[1].replace(/['"]/g, ''));
+                        }
+                    }
+
+                    // 创建下载链接
+                    const blob = new Blob([response], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+
+                    // 显示成功提示
+                    showSuccessToast('Excel文件导出成功！');
+                },
+                error: function(xhr, status, error) {
+                    // 关闭加载提示
+                    loadingToast.close();
+
+                    // 显示错误提示
+                    showErrorToast('导出Excel文件失败：' + (xhr.responseText || error));
+                }
+            });
+        });
+
+        // 显示加载提示
+        function showLoadingToast(message) {
+            const toast = $('<div>')
+                .addClass('fixed top-4 right-4 bg-blue-500 text-white px-6 py-3 rounded-lg shadow-lg z-50')
+                .text(message);
+            $('body').append(toast);
+            return {
+                close: function() {
+                    toast.fadeOut(300, function() {
+                        $(this).remove();
+                    });
+                }
+            };
+        }
+
+        // 显示成功提示
+        function showSuccessToast(message) {
+            const toast = $('<div>')
+                .addClass('fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50')
+                .text(message);
+            $('body').append(toast);
+            setTimeout(() => {
+                toast.fadeOut(300, function() {
+                    $(this).remove();
+                });
+            }, 3000);
+        }
+
+        // 显示错误提示
+        function showErrorToast(message) {
+            const toast = $('<div>')
+                .addClass('fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50')
+                .text(message);
+            $('body').append(toast);
+            setTimeout(() => {
+                toast.fadeOut(300, function() {
+                    $(this).remove();
+                });
+            }, 5000);
+        }
     </script>
 
     <!-- 非Ajax形式请求的错误弹框提示 -->

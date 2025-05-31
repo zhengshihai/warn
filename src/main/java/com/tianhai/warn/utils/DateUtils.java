@@ -10,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.*;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.Calendar;
 import java.util.Date;
@@ -24,6 +25,7 @@ public class DateUtils {
 
     public static final String START_TIME = "startTime";
     public static final String END_TIME = "endTime";
+    private static final DateTimeFormatter YMD_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
     /**
      * 获取指定日期的开始时间（00:00:00）
@@ -207,5 +209,21 @@ public class DateUtils {
         timeRangeMap.put(END_TIME, DateUtils.toEndOfDay(endDate));
 
         return timeRangeMap;
+    }
+
+    /**
+     * 将 java.util.Date 转换为 "yyyy-MM-dd" 格式的字符串
+     *
+     * @param date java.util.Date 对象
+     * @return 格式化后的字符串，例如 "2025-05-30"
+     */
+    public static String formatDateToYMD(Date date) {
+        if (date == null) {
+            return null;
+        }
+        LocalDate localDate = Instant.ofEpochMilli(date.getTime())
+                .atZone(ZoneId.systemDefault())
+                .toLocalDate();
+        return localDate.format(YMD_FORMATTER);
     }
 }

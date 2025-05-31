@@ -11,17 +11,26 @@ import com.tianhai.warn.model.CalculationResult;
 import com.tianhai.warn.service.LateReturnService;
 import com.tianhai.warn.service.ReportService;
 import com.tianhai.warn.service.WarningRuleService;
+import com.tianhai.warn.service.impl.ReportExcelExporter;
 import com.tianhai.warn.utils.DateUtils;
 import com.tianhai.warn.utils.RedisLockUtils;
 import com.tianhai.warn.utils.Result;
 import com.tianhai.warn.vo.*;
+import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 @Controller
@@ -259,6 +268,71 @@ public class ReportsController {
 
         if (!dormitoryBuilding.equalsIgnoreCase(Constants.ALL) && dormitoryBuilding.matches("^[A-Za-z]栋$")) {
             logger.error("宿舍楼参数不合法:{}", dormitoryBuilding);
+        }
+    }
+
+    /**
+     * 导出报表统计数据到 Excel 文件
+     */
+    @GetMapping("/export/excel")
+    @RequirePermission(roles = Constants.SYSTEM_USER)
+    @LogOperation("导出Excel报表统计数据")
+    public void exportExcel(LateReturnReportChartDTO reportChartDTO,
+            HttpServletResponse response) { // 接收 HttpServletResponse
+
+        // 校验参数
+        validateCollegeAndDorm(reportChartDTO.getCollege(), reportChartDTO.getDormitoryBuilding());
+
+        // 获取含有当天起始和截止的时分秒时间
+        Map<String, Date> timeRange = DateUtils.resolveSingleDayRange(
+                reportChartDTO.getStartDate(), reportChartDTO.getEndDate());
+
+        logger.info("接收到导出Excel请求，筛选条件: startDate={}, endDate={}, college={}, dormitoryBuilding={}",
+                reportChartDTO.getStartDate(),
+                reportChartDTO.getEndDate(),
+                reportChartDTO.getCollege(),
+                reportChartDTO.getDormitoryBuilding());
+
+        try {
+            // --- 1. 设置 HTTP 响应头 ---
+            response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"); // .xlsx 格式
+            String fileName = "报表统计_" + new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date()) + ".xlsx";
+            // 对文件名进行URL编码，特别是包含中文时，避免乱码
+            String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8).replaceAll("\\+", "%20"); // 处理空格
+            response.setHeader("Content-Disposition", "attachment; filename=\"" + encodedFileName + "\"");
+            response.setHeader("Pragma", "no-cache"); // 确保文件不被缓存
+            response.setHeader("Cache-Control", "no-cache");
+            response.setDateHeader("Expires", 0);
+
+            // --- 2. 调用 Service 层方法获取所有需要导出的统计数据 ---
+
+            // 调用服务层生成Excel
+            try (OutputStream outputStream = response.getOutputStream()) {
+                Workbook workbook = reportService.exportReportToExcel(
+                        timeRange.get(DateUtils.START_TIME),
+                        timeRange.get(DateUtils.END_TIME),
+                        reportChartDTO.getCollege(),
+                        reportChartDTO.getDormitoryBuilding());
+                workbook.write(outputStream);
+                outputStream.flush();
+                logger.info("报表统计Excel文件导出成功");
+            }
+        } catch (IOException e) {
+            logger.error("导出Excel文件失败: {}", e.getMessage(), e);
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            try {
+                response.getWriter().write("导出Excel文件失败");
+            } catch (IOException ioException) {
+                logger.error("写入错误信息到响应流失败", ioException);
+            }
+        } catch (Exception e) {
+            logger.error("处理导出Excel请求时发生异常: {}", e.getMessage(), e);
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            try {
+                response.getWriter().write("导出Excel文件过程中发生服务器错误");
+            } catch (IOException ioException) {
+                logger.error("写入错误信息到响应流失败", ioException);
+            }
         }
     }
 

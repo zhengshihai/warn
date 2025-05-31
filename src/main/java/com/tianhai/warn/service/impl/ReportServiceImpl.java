@@ -3,22 +3,26 @@ package com.tianhai.warn.service.impl;
 import com.tianhai.warn.constants.Constants;
 import com.tianhai.warn.enums.ResultCode;
 import com.tianhai.warn.exception.SystemException;
+import com.tianhai.warn.model.CalculationResult;
 import com.tianhai.warn.model.LateReturn;
 import com.tianhai.warn.model.SystemRule;
 import com.tianhai.warn.query.LateReturnQuery;
 import com.tianhai.warn.service.LateReturnService;
 import com.tianhai.warn.service.ReportService;
 import com.tianhai.warn.service.SystemRuleService;
+import com.tianhai.warn.service.WarningRuleService;
 import com.tianhai.warn.utils.DateUtils;
 import com.tianhai.warn.utils.TimeRange;
 import com.tianhai.warn.vo.*;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.poi.ss.usermodel.Workbook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.*;
@@ -27,6 +31,7 @@ import java.time.format.TextStyle;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 @Service
@@ -43,53 +48,74 @@ public class ReportServiceImpl implements ReportService {
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
 
+    @Autowired
+    private WarningRuleService warningRuleService;
+
     private static final String unjustifiedLateReturnReportKey = "late_return:unjustified:list:report:";
 
+    /**
+     * 生成缓存键
+     * 根据查询参数生成唯一的缓存键，格式为：prefix_startDate_endDate_college_dormitoryBuilding
+     *
+     * @param prefix            缓存键前缀，用于区分不同类型的统计数据
+     * @param startTime         开始时间
+     * @param endTime           结束时间
+     * @param college           学院
+     * @param dormitoryBuilding 宿舍楼
+     * @return 格式化的缓存键
+     */
+    private String generateCacheKey(String prefix, Date startTime, Date endTime, String college,
+            String dormitoryBuilding) {
+        return String.format("%s%s_%s_%s_%s",
+                prefix,
+                DateUtils.formatDateToYMD(startTime),
+                DateUtils.formatDateToYMD(endTime),
+                college,
+                dormitoryBuilding);
+    }
+
+    /**
+     * 从缓存获取数据，如果不存在则计算并缓存
+     * 使用泛型方法处理不同类型的统计数据，确保类型安全
+     *
+     * @param <T>        统计数据的类型
+     * @param cacheKey   缓存键
+     * @param calculator 数据计算函数，当缓存未命中时调用
+     * @return 统计数据，优先从缓存获取，缓存未命中时计算并缓存
+     */
+    private <T> T getOrCalculate(String cacheKey, Supplier<T> calculator) {
+        // 尝试从缓存获取
+        T cachedValue = (T) redisTemplate.opsForValue().get(cacheKey);
+        if (cachedValue != null) {
+            logger.debug("从缓存获取数据: {}", cacheKey);
+            return cachedValue;
+        }
+
+        // 缓存不存在，计算并缓存
+        T value = calculator.get();
+        redisTemplate.opsForValue().set(cacheKey, value, Constants.CACHE_REPORT_EXPIRE_TIME, TimeUnit.SECONDS);
+        logger.debug("计算并缓存数据: {}", cacheKey);
+        return value;
+    }
+
+    /**
+     * 获取统计卡片数据（排除高危预警）
+     * 统计指定时间范围内的晚归总次数、晚归学生人数和完成率
+     * 结果会被缓存2小时
+     *
+     * @param startDate         开始日期
+     * @param endDate           结束日期
+     * @param college           学院，ALL表示所有学院
+     * @param dormitoryBuilding 宿舍楼，ALL表示所有宿舍楼
+     * @return 统计卡片数据
+     */
     @Override
     public ReportCardStatVO statsReportCardDataExcludeHighRisk(Date startDate,
             Date endDate,
             String college,
             String dormitoryBuilding) {
-        Map<String, Date> timeRangeMap = DateUtils.resolveSingleDayRange(startDate, endDate);
-        Date startTime = timeRangeMap.get(Constants.START_TIME);
-        Date endTime = timeRangeMap.get(Constants.END_TIME);
-
-        LateReturnQuery query = buildLateReturnQuery(startTime, endTime, college, dormitoryBuilding);
-
-        // 把违规的晚归记录缓存到 redis 时效性为当前时间到今天的晚上23:59:59
-        List<LateReturn> unjustifiedLateReturns = getUnjustifiedLateReturns(query);
-
-        // 获取卡片数据
-        int totalLateReturns, lateStudentCount;
-        totalLateReturns = unjustifiedLateReturns.isEmpty() ? 0 : unjustifiedLateReturns.size();
-
-        lateStudentCount = unjustifiedLateReturns.isEmpty()
-                ? 0
-                : (int) unjustifiedLateReturns.stream()
-                        .map(LateReturn::getStudentNo)
-                        .filter(Objects::nonNull)
-                        .distinct()
-                        .count();
-
-        int finishedCount = (int) unjustifiedLateReturns.stream()
-                .filter(lr -> Constants.LATE_RETURN_PROCESS_STATUS_FINISHED.equals(lr.getProcessStatus()))
-                .count();
-        int unjustifiedCount = unjustifiedLateReturns.size();
-
-        String completionRateStr;
-        if (unjustifiedCount == 0) {
-            completionRateStr = "100.00%"; // 没有数据默认设置为100.00%
-        } else {
-            BigDecimal completionRate = BigDecimal.valueOf(finishedCount * 100.0)
-                    .divide(BigDecimal.valueOf(unjustifiedCount), 2, RoundingMode.HALF_UP);
-            completionRateStr = completionRate.toPlainString() + "%";
-        }
-
-        return ReportCardStatVO.builder()
-                .totalLateReturns(totalLateReturns)
-                .lateStudentCount(lateStudentCount)
-                .completionRate(completionRateStr)
-                .build();
+        String cacheKey = generateCacheKey(Constants.CACHE_REPORT_CARD, startDate, endDate, college, dormitoryBuilding);
+        return getOrCalculate(cacheKey, () -> calculateReportCardData(startDate, endDate, college, dormitoryBuilding));
     }
 
     /**
@@ -214,13 +240,15 @@ public class ReportServiceImpl implements ReportService {
     }
 
     /**
+     * 计算周晚归统计数据
      * 按照周一到周日统计晚归次数
-     * 
-     * @param startTime         起始统计时间
-     * @param endTime           截至统计时间
-     * @param college           学院
-     * @param dormitoryBuilding 宿舍楼栋
-     * @return 统计结果
+     * 结果会被缓存2小时
+     *
+     * @param startTime         开始时间
+     * @param endTime           结束时间
+     * @param college           学院，ALL表示所有学院
+     * @param dormitoryBuilding 宿舍楼，ALL表示所有宿舍楼
+     * @return 按周统计的晚归数据列表
      */
     @Override
     public List<WeekLateReturnStatVO> calWeekLateReturnStat(Date startTime,
@@ -228,11 +256,10 @@ public class ReportServiceImpl implements ReportService {
             String college,
             String dormitoryBuilding) {
 
-        LateReturnQuery query = buildLateReturnQuery(startTime, endTime, college, dormitoryBuilding);
+        String cacheKey = generateCacheKey(Constants.CACHE_REPORT_WEEK, startTime, endTime, college, dormitoryBuilding);
 
-        List<LateReturn> unjustifiedLateReturns = getUnjustifiedLateReturns(query);
-
-        return countByWeek(unjustifiedLateReturns);
+        return getOrCalculate(cacheKey,
+                () -> calculateWeekLateReturnStat(startTime, endTime, college, dormitoryBuilding));
     }
 
     /**
@@ -266,23 +293,23 @@ public class ReportServiceImpl implements ReportService {
     }
 
     /**
-     * 按照学院进行统计
-     * 
-     * @param startTime
-     * @param endTime
-     * @param college
-     * @param dormitoryBuilding
-     * @return
+     * 计算学院晚归统计数据
+     * 统计每个学院的晚归次数和占比
+     * 结果会被缓存2小时
+     *
+     * @param startTime         开始时间
+     * @param endTime           结束时间
+     * @param college           学院，ALL表示所有学院
+     * @param dormitoryBuilding 宿舍楼，ALL表示所有宿舍楼
+     * @return 按学院统计的晚归数据列表
      */
     @Override
     public List<CollegeLateReturnStatVO> calCollegeLateReturnStat(Date startTime, Date endTime, String college,
             String dormitoryBuilding) {
-
-        LateReturnQuery query = buildLateReturnQuery(startTime, endTime, college, dormitoryBuilding);
-
-        List<LateReturn> unjustifiedLateReturns = getUnjustifiedLateReturns(query);
-
-        return countByCollege(unjustifiedLateReturns);
+        String cacheKey = generateCacheKey(Constants.CACHE_REPORT_COLLEGE, startTime, endTime, college,
+                dormitoryBuilding);
+        return getOrCalculate(cacheKey,
+                () -> calculateCollegeLateReturnStat(startTime, endTime, college, dormitoryBuilding));
     }
 
     /**
@@ -456,26 +483,24 @@ public class ReportServiceImpl implements ReportService {
                 .toList();
     }
 
+    /**
+     * 计算宿舍楼晚归统计数据
+     * 分别统计宿舍门牌号和宿舍楼栋的晚归次数
+     * 结果会被缓存2小时
+     *
+     * @param startTime         开始时间
+     * @param endTime           结束时间
+     * @param college           学院，ALL表示所有学院
+     * @param dormitoryBuilding 宿舍楼，ALL表示所有宿舍楼
+     * @return 包含宿舍和楼栋统计数据的Map
+     */
     @Override
     public Map<String, List<DormitoryLateReturnStatVO>> calDormitoryLateReturnStat(Date startTime, Date endTime,
             String college, String dormitoryBuilding) {
-
-        LateReturnQuery query = buildLateReturnQuery(startTime, endTime, college, dormitoryBuilding);
-
-        List<LateReturn> unjustifiedLateReturns = getUnjustifiedLateReturns(query);
-
-        // 按照宿舍门牌号进行筛选
-        List<DormitoryLateReturnStatVO> statByDormitoryList = statByDormitory(unjustifiedLateReturns);
-
-        // 按照宿舍楼栋进行筛选
-        List<DormitoryLateReturnStatVO> statByDormitoryBuildingList = statByDormitoryBuilding(unjustifiedLateReturns);
-
-        // 构建结果 Map
-        Map<String, List<DormitoryLateReturnStatVO>> resultMap = new HashMap<>();
-        resultMap.put("dormitory", statByDormitoryList);
-        resultMap.put("building", statByDormitoryBuildingList);
-
-        return resultMap;
+        String cacheKey = generateCacheKey(Constants.CACHE_REPORT_DORMITORY, startTime, endTime, college,
+                dormitoryBuilding);
+        return getOrCalculate(cacheKey,
+                () -> calculateDormitoryLateReturnStat(startTime, endTime, college, dormitoryBuilding));
     }
 
     /**
@@ -536,5 +561,129 @@ public class ReportServiceImpl implements ReportService {
         char buildingChar = dormitory.charAt(0);
         return buildingChar + "栋";
 
+    }
+
+    @Override
+    public Workbook exportReportToExcel(Date startTime, Date endTime, String college, String dormitoryBuilding)
+            throws IOException {
+        logger.info("开始导出Excel报表，筛选条件: startTime={}, endTime={}, college={}, dormitoryBuilding={}",
+                startTime, endTime, college, dormitoryBuilding);
+
+        // 优先从缓存获取统计卡片数据
+        ReportCardStatVO reportCardStatVO = statsReportCardDataExcludeHighRisk(
+                startTime, endTime, college, dormitoryBuilding);
+        logger.debug("获取到统计卡片数据: {}", reportCardStatVO);
+
+        // 优先从缓存获取高危预警人数统计
+        CalculationResult calculationResult = warningRuleService.calHighRiskStudents(
+                startTime, endTime, college, dormitoryBuilding);
+        logger.debug("获取高危预警人数统计数据: {}", calculationResult);
+
+        // 优先从缓存获取晚归趋势数据 (按周统计)
+        List<WeekLateReturnStatVO> weekLateReturnStatVOList = calWeekLateReturnStat(
+                startTime, endTime, college, dormitoryBuilding);
+        logger.debug("获取到晚归趋势数据: {}", weekLateReturnStatVOList);
+
+        // 优先从缓存获取学院分布数据
+        List<CollegeLateReturnStatVO> collegeLateReturnStatVOList = calCollegeLateReturnStat(
+                startTime, endTime, college, dormitoryBuilding);
+        logger.debug("获取到学院分布数据: {}", collegeLateReturnStatVOList);
+
+        // 优先从缓存获取宿舍楼统计数据
+        Map<String, List<DormitoryLateReturnStatVO>> dormitoryLateReturnStatMap = calDormitoryLateReturnStat(
+                startTime, endTime, college, dormitoryBuilding);
+        logger.debug("获取到宿舍楼统计数据: {}", dormitoryLateReturnStatMap);
+
+        // 生成Excel工作簿
+        return ReportExcelExporter.createReportWorkbook(
+                reportCardStatVO, calculationResult,
+                weekLateReturnStatVOList, collegeLateReturnStatVOList, dormitoryLateReturnStatMap,
+                DateUtils.formatDateToYMD(startTime),
+                DateUtils.formatDateToYMD(endTime),
+                college,
+                dormitoryBuilding);
+    }
+
+    // 将原有的计算方法重命名为 calculate 前缀
+    private ReportCardStatVO calculateReportCardData(Date startDate, Date endDate, String college,
+            String dormitoryBuilding) {
+        Map<String, Date> timeRangeMap = DateUtils.resolveSingleDayRange(startDate, endDate);
+        Date startTime = timeRangeMap.get(Constants.START_TIME);
+        Date endTime = timeRangeMap.get(Constants.END_TIME);
+
+        LateReturnQuery query = buildLateReturnQuery(startTime, endTime, college, dormitoryBuilding);
+
+        // 把违规的晚归记录缓存到 redis 时效性为当前时间到今天的晚上23:59:59
+        List<LateReturn> unjustifiedLateReturns = getUnjustifiedLateReturns(query);
+
+        // 获取卡片数据
+        int totalLateReturns, lateStudentCount;
+        totalLateReturns = unjustifiedLateReturns.isEmpty() ? 0 : unjustifiedLateReturns.size();
+
+        lateStudentCount = unjustifiedLateReturns.isEmpty()
+                ? 0
+                : (int) unjustifiedLateReturns.stream()
+                        .map(LateReturn::getStudentNo)
+                        .filter(Objects::nonNull)
+                        .distinct()
+                        .count();
+
+        int finishedCount = (int) unjustifiedLateReturns.stream()
+                .filter(lr -> Constants.LATE_RETURN_PROCESS_STATUS_FINISHED.equals(lr.getProcessStatus()))
+                .count();
+        int unjustifiedCount = unjustifiedLateReturns.size();
+
+        String completionRateStr;
+        if (unjustifiedCount == 0) {
+            completionRateStr = "100.00%"; // 没有数据默认设置为100.00%
+        } else {
+            BigDecimal completionRate = BigDecimal.valueOf(finishedCount * 100.0)
+                    .divide(BigDecimal.valueOf(unjustifiedCount), 2, RoundingMode.HALF_UP);
+            completionRateStr = completionRate.toPlainString() + "%";
+        }
+
+        return ReportCardStatVO.builder()
+                .totalLateReturns(totalLateReturns)
+                .lateStudentCount(lateStudentCount)
+                .completionRate(completionRateStr)
+                .build();
+    }
+
+    private List<WeekLateReturnStatVO> calculateWeekLateReturnStat(Date startTime, Date endTime, String college,
+            String dormitoryBuilding) {
+        LateReturnQuery query = buildLateReturnQuery(startTime, endTime, college, dormitoryBuilding);
+
+        List<LateReturn> unjustifiedLateReturns = getUnjustifiedLateReturns(query);
+
+        return countByWeek(unjustifiedLateReturns);
+    }
+
+    private List<CollegeLateReturnStatVO> calculateCollegeLateReturnStat(Date startTime, Date endTime, String college,
+            String dormitoryBuilding) {
+        LateReturnQuery query = buildLateReturnQuery(startTime, endTime, college, dormitoryBuilding);
+
+        List<LateReturn> unjustifiedLateReturns = getUnjustifiedLateReturns(query);
+
+        return countByCollege(unjustifiedLateReturns);
+    }
+
+    private Map<String, List<DormitoryLateReturnStatVO>> calculateDormitoryLateReturnStat(Date startTime, Date endTime,
+            String college, String dormitoryBuilding) {
+        LateReturnQuery query = buildLateReturnQuery(startTime, endTime, college, dormitoryBuilding);
+
+        List<LateReturn> unjustifiedLateReturns = getUnjustifiedLateReturns(query);
+
+        // 按照宿舍门牌号进行筛选
+        List<DormitoryLateReturnStatVO> statByDormitoryList = statByDormitory(unjustifiedLateReturns);
+
+        // 按照宿舍楼栋进行筛选
+        List<DormitoryLateReturnStatVO> statByDormitoryBuildingList = statByDormitoryBuilding(unjustifiedLateReturns);
+
+        // 构建结果 Map
+        Map<String, List<DormitoryLateReturnStatVO>> resultMap = new HashMap<>();
+        resultMap.put("dormitory", statByDormitoryList);
+        resultMap.put("building", statByDormitoryBuildingList);
+
+        return resultMap;
     }
 }

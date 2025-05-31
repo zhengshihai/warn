@@ -86,8 +86,18 @@ public class Constants {
     public static final String START_TIME = "startTime"; // 起始时间 年月日时分秒
     public static final String END_TIME = "endTime"; // 结束时间 年月日时分秒
 
-    public static final String LATE_RETURN_TIME_WEEKEND = "LATE_RETURN_TIME_WEEKENDS"; // 周末的晚归的晚归判定的起始时间 时分秒 例如 ”23:50:55"
-    public static final String LATE_RETURN_TIME_WEEKDAYS = "LATE_RETURN_TIME_WEEKDAYS"; // 周一到周五的晚归判定的起始时间 时分秒 例如“23:30:00"
+    public static final String LATE_RETURN_TIME_WEEKEND = "LATE_RETURN_TIME_WEEKENDS"; // 周末的晚归的晚归判定的起始时间 时分秒 例如
+                                                                                       // "23:50:55"
+    public static final String LATE_RETURN_TIME_WEEKDAYS = "LATE_RETURN_TIME_WEEKDAYS"; // 周一到周五的晚归判定的起始时间 时分秒
+                                                                                        // 例如"23:30:00"
     public static final String LATE_RETURN_TIME_DECLINE = "LATE_RETURN_TIME_DECLINE"; // 晚归判定的截止时间
+
+    // Redis缓存相关常量
+    public static final String CACHE_REPORT_PREFIX = "report:cache:";
+    public static final String CACHE_REPORT_CARD = CACHE_REPORT_PREFIX + "card:";
+    public static final String CACHE_REPORT_WEEK = CACHE_REPORT_PREFIX + "week:";
+    public static final String CACHE_REPORT_COLLEGE = CACHE_REPORT_PREFIX + "college:";
+    public static final String CACHE_REPORT_DORMITORY = CACHE_REPORT_PREFIX + "dormitory:";
+    public static final long CACHE_REPORT_EXPIRE_TIME = 7200; // 2小时过期
 
 }
