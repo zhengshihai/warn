@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tianhai.warn.mapper.AlarmRecordMapper">
+    
+    <resultMap id="BaseResultMap" type="com.tianhai.warn.model.AlarmRecord">
+        <id column="id" property="id"/>
+        <result column="alarm_no" property="alarmNo"/>
+        <result column="student_no" property="studentNo"/>
+        <result column="alarm_type" property="alarmType"/>
+        <result column="alarm_level" property="alarmLevel"/>
+        <result column="alarm_status" property="alarmStatus"/>
+        <result column="alarm_time" property="alarmTime"/>
+        <result column="latitude" property="latitude"/>
+        <result column="longitude" property="longitude"/>
+        <result column="location_address" property="locationAddress"/>
+        <result column="description" property="description"/>
+        <result column="media_urls" property="mediaUrls"
+                typeHandler="com.tianhai.warn.handler.JsonTypeHandler"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, alarm_no, student_no, alarm_type, alarm_level, alarm_status, alarm_time,
+        latitude, longitude, location_address, description, media_urls, created_at, updated_at
+    </sql>
+
+    <select id="selectByAlarmNo" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM alarm_record
+        WHERE alarm_no = #{alarmNo}
+    </select>
+
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM alarm_record
+        WHERE id = #{id}
+    </select>
+
+    <insert id="insert" parameterType="com.tianhai.warn.model.AlarmRecord" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO alarm_record (
+            alarm_no, student_no, alarm_type, alarm_level, alarm_status, alarm_time,
+            latitude, longitude, location_address, description, media_urls
+        ) VALUES (
+            #{alarmNo}, #{studentNo}, #{alarmType}, #{alarmLevel}, #{alarmStatus}, #{alarmTime},
+            #{latitude}, #{longitude}, #{locationAddress}, #{description}, #{mediaUrls,typeHandler=com.tianhai.warn.handler.JsonTypeHandler}
+        )
+    </insert>
+
+    <update id="update" parameterType="com.tianhai.warn.model.AlarmRecord">
+        UPDATE alarm_record
+        <set>
+            <if test="alarmStatus != null">alarm_status = #{alarmStatus},</if>
+            <if test="latitude != null">latitude = #{latitude},</if>
+            <if test="longitude != null">longitude = #{longitude},</if>
+            <if test="locationAddress != null">location_address = #{locationAddress},</if>
+            <if test="description != null">description = #{description},</if>
+            <if test="mediaUrls != null">media_urls = #{mediaUrls,typeHandler=com.tianhai.warn.handler.JsonTypeHandler},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM alarm_record WHERE id = #{id}
+    </delete>
+
+    <sql id="Query_Where_Clause">
+        <where>
+            <if test="alarmNo != null and alarmNo != ''">
+                AND alarm_no = #{alarmNo}
+            </if>
+            <if test="alarmNoLike != null and alarmNoLike != ''">
+                AND alarm_no LIKE CONCAT('%', #{alarmNoLike}, '%')
+            </if>
+            <if test="studentNo != null and studentNo != ''">
+                AND student_no = #{studentNo}
+            </if>
+            <if test="studentNoLike != null and studentNoLike != ''">
+                AND student_no LIKE CONCAT('%', #{studentNoLike}, '%')
+            </if>
+            <if test="alarmType != null">
+                AND alarm_type = #{alarmType}
+            </if>
+            <if test="alarmLevel != null">
+                AND alarm_level = #{alarmLevel}
+            </if>
+            <if test="alarmStatus != null">
+                AND alarm_status = #{alarmStatus}
+            </if>
+            <if test="alarmTimeStart != null">
+                AND alarm_time >= #{alarmTimeStart}
+            </if>
+            <if test="alarmTimeEnd != null">
+                AND alarm_time &lt;= #{alarmTimeEnd}
+            </if>
+            <if test="createdAtStart != null">
+                AND created_at >= #{createdAtStart}
+            </if>
+            <if test="createdAtEnd != null">
+                AND created_at &lt;= #{createdAtEnd}
+            </if>
+        </where>
+    </sql>
+
+    <select id="selectList" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM alarm_record
+        <include refid="Query_Where_Clause"/>
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="selectCount" resultType="int">
+        SELECT COUNT(*)
+        FROM alarm_record
+        <include refid="Query_Where_Clause"/>
+    </select>
+
+    <select id="selectPage" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM alarm_record
+        <include refid="Query_Where_Clause"/>
+        ORDER BY created_at DESC
+        LIMIT #{offset}, #{pageSize}
+    </select>
+</mapper>
