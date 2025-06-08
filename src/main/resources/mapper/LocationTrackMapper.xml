@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tianhai.warn.mapper.LocationTrackMapper">
+    
+    <!-- 基础列 -->
+    <sql id="Base_Column_List">
+        id, alarm_no, latitude, longitude, location_accuracy, speed, direction, 
+        location_time, created_at
+    </sql>
+
+    <!-- 插入位置轨迹 -->
+    <insert id="insert" parameterType="com.tianhai.warn.model.LocationTrack" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO location_track (
+            alarm_no, latitude, longitude, location_accuracy, speed, direction, location_time
+        ) VALUES (
+            #{alarmNo}, #{latitude}, #{longitude}, #{locationAccuracy}, 
+            #{speed}, #{direction}, #{locationTime}
+        )
+    </insert>
+
+    <!-- 根据ID查询 -->
+    <select id="selectById" resultType="com.tianhai.warn.model.LocationTrack">
+        SELECT 
+        <include refid="Base_Column_List"/>
+        FROM location_track
+        WHERE id = #{id}
+    </select>
+
+    <!-- 根据报警编号查询 -->
+    <select id="selectByAlarmNo" resultType="com.tianhai.warn.model.LocationTrack">
+        SELECT 
+        <include refid="Base_Column_List"/>
+        FROM location_track
+        WHERE alarm_no = #{alarmNo}
+        ORDER BY location_time DESC
+    </select>
+
+    <!-- 根据时间范围查询 -->
+    <select id="selectByTimeRange" resultType="com.tianhai.warn.model.LocationTrack">
+        SELECT 
+        <include refid="Base_Column_List"/>
+        FROM location_track
+        WHERE alarm_no = #{alarmNo}
+        AND location_time BETWEEN #{startTime} AND #{endTime}
+        ORDER BY location_time ASC
+    </select>
+
+    <!-- 根据报警编号和时间范围查询 -->
+    <select id="selectByAlarmNoAndTimeRange" resultType="com.tianhai.warn.model.LocationTrack">
+        SELECT 
+        <include refid="Base_Column_List"/>
+        FROM location_track
+        WHERE alarm_no = #{alarmNo}
+        AND location_time BETWEEN #{startTime} AND #{endTime}
+        ORDER BY location_time ASC
+    </select>
+
+    <!-- 查询最新的位置记录 -->
+    <select id="selectLatestByAlarmNo" resultType="com.tianhai.warn.model.LocationTrack">
+        SELECT 
+        <include refid="Base_Column_List"/>
+        FROM location_track
+        WHERE alarm_no = #{alarmNo}
+        ORDER BY location_time DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 更新位置轨迹 -->
+    <update id="update" parameterType="com.tianhai.warn.model.LocationTrack">
+        UPDATE location_track
+        <set>
+            <if test="latitude != null">latitude = #{latitude},</if>
+            <if test="longitude != null">longitude = #{longitude},</if>
+            <if test="locationAccuracy != null">location_accuracy = #{locationAccuracy},</if>
+            <if test="speed != null">speed = #{speed},</if>
+            <if test="direction != null">direction = #{direction},</if>
+            <if test="locationTime != null">location_time = #{locationTime},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <!-- 根据ID删除 -->
+    <delete id="deleteById">
+        DELETE FROM location_track WHERE id = #{id}
+    </delete>
+
+    <!-- 根据报警编号删除 -->
+    <delete id="deleteByAlarmNo">
+        DELETE FROM location_track WHERE alarm_no = #{alarmNo}
+    </delete>
+
+    <!-- 根据时间范围删除 -->
+    <delete id="deleteByTimeRange">
+        DELETE FROM location_track 
+        WHERE alarm_no = #{alarmNo}
+        AND location_time BETWEEN #{startTime} AND #{endTime}
+    </delete>
+
+</mapper>

@@ -230,3 +230,89 @@ CREATE TABLE super_admin (
     UNIQUE KEY `uk_email` (`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4  COMMENT='超级管理员表';
 
+
+
+-- 报警记录表
+CREATE TABLE alarm_record (
+      id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID',
+      alarm_no VARCHAR(20) NOT NULL COMMENT '报警记录ID',
+      student_no VARCHAR(20) NOT NULL COMMENT '学生ID',
+      alarm_type TINYINT NOT NULL COMMENT '报警类型：1-一键报警，2-定时报警，3-区域报警',
+      alarm_level TINYINT NOT NULL COMMENT '报警级别：1-普通，2-紧急',
+      alarm_status TINYINT NOT NULL DEFAULT 0 COMMENT '处理状态：0-未处理，1-处理中，2-已处理，3-已关闭',
+      alarm_time DATETIME NOT NULL COMMENT '报警时间',
+      latitude DECIMAL(10,6) COMMENT '纬度',
+      longitude DECIMAL(10,6) COMMENT '经度',
+      location_address VARCHAR(255) COMMENT '位置描述',
+      description TEXT COMMENT '报警描述',
+      media_urls JSON COMMENT '媒体文件URL列表',
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+     -- FOREIGN KEY (student_no) REFERENCES student(student_no),
+      UNIQUE KEY uk_alarm_no (alarm_no),
+      INDEX idx_student_no (student_no),
+      INDEX idx_alarm_status (alarm_status),
+      INDEX idx_alarm_time (alarm_time)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='报警记录表';
+
+-- 报警处理记录表
+CREATE TABLE alarm_process_record (
+      id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID',
+      alarm_no VARCHAR(20) NOT NULL COMMENT '报警记录ID',
+      handler_type TINYINT NOT NULL COMMENT '处理方类型：1-学校安保，2-警方，3-医疗',
+      handler_id VARCHAR(50) COMMENT '处理方ID',
+      handler_name VARCHAR(50) COMMENT '处理人姓名',
+      process_status TINYINT NOT NULL COMMENT '处理状态：0-待处理，1-处理中，2-已处理，3-已关闭',
+      process_result TEXT COMMENT '处理结果',
+      process_time DATETIME COMMENT '处理时间',
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+      -- FOREIGN KEY (alarm_no) REFERENCES alarm_record(alarm_no),
+      INDEX idx_alarm_no (alarm_no),
+      INDEX idx_handler_type (handler_type),
+      INDEX idx_handler_id (handler_id),
+      INDEX idx_process_status (process_status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='报警处理记录表';
+
+-- 位置轨迹表
+CREATE TABLE location_track (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID',
+    alarm_no VARCHAR(20) NOT NULL COMMENT '报警记录ID',
+    latitude DECIMAL(10,6) NOT NULL COMMENT '纬度',
+    longitude DECIMAL(10,6) NOT NULL COMMENT '经度',
+    location_accuracy DECIMAL(10,2) COMMENT '精确度(米)',
+    speed DECIMAL(10,2) COMMENT '速度(米/秒)',
+    direction DECIMAL(10,2) COMMENT '方向(度)',
+    location_time DATETIME NOT NULL COMMENT '时间戳',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+   -- FOREIGN KEY (alarm_no) REFERENCES alarm_record(alarm_no),
+    INDEX idx_alarm_no (alarm_no),
+    INDEX idx_alarm_no_timestamp (alarm_no, location_time)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='位置轨迹表';
+
+-- 报警配置表
+CREATE TABLE alarm_config (
+      id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID',
+      config_key VARCHAR(50) NOT NULL COMMENT '配置键',
+      config_value TEXT NOT NULL COMMENT '配置值',
+      description VARCHAR(255) COMMENT '配置描述',
+      is_active TINYINT NOT NULL DEFAULT 1 COMMENT '是否启用：0-禁用，1-启用',
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+      UNIQUE KEY uk_config_key (config_key)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='报警配置表';
+
+-- 报警处理方配置表
+CREATE TABLE alarm_handler_config (
+      id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID',
+      handler_type TINYINT NOT NULL COMMENT '处理方类型：1-学校安保，2-警方，3-医疗',
+      handler_name VARCHAR(50) NOT NULL COMMENT '处理方名称',
+      api_url VARCHAR(255) NOT NULL COMMENT '接口地址',
+      api_key VARCHAR(100) COMMENT '接口密钥',
+      timeout INT NOT NULL DEFAULT 5000 COMMENT '超时时间(毫秒)',
+      priority INT NOT NULL DEFAULT 0 COMMENT '优先级',
+      is_active TINYINT NOT NULL DEFAULT 1 COMMENT '是否启用：0-禁用，1-启用',
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+      UNIQUE KEY uk_handler_type (handler_type)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='报警处理方配置表';
