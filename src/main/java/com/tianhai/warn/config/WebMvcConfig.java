@@ -14,6 +14,7 @@ import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.core.task.AsyncTaskExecutor;
 import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.web.servlet.config.annotation.*;
 import org.springframework.web.servlet.view.InternalResourceViewResolver;
@@ -28,6 +29,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 @Configuration
 @EnableWebMvc
 @ComponentScan(basePackages = "com.tianhai.warn")
+@EnableAsync
 public class WebMvcConfig implements WebMvcConfigurer {
 
         // 暂时写死配置值
@@ -46,7 +48,9 @@ public class WebMvcConfig implements WebMvcConfigurer {
                                                 "/logout",
                                                 "/css/**",
                                                 "/js/**",
-                                                "/images/**");
+                                                "/images/**", // todo
+                                                "/static/test-websocket.html", // 排除WebSocket测试页面
+                                                "/ws/**"); // 排除WebSocket连接
         }
 
         @Override
@@ -93,8 +97,6 @@ public class WebMvcConfig implements WebMvcConfigurer {
                 converters.add(jsonConverter);
         }
 
-
-
         @Bean
         public FileStorageController fileStorageController() {
                 FileStorageController controller = new FileStorageController();
@@ -109,15 +111,27 @@ public class WebMvcConfig implements WebMvcConfigurer {
                 return applicationContext;
         }
 
-        @Bean
+        @Bean("asyncTaskExecutor")
         public AsyncTaskExecutor asyncTaskExecutor() {
-                ThreadPoolTaskExecutor asyncTaskExecutor = new ThreadPoolTaskExecutor();
-                asyncTaskExecutor.setCorePoolSize(5);
-                asyncTaskExecutor.setMaxPoolSize(10);
-                asyncTaskExecutor.setQueueCapacity(100);
-                asyncTaskExecutor.initialize();
-
-                return asyncTaskExecutor;
+                ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+                // 核心线程数：线程池创建时初始化的线程数
+                executor.setCorePoolSize(5);
+                // 最大线程数：线程池最大的线程数，只有在缓冲队列满了之后才会申请超过核心线程数的线程
+                executor.setMaxPoolSize(10);
+                // 缓冲队列：用来缓冲执行任务的队列
+                executor.setQueueCapacity(100);
+                // 允许线程的空闲时间：超过核心线程数的线程在空闲时间到达之后会被销毁
+                executor.setKeepAliveSeconds(60);
+                // 线程池名的前缀
+                executor.setThreadNamePrefix("AsyncTask-");
+                // 缓冲队列满了之后的拒绝策略
+                executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+                // 等待所有任务结束后再关闭线程池
+                executor.setWaitForTasksToCompleteOnShutdown(true);
+                executor.setAwaitTerminationSeconds(60);
+                // 初始化
+                executor.initialize();
+                return executor;
         }
 
         @Bean

@@ -1,5 +1,8 @@
 package com.tianhai.warn.service;
 
+import com.tianhai.warn.enums.AlarmLevel;
+
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -57,4 +60,6 @@ public interface SmsService {
      * @return 当前发送状态（成功、失败、待发送等）
      */
     String querySendStatus(String messageId);
+
+    void sendOneClickAlarmSms(String studentNo, AlarmLevel alarmLevel, Date alarmTime);
 }

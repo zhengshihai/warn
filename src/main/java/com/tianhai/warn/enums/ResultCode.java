@@ -6,6 +6,7 @@ public enum ResultCode implements IResultCode {
     VALIDATE_FAILED(404, "参数校验失败"),
     UNAUTHORIZED(401, "暂未登录或session已过期"),
     FORBIDDEN(403, "没有相关权限"),
+    PARAMETER_ERROR(999, "参数错误或者不完整" ),
 
     LOGIN_FAILED(100, "登录失败，请检查邮箱或密码是否正确"),
 
@@ -48,7 +49,15 @@ public enum ResultCode implements IResultCode {
     SUPER_ADMIN_DISABLE(7001, "该管理员已被禁用"),
     SUPER_ADMIN_DELETE_FAILED(7002, "删除管理员失败"),
 
-    WARN_RULE_NOT_SET(8001, "找不到该预警规则");
+    WARN_RULE_NOT_SET(8001, "找不到该预警规则"),
+
+    ALARM_RATE_TOO_HIGH(9000, "报警频率过高，请稍后再试"),
+    ALARM_ENDED(9001, "该报警已结束，无法进行操作"),
+    ALARM_NOT_FOUND(9002, "找不到该报警相关的信息" ),
+
+    LOCATION_TRACK_NOT_FOUND(10000, "找不到该位置轨迹信息"),
+    LOCATION_TRACK_SAVE_FAILED(10001, "保存位置轨迹失败");
+
 
     private final Integer code;
     private final String message;

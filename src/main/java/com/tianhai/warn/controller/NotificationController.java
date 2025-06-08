@@ -10,7 +10,6 @@ import com.tianhai.warn.model.Notification;
 import com.tianhai.warn.model.Student;
 import com.tianhai.warn.model.SysUser;
 import com.tianhai.warn.query.NotificationQuery;
-import com.tianhai.warn.service.NotificationService;
 import com.tianhai.warn.utils.IdValidator;
 import com.tianhai.warn.utils.PageResult;
 import com.tianhai.warn.utils.Result;
@@ -20,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import com.tianhai.warn.service.NotificationService;
 
 import java.sql.Timestamp;
 import java.time.LocalDateTime;

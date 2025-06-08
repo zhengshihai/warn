@@ -5,6 +5,7 @@ import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import com.jhlabs.composite.DodgeComposite;
 import com.tianhai.warn.constants.Constants;
+import com.tianhai.warn.enums.AlarmLevel;
 import com.tianhai.warn.enums.ResultCode;
 import com.tianhai.warn.exception.BusinessException;
 import com.tianhai.warn.mapper.NotificationMapper;
@@ -18,6 +19,8 @@ import com.tianhai.warn.utils.PageResult;
 import com.tianhai.warn.utils.RoleObjectCaster;
 import org.aspectj.weaver.ast.Not;
 import org.eclipse.tags.shaded.org.apache.bcel.generic.IF_ACMPEQ;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -39,6 +42,8 @@ public class NotificationServiceImpl implements NotificationService {
     private static final String NOTIFICATION_CACHE_KEY = "notifications:";
 
     private static final long CACHE_EXPIRE_TIME = 600;
+
+    private static final Logger logger = LoggerFactory.getLogger(NotificationServiceImpl.class);
 
     @Autowired
     private NotificationMapper notificationMapper;
@@ -175,6 +180,15 @@ public class NotificationServiceImpl implements NotificationService {
         //检查所有通知是否都针对该用户
         return notifications.stream()
                 .allMatch(notification -> isNotificationForUser(userRoleStr, currentUser, notification));
+    }
+
+    //todo
+    @Override
+    public Integer sendOneClickAlarmNotification(String studentNo, AlarmLevel alarmLevel) {
+        logger.info("正在发送一键报警通知，学号：{}，报警等级：{}", studentNo, alarmLevel);
+
+
+        return 1;
     }
 
     /**

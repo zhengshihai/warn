@@ -1,6 +1,8 @@
 package com.tianhai.warn.service;
 
+import com.tianhai.warn.enums.AlarmLevel;
 import com.tianhai.warn.model.Notification;
+import com.tianhai.warn.mq.AlarmContext;
 import com.tianhai.warn.query.NotificationQuery;
 import com.tianhai.warn.utils.PageResult;
 
@@ -147,4 +149,10 @@ public interface NotificationService {
      */
     boolean hasPermissionToReadBatch(String userRoleStr, Object currentUser, List<String> noticeIds);
 
+    /**
+     * 发送报警通知  todo
+
+     * @return
+     */
+    Integer sendOneClickAlarmNotification(String studentNo, AlarmLevel alarmLevel);
 }
