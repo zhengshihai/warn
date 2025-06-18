@@ -19,6 +19,11 @@ public class AlarmConstants {
     public static final Integer ONE_CLICK_ALARM_TYPE = 1;
     public static final Integer INTERFACE_ALARM_TYPE = 2;
 
+    public static final String ALARM_LBS_MAP = "ALARM_LBS_MAP"; // 高德地图API标识符
+    public static final Integer ALARM_CONFIG_ACTIVE = 1; // 报警配置启用状态
+    public static final Integer ALARM_CONFIG_INACTIVE = 0; // 报警配置禁用状态
+    public static final Integer ALARM_ONE_CLICK_RATE_LIMIT = 30;// 一键报警在半小时内次数最多不超过30次
+
     /**
      * WebSocket会话超时时间（单位：秒）
      */
@@ -30,10 +35,10 @@ public class AlarmConstants {
         public static final int ALARM_LOCATION = 1800;
 
         /**
-         * 普通位置追踪会话超时时间 - 10分钟
+         * 普通位置追踪会话超时时间 - 20分钟
          * 用于日常位置追踪，超时时间可以相对短一些
          */
-        public static final int NORMAL_TRACKING = 600;
+        public static final int NORMAL_TRACKING = 1200;
 
         /**
          * 临时会话超时时间 - 5分钟
@@ -48,9 +53,16 @@ public class AlarmConstants {
         public static final int HEARTBEAT_INTERVAL = 30;
     }
 
-    // 报警短信内容模板
-    public static final String ALARM_SMS_CLASS_MANAGER_TEMPLATE =
+    // 触发一键报警短信的内容模板
+    public static final String ALARM_TRIGGER_SMS_CLASS_MANAGER_TEMPLATE =
             "您有学生发出了一键报警求助！学号：%s，报警等级：%s，时间：%s，请立即处理！";
-    public static final String ALARM_SMS_PARENT_TEMPLATE =
+    public static final String ALARM_TRIGGER_SMS_PARENT_TEMPLATE =
             "您的孩子 %s 发出了一键报警求助！报警等级：%s，时间：%s，请立即联系孩子和学校";
+
+    // 取消一键报警短信的内容模板
+    public static final String ALARM_CANCEL_SMS_CLASS_MANAGER_TEMPLATE =
+            "您的学生取消了一键报警求助！学号：%s, 姓名：%s，时间：%s，为确保安全，建议您及时联系该学生！";
+    public static final String ALARM_CANCEL_SMS_PARENT_TEMPLATE =
+            "您的孩子 %s 在 %s 取消了一键报警求助！为确保安全，建议您及时联系您的孩子";
+
 }

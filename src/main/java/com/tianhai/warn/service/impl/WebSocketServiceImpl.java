@@ -140,4 +140,9 @@ public class WebSocketServiceImpl implements WebSocketService {
         logger.info("缓存中未找到报警状态，认为报警未结束, alarmNo: {}", alarmNo);
         return false;
     }
+
+    @Override
+    public void closeConnection(String alarmNo) {
+        locationWebSocketHandler.closeConnection(alarmNo);
+    }
 }

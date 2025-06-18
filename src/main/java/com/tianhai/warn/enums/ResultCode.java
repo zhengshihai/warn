@@ -6,7 +6,7 @@ public enum ResultCode implements IResultCode {
     VALIDATE_FAILED(404, "参数校验失败"),
     UNAUTHORIZED(401, "暂未登录或session已过期"),
     FORBIDDEN(403, "没有相关权限"),
-    PARAMETER_ERROR(999, "参数错误或者不完整" ),
+    PARAMETER_ERROR(999, "参数错误或者不完整"),
 
     LOGIN_FAILED(100, "登录失败，请检查邮箱或密码是否正确"),
 
@@ -53,11 +53,18 @@ public enum ResultCode implements IResultCode {
 
     ALARM_RATE_TOO_HIGH(9000, "报警频率过高，请稍后再试"),
     ALARM_ENDED(9001, "该报警已结束，无法进行操作"),
-    ALARM_NOT_FOUND(9002, "找不到该报警相关的信息" ),
+    ALARM_PROCESSING(9002, "该报警正在处理中，请不要重复报警"),
+    ALARM_ONE_CLICK_RATE_TOO_HIGH(9003, "一键报警报警过于频繁"),
+    ALARM_NOT_FOUND(9004, "找不到该报警相关的信息"),
 
     LOCATION_TRACK_NOT_FOUND(10000, "找不到该位置轨迹信息"),
-    LOCATION_TRACK_SAVE_FAILED(10001, "保存位置轨迹失败");
+    LOCATION_TRACK_SAVE_FAILED(10001, "保存位置轨迹失败"),
 
+    ALARM_CONFIG_KEY_EXISTS(11000, "配置键已存在"),
+    ALARM_CONFIG_NOT_FOUNT(11001, "该报警配置不存在"),
+    ALARM_CONFIG_VERSION_MISMATCH(10010, "配置版本不匹配，请刷新后重试"),
+    ALARM_AMAP_API_ERROR(10011, "调用高低地图API失败"),
+    ALARM_CONFIG_STATUS_INVALID(10012, "该报警配置状态无效" );
 
     private final Integer code;
     private final String message;

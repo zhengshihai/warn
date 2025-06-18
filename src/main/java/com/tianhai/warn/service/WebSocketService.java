@@ -7,4 +7,6 @@ public interface WebSocketService {
     void establishConnection(AlarmContext context);
 
     void handleLocationUpdate(LocationUpdateDTO locationUpdateDTO);
+
+    void closeConnection(String alarmNo);
 }

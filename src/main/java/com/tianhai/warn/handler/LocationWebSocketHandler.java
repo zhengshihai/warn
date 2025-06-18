@@ -252,4 +252,32 @@ public class LocationWebSocketHandler extends TextWebSocketHandler {
             }
         });
     }
+
+    public void closeConnection(String alarmNo) {
+        WebSocketSession session = SESSIONS.get(alarmNo);
+        if (session != null && session.isOpen()) {
+            try {
+                session.close(CloseStatus.NORMAL);
+                SESSIONS.remove(alarmNo);
+                LAST_MESSAGE_TIME.remove(alarmNo);
+                SESSION_TIMEOUTS.remove(alarmNo);
+                logger.info("WebSocket连接已关闭，alarmNo:{}", alarmNo);
+            } catch (IOException e) {
+                logger.error("关闭WebSocket连接失败，alarmNo:{}");
+            }
+        }
+    }
 }
+
+/*
+POSTMAN测试用例：
+{
+  "alarmNo": "AL0001",
+ "latitude": 30.79,
+  "longitude": 104.5744,
+  "locationTime": "2025-06-08 09:38",
+  "speed": 0,
+  "direction": 0,
+  "locationAccuracy": 10
+}
+ */

@@ -1,6 +1,5 @@
 package com.tianhai.warn.service.impl;
 
-import com.tencentcloudapi.common.Credential;
 import com.tencentcloudapi.common.exception.TencentCloudSDKException;
 import com.tencentcloudapi.sms.v20210111.SmsClient;
 import com.tencentcloudapi.sms.v20210111.models.SendSmsRequest;
@@ -123,7 +122,7 @@ public class SmsServiceImpl implements SmsService {
     }
 
     @Override
-    public void sendOneClickAlarmSms(String studentNo, AlarmLevel alarmLevel, Date alarmTime) {
+    public void sendTriggerOneClickAlarmSms(String studentNo, AlarmLevel alarmLevel, Date alarmTime) {
         // 获取学生信息
         Student student = studentService.selectByStudentNo(studentNo);
         if (student == null) {
@@ -192,9 +191,9 @@ public class SmsServiceImpl implements SmsService {
     }
 
     private void sendNormalAlarmSms(Student student, List<String> parentPhones, List<String> managerPhones) {
-        String parentContent = String.format(AlarmConstants.ALARM_SMS_PARENT_TEMPLATE,
+        String parentContent = String.format(AlarmConstants.ALARM_TRIGGER_SMS_PARENT_TEMPLATE,
                 student.getName(), AlarmLevel.NORMAL.getDesc(), new Date());
-        String managerContent = String.format(AlarmConstants.ALARM_SMS_CLASS_MANAGER_TEMPLATE,
+        String managerContent = String.format(AlarmConstants.ALARM_TRIGGER_SMS_CLASS_MANAGER_TEMPLATE,
                 student.getStudentNo(), AlarmLevel.NORMAL.getDesc(), new Date());
 
         // 发送第一条短信
@@ -215,9 +214,9 @@ public class SmsServiceImpl implements SmsService {
     }
 
     private void sendCriticalAlarmSms(Student student, List<String> parentPhones, List<String> managerPhones) {
-        String parentContent = String.format(AlarmConstants.ALARM_SMS_PARENT_TEMPLATE,
+        String parentContent = String.format(AlarmConstants.ALARM_TRIGGER_SMS_PARENT_TEMPLATE,
                 student.getName(), AlarmLevel.CRITICAL.getDesc(), new Date());
-        String managerContent = String.format(AlarmConstants.ALARM_SMS_CLASS_MANAGER_TEMPLATE,
+        String managerContent = String.format(AlarmConstants.ALARM_TRIGGER_SMS_CLASS_MANAGER_TEMPLATE,
                 student.getStudentNo(), AlarmLevel.CRITICAL.getDesc(), new Date());
 
         // 发送前三条短信（每分钟一条）
@@ -250,4 +249,34 @@ public class SmsServiceImpl implements SmsService {
             }
         }
     }
+
+    @Override
+    public void sendCancelOneClickAlarmSms(String studentNo, String name, Date date) {
+        RedisUtils.StudentContacts studentContacts = redisUtils.getStudentContacts(studentNo);
+        boolean contactDisable = studentContacts == null
+             || (studentContacts.getManagerPhones() == null && studentContacts.getParentPhones() == null);
+        if (contactDisable) {
+            logger.warn("找不到该该学生对应的班级管理员和家长的手机号码, studentNo: {}, name:{}", studentNo, name);
+        } else {
+            String parentSmsContent = String.format(AlarmConstants.ALARM_CANCEL_SMS_PARENT_TEMPLATE, name, date);
+            sendSmsSync(studentContacts.getParentPhones(), parentSmsContent);
+
+            String classManagerSmsContent = String.format(
+                    AlarmConstants.ALARM_CANCEL_SMS_CLASS_MANAGER_TEMPLATE,
+                    studentNo, name, date);
+            sendSmsSync(studentContacts.getManagerPhones(), classManagerSmsContent);
+        }
+    }
+
+    private void sendSmsSync(List<String> phones, String content) {
+        for (String phone : phones) {
+            try {
+                sendMessage(phone, content);
+                logger.info("短信发送成功: {}", phone);
+            } catch (Exception e) {
+                logger.error("短信发送失败: {}, 错误: {}", phone, e.getMessage());
+            }
+        }
+    }
+
 }

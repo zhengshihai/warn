@@ -61,5 +61,19 @@ public interface SmsService {
      */
     String querySendStatus(String messageId);
 
-    void sendOneClickAlarmSms(String studentNo, AlarmLevel alarmLevel, Date alarmTime);
+    /**
+     * 发送触发一键报警的信息
+     * @param studentNo     学号
+     * @param alarmLevel    报警级别
+     * @param alarmTime     报警时间
+     */
+    void sendTriggerOneClickAlarmSms(String studentNo, AlarmLevel alarmLevel, Date alarmTime);
+
+    /**
+     * 发送取消一键报警的信息
+     * @param studentNo     学号
+     * @param name          学生姓名
+     * @param date          取消时间
+     */
+    void sendCancelOneClickAlarmSms(String studentNo, String name, Date date);
 }

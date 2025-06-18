@@ -7,27 +7,27 @@ import java.util.Date;
 import java.util.List;
 
 public interface LocationTrackMapper {
-    Integer insert(LocationTrack track);
+        Integer insert(LocationTrack track);
 
-    List<LocationTrack> selectByTimeRange(String alarmNo, Date startTime, Date endTime);
+        List<LocationTrack> selectByTimeRange(String alarmNo, Date startTime, Date endTime);
 
-    LocationTrack selectById(Long id);
+        LocationTrack selectById(Long id);
 
-    List<LocationTrack> selectByAlarmNo(String alarmNo);
+        List<LocationTrack> selectByAlarmNo(String alarmNo);
 
-    List<LocationTrack> selectByAlarmNoAndTimeRange(@Param("alarmNo") String alarmNo,
-            @Param("startTime") Date startTime,
-            @Param("endTime") Date endTime);
+        List<LocationTrack> selectByAlarmNoAndTimeRange(@Param("alarmNo") String alarmNo,
+                        @Param("startTime") Date startTime,
+                        @Param("endTime") Date endTime);
 
-    Integer update(LocationTrack track);
+        Integer update(LocationTrack track);
 
-    Integer deleteById(Long id);
+        Integer deleteById(Long id);
 
-    Integer deleteByAlarmNo(String alarmNo);
+        Integer deleteByAlarmNo(String alarmNo);
 
-    Integer deleteByTimeRange(@Param("alarmNo") String alarmNo,
-            @Param("startTime") Date startTime,
-            @Param("endTime") Date endTime);
+        Integer deleteByTimeRange(@Param("alarmNo") String alarmNo,
+                        @Param("startTime") Date startTime,
+                        @Param("endTime") Date endTime);
 
-    List<LocationTrack> selectLatestByAlarmNo(String alarmNo, Integer limit);
+        List<LocationTrack> selectLatestByAlarmNo(String alarmNo, Integer limit);
 }
