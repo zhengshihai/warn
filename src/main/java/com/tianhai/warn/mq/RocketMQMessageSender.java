@@ -24,20 +24,24 @@ public class RocketMQMessageSender {
     @Autowired
     public RocketMQMessageSender(
             @Qualifier("alarmProducer") DefaultMQProducer alarmProducer,
-            @Qualifier("videoProducer") DefaultMQProducer videoProducer) {
+            @Qualifier("videoProducer") DefaultMQProducer videoProducer,
+            @Qualifier("compensateProducer") DefaultMQProducer compensateProducer) {
         // 初始化生产者Map
         producerMap.put("alarm", alarmProducer);
         producerMap.put("video", videoProducer);
+        producerMap.put("compensate", compensateProducer);
     }
 
     /**
      * 根据topic获取对应的生产者
      */
     private DefaultMQProducer getProducer(String topic) {
-        if (topic.startsWith("alarm-")) {
+        if (topic.startsWith("alarm-")) { // todo 这里的判断会不会有问题？
             return producerMap.get("alarm");
         } else if (topic.startsWith("video-")) {
             return producerMap.get("video");
+        } else if(topic.startsWith("alarm-location-compensate")) {
+            return producerMap.get("compensate");
         } else {
             logger.warn("未知的topic类型: {}, 使用默认的报警生产者", topic);
             return producerMap.get("alarm");

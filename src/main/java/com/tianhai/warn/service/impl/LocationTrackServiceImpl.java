@@ -10,6 +10,7 @@ import com.tianhai.warn.exception.BusinessException;
 import com.tianhai.warn.exception.SystemException;
 import com.tianhai.warn.mapper.LocationTrackMapper;
 import com.tianhai.warn.model.LocationTrack;
+import com.tianhai.warn.mq.RocketMQMessageSender;
 import com.tianhai.warn.service.LocationTrackService;
 
 import org.slf4j.Logger;
@@ -53,11 +54,20 @@ public class LocationTrackServiceImpl implements LocationTrackService {
      */
     private static final double MIN_REASONABLE_SPEED = 0;
 
+    private static final String COMPENSATE_TOPIC = "alarm-location-compensate";
+
+    private static final String COMPENSATE_REDIS_LIST = "location:compensate:redis";
+
+    private static final Integer MAX_RETRY_TIMES = 3;
+
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
 
     @Autowired
     private LocationTrackMapper locationTrackMapper;
+
+    @Autowired
+    private RocketMQMessageSender rocketMQMessageSender;
 
     @Override
     public void handleLocationMessage(String locationMessage) {
@@ -254,19 +264,22 @@ public class LocationTrackServiceImpl implements LocationTrackService {
         // 更新Redis报警状态缓存
         updateCacheAlarmStatus(locationUpdateDTO, AlarmStatus.PROCESSING);
 
-        // 异步保存位置轨迹
-        CompletableFuture.runAsync(() -> {
-            try {
-                // 再次验证位置有效性（因为可能是异步执行，需要重新获取最新数据）
-                if (isValidLocation(locationUpdateDTO)) {
-                    saveLocationTrack(locationUpdateDTO);
-                } else {
-                    logger.warn("位置信息无效，不保存到数据库: {}", locationUpdateDTO);
-                }
-            } catch (Exception e) {
-                logger.error("异步保存位置轨迹失败: {}", locationUpdateDTO, e);
-            }
-        });
+        // 异步保存位置轨迹到mysql
+        // todo 需要处理缓存不一致性问题，方案参考：1 引入“写入状态确认”机制 2 消息队列异步吸入+事件触发后处理
+        // 该定位轨迹信息存储业务以redis为主 以mysql为辅
+//        CompletableFuture.runAsync(() -> {
+//            try {
+//                // 再次验证位置有效性（因为可能是异步执行，需要重新获取最新数据）
+//                if (isValidLocation(locationUpdateDTO)) {
+//                    saveLocationTrack(locationUpdateDTO);
+//                } else {
+//                    logger.warn("位置信息无效，不保存到数据库: {}", locationUpdateDTO);
+//                }
+//            } catch (Exception e) {
+//                logger.error("异步保存位置轨迹失败: {}", locationUpdateDTO, e);
+//            }
+//        });
+        asyncSaveLocationWithCompensate(locationUpdateDTO);
     }
 
     /**
@@ -382,6 +395,10 @@ public class LocationTrackServiceImpl implements LocationTrackService {
             logger.error("保存位置轨迹到数据库失败: {}", track, e);
             throw new BusinessException("保存位置轨迹失败");
         }
+
+
+//        locationTrackMapper.insert(track);
+//        throw new RuntimeException("手动抛出异常，验证定位信息能否进入mq补偿队列");
     }
 
     /**
@@ -410,6 +427,47 @@ public class LocationTrackServiceImpl implements LocationTrackService {
         if (accuracy != null && accuracy > 1000) {
             logger.warn("位置精确度过低: {}", accuracy);
         }
+    }
+
+    // 异步保存定位信息到mysql 并使用 重试 + RocketMQ + Redis List 作为缓存一致性的双重兜底策略
+    public void asyncSaveLocationWithCompensate(LocationUpdateDTO locationUpdateDTO) {
+        CompletableFuture.runAsync(() -> {
+            int retry = 0;
+            boolean success = false;
+            while (retry < MAX_RETRY_TIMES && !success) {
+                try {
+                    // 保存定位信息到mysql
+                    saveLocationTrack(locationUpdateDTO);
+                    success = true;
+                } catch (Exception e) {
+                    retry++;
+                    logger.error("异步保存位置轨迹失败：{}，重试次数：{}",
+                            locationUpdateDTO, retry, e);
+                }
+            }
+
+            // 使用RocketMQ作为补偿
+            if (!success) {
+                try {
+                    rocketMQMessageSender.sendMessage(
+                            COMPENSATE_TOPIC,
+                            "compensate",
+                            locationUpdateDTO.getAlarmNo(),
+                            JSON.toJSONString(locationUpdateDTO)
+                    );
+                } catch (Exception mqEx) {
+                    logger.error("补偿消息发送到RocketMQ失败，写入Redis List兜底：{}",
+                            locationUpdateDTO, mqEx);
+                    pushToCompensateQueue(locationUpdateDTO);
+                }
+            }
+        });
+    }
+
+    public void pushToCompensateQueue(LocationUpdateDTO locationUpdateDTO) {
+        Map<String, Object> map = new HashMap<>(JSON.parseObject(JSON.toJSONString(locationUpdateDTO)));
+        map.put("retryCount", 0);
+        redisTemplate.opsForList().rightPush("location:compensate:redis", map);
     }
 
     /**

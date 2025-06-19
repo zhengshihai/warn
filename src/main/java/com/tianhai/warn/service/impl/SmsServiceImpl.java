@@ -258,7 +258,9 @@ public class SmsServiceImpl implements SmsService {
         if (contactDisable) {
             logger.warn("找不到该该学生对应的班级管理员和家长的手机号码, studentNo: {}, name:{}", studentNo, name);
         } else {
-            String parentSmsContent = String.format(AlarmConstants.ALARM_CANCEL_SMS_PARENT_TEMPLATE, name, date);
+            String parentSmsContent = String.format(
+                    AlarmConstants.ALARM_CANCEL_SMS_PARENT_TEMPLATE,
+                    name, date);
             sendSmsSync(studentContacts.getParentPhones(), parentSmsContent);
 
             String classManagerSmsContent = String.format(

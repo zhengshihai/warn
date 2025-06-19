@@ -47,6 +47,13 @@ public class RocketMQConfig {
     @Value("${rocketmq.video.consumer.group}")
     private String videoConsumerGroup;
 
+    // 补偿业务配置
+    @Value("${rocketmq.compensate.producer.group}")
+    private String compensateProducerGroup;
+
+    @Value("${rocketmq.compensate.consumer.group}")
+    private String compensateConsumerGroup;
+
     // 通用配置
     @Value("${rocketmq.producer.send-message-timeout}")
     private int sendMessageTimeout;
@@ -164,6 +171,30 @@ public class RocketMQConfig {
         }
 
         return configs;
+    }
+
+    @Bean("compensateProducer")
+    public DefaultMQProducer compensateProducer() {
+        DefaultMQProducer producer = new DefaultMQProducer();
+        producer.setNamesrvAddr(nameServer);
+        producer.setProducerGroup(compensateProducerGroup);
+        producer.setSendMsgTimeout(sendMessageTimeout);
+        producer.setRetryTimesWhenSendFailed(retryTimesWhenSendFailed);
+        producer.setRetryTimesWhenSendAsyncFailed(retryTimesWhenSendAsyncFailed);
+        producer.setMaxMessageSize(maxMessageSize);
+
+        try {
+            logger.info("正在启动补偿业务 RocketMQ Producer...");
+            producer.start();
+            logger.info("补偿业务 RocketMQ Producer 启动成功，nameServer: {}, producerGroup: {}",
+                    nameServer, "compensate-producer-group");
+        } catch (Exception e) {
+            logger.error("补偿业务 RocketMQ Producer 启动失败: {}, nameServer: {}, producerGroup: {}",
+                    e.getMessage(), nameServer, "compensate-producer-group", e);
+            throw new RuntimeException("补偿业务 RocketMQ Producer 启动失败", e);
+        }
+
+        return producer;
     }
 
     @Bean

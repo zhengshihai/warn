@@ -1,5 +1,9 @@
 package com.tianhai.warn.utils;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
@@ -45,21 +49,11 @@ public class RedisUtils {
     /**
      * 联系人信息内部类
      */
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class StudentContacts {
         private List<String> parentPhones;
         private List<String> managerPhones;
-
-        public StudentContacts(List<String> parentPhones, List<String> managerPhones) {
-            this.parentPhones = parentPhones;
-            this.managerPhones = managerPhones;
-        }
-
-        public List<String> getParentPhones() {
-            return parentPhones;
-        }
-
-        public List<String> getManagerPhones() {
-            return managerPhones;
-        }
     }
 }
