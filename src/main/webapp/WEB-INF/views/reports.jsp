@@ -8,9 +8,19 @@
 <head>
     <title>报表统计 - 学生晚归预警系统</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.0.0/css/all.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<%--    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.0.0/css/all.min.css" rel="stylesheet">--%>
+<%--    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>--%>
+<%--    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>--%>
+    <!-- 引入 CSS 文件 -->
+    <link href="${pageContext.request.contextPath}/static/css/tailwind.min.css" rel="stylesheet">
+    <link href="${pageContext.request.contextPath}/static/css/fontawesome.min.css" rel="stylesheet">
+    <link href="${pageContext.request.contextPath}/static/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- 引入 JS 文件 -->
+    <script src="${pageContext.request.contextPath}/static/js/echarts.min.js"></script>
+    <script src="${pageContext.request.contextPath}/static/js/jquery.min.js"></script>
+    <script src="${pageContext.request.contextPath}/static/js/popper.min.js"></script>
+    <script src="${pageContext.request.contextPath}/static/js/bootstrap.bundle.min.js"></script>
 </head>
 <body class="bg-gray-100">
     <!-- 导航栏 -->

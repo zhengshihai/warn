@@ -1,5 +1,4 @@
-
-const Validation = {
+const SysUserValidation = {
     // 检查是否为空
     isEmpty: function(value) {
         return value === null || value === undefined || value.trim() === '';
@@ -26,10 +25,9 @@ const Validation = {
     //     return true;
     // },
 
-    //检查密码强度（至少包含数字和字母，长度8-20位）
-    isPasswordStrong: function(value) {
-        // return /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,20}$/.test(value);
-        return true
+    // 检查密码长度
+    isPasswordValid: function(value) {
+        return value.length >= 6;
     }
 };
 

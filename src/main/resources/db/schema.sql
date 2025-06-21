@@ -285,6 +285,9 @@ CREATE TABLE location_track (
     direction DECIMAL(10,2) COMMENT '方向(度)',
     location_time DATETIME NOT NULL COMMENT '时间戳',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    first_location_time DATETIME COMMENT '静止段起始时间',
+    end_location_time DATETIME COMMENT '静止段结束时间',
+    change_unit INT COMMENT '前端上报间隔（秒）',
    -- FOREIGN KEY (alarm_no) REFERENCES alarm_record(alarm_no),
     INDEX idx_alarm_no (alarm_no),
     INDEX idx_alarm_no_timestamp (alarm_no, location_time)
@@ -292,14 +295,17 @@ CREATE TABLE location_track (
 
 -- 报警配置表
 CREATE TABLE alarm_config (
-      id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID',
-      config_key VARCHAR(50) NOT NULL COMMENT '配置键',
-      config_value TEXT NOT NULL COMMENT '配置值',
-      description VARCHAR(255) COMMENT '配置描述',
-      is_active TINYINT NOT NULL DEFAULT 1 COMMENT '是否启用：0-禁用，1-启用',
-      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-      UNIQUE KEY uk_config_key (config_key)
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID',
+    api_provider VARCHAR(50) NOT NULL COMMENT 'API提供商标识',
+    api_key VARCHAR(100) NOT NULL COMMENT 'API密钥',
+    api_secret TEXT NOT NULL COMMENT 'API密钥',
+    description VARCHAR(255) COMMENT '配置描述',
+    is_active TINYINT NOT NULL DEFAULT 1 COMMENT '是否启用：0-禁用，1-启用',
+    version INT NOT NULL DEFAULT 1 COMMENT '版本号',
+    last_modified_by VARCHAR(50) COMMENT '最后修改人',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    UNIQUE KEY uk_api_provider (api_provider)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='报警配置表';
 
 -- 报警处理方配置表

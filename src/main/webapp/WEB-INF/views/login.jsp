@@ -8,8 +8,18 @@
 <head>
     <!-- 页面一 登录页面 -->
     <title>学生晚归预警系统 - 登录</title>
-    <link href="https://cdn.bootcdn.net/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
-    <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<%--    <link href="https://cdn.bootcdn.net/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">--%>
+<%--    <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.0/jquery.min.js"></script>--%>
+
+    <!-- 引入 CSS 文件 -->
+    <link href="${pageContext.request.contextPath}/static/css/tailwind.min.css" rel="stylesheet">
+    <link href="${pageContext.request.contextPath}/static/css/fontawesome.min.css" rel="stylesheet">
+    <link href="${pageContext.request.contextPath}/static/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- 引入 JS 文件 -->
+    <script src="${pageContext.request.contextPath}/static/js/jquery.min.js"></script>
+    <script src="${pageContext.request.contextPath}/static/js/popper.min.js"></script>
+    <script src="${pageContext.request.contextPath}/static/js/bootstrap.bundle.min.js"></script>
     <style>
         .login-container {
             min-height: 100vh;

@@ -32,9 +32,15 @@
 <head>
     <!-- 基层管理人员（宿管、辅导员、班主任）处理晚归说明页面 -->
     <title>学生晚归预警系统 - 晚归说明处理</title>
-    <link href="https://cdn.bootcdn.net/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
-    <link href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <!-- 引入 CSS 文件 -->
+    <link href="${pageContext.request.contextPath}/static/css/tailwind.min.css" rel="stylesheet">
+    <link href="${pageContext.request.contextPath}/static/css/fontawesome.min.css" rel="stylesheet">
+    <link href="${pageContext.request.contextPath}/static/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- 引入 JS 文件 -->
+    <script src="${pageContext.request.contextPath}/static/js/jquery.min.js"></script>
+    <script src="${pageContext.request.contextPath}/static/js/popper.min.js"></script>
+    <script src="${pageContext.request.contextPath}/static/js/bootstrap.bundle.min.js"></script>
     <script src="${pageContext.request.contextPath}/static/js/college-mapping.js"></script>
     <style>
         .detail-card {

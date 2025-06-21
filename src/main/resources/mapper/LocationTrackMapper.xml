@@ -5,16 +5,19 @@
     <!-- 基础列 -->
     <sql id="Base_Column_List">
         id, alarm_no, latitude, longitude, location_accuracy, speed, direction, 
-        location_time, created_at
+        location_time, created_at, first_location_time, end_location_time, change_unit
     </sql>
 
     <!-- 插入位置轨迹 -->
     <insert id="insert" parameterType="com.tianhai.warn.model.LocationTrack" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO location_track (
-            alarm_no, latitude, longitude, location_accuracy, speed, direction, location_time
+            alarm_no, latitude, longitude, location_accuracy, speed, direction,
+             location_time, created_at, 
+            first_location_time, end_location_time, change_unit
         ) VALUES (
             #{alarmNo}, #{latitude}, #{longitude}, #{locationAccuracy}, 
-            #{speed}, #{direction}, #{locationTime}
+            #{speed}, #{direction}, #{locationTime}, #{createdAt}, 
+            #{firstLocationTime}, #{endLocationTime}, #{changeUnit}
         )
     </insert>
 
@@ -56,13 +59,22 @@
     </select>
 
     <!-- 查询最新的位置记录 -->
-    <select id="selectLatestByAlarmNo" resultType="com.tianhai.warn.model.LocationTrack">
+    <select id="selectWithLimitByAlarmNo" resultType="com.tianhai.warn.model.LocationTrack">
         SELECT 
         <include refid="Base_Column_List"/>
         FROM location_track
         WHERE alarm_no = #{alarmNo}
         ORDER BY location_time DESC
         LIMIT #{limit}
+    </select>
+
+    <!-- 查询最新一条轨迹点 -->
+    <select id="selectLastByAlarmNo" resultType="com.tianhai.warn.model.LocationTrack">
+        SELECT <include refid="Base_Column_List"/>
+        FROM location_track
+        WHERE alarm_no = #{alarmNo}
+        ORDER BY end_location_time DESC, location_time DESC
+        LIMIT 1
     </select>
 
     <!-- 更新位置轨迹 -->
@@ -75,6 +87,9 @@
             <if test="speed != null">speed = #{speed},</if>
             <if test="direction != null">direction = #{direction},</if>
             <if test="locationTime != null">location_time = #{locationTime},</if>
+            <if test="firstLocationTime != null">first_location_time = #{firstLocationTime},</if>
+            <if test="endLocationTime != null">end_location_time = #{endLocationTime},</if>
+            <if test="changeUnit != null">change_unit = #{changeUnit},</if>
         </set>
         WHERE id = #{id}
     </update>

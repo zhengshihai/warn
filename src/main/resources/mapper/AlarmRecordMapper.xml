@@ -37,6 +37,12 @@
         WHERE id = #{id}
     </select>
 
+    <select id="selectNotEndedAlarms" resultMap="BaseResultMap">
+        SELECT alarm_no, student_no
+        FROM alarm_record
+        WHERE alarm_status = 0 OR alarm_status = 1;
+    </select>
+
     <insert id="insert" parameterType="com.tianhai.warn.model.AlarmRecord" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO alarm_record (
             alarm_no, student_no, alarm_type, alarm_level, alarm_status, alarm_time,

@@ -6,12 +6,19 @@
 <html>
 <head>
     <title>学生晚归预警系统 - 学生主页</title>
-    <link href="https://cdn.bootcdn.net/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
-    <link href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <!-- 引入 Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- 引入 jQuery -->
-    <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <!-- 引入 CSS 文件 -->
+    <link href="${pageContext.request.contextPath}/static/css/tailwind.min.css" rel="stylesheet">
+    <link href="${pageContext.request.contextPath}/static/css/fontawesome.min.css" rel="stylesheet">
+    <link href="${pageContext.request.contextPath}/static/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- 引入 JS 文件 -->
+    <script src="${pageContext.request.contextPath}/static/js/jquery.min.js"></script>
+    <script src="${pageContext.request.contextPath}/static/js/popper.min.js"></script>
+    <script src="${pageContext.request.contextPath}/static/js/bootstrap.bundle.min.js"></script>
+
+    <!-- 引入验证脚本 -->
+    <script src="${pageContext.request.contextPath}/static/js/student-validation.js"></script>
+
     <script src="https://webapi.amap.com/maps?v=2.0&key=c34c1fdbcbe4d043906c95993710fbcc"></script>
     <style>
         .dashboard-container {
@@ -532,36 +539,6 @@
                             </div>
                         </div>
 
-<%--                        <!-- 晚归申请信息 -->--%>
-<%--                        <div class="bg-gray-50 p-4 rounded-lg mt-4" id="applicationSection" style="display: none;">--%>
-<%--                            <h6 class="text-lg font-medium text-gray-900 mb-3">晚归申请</h6>--%>
-<%--                            <div class="grid grid-cols-2 gap-4">--%>
-<%--                                <div>--%>
-<%--                                    <p class="text-sm text-gray-500">申请时间</p>--%>
-<%--                                    <p class="text-sm font-medium text-gray-900" id="detailApplyTime"></p>--%>
-<%--                                </div>--%>
-<%--                                <div>--%>
-<%--                                    <p class="text-sm text-gray-500">预期回校时间</p>--%>
-<%--                                    <p class="text-sm font-medium text-gray-900" id="detailExpectedReturnTime"></p>--%>
-<%--                                </div>--%>
-<%--                                <div class="col-span-2">--%>
-<%--                                    <p class="text-sm text-gray-500">申请原因</p>--%>
-<%--                                    <p class="text-sm font-medium text-gray-900" id="detailReason"></p>--%>
-<%--                                </div>--%>
-<%--                                <div class="col-span-2">--%>
-<%--                                    <p class="text-sm text-gray-500">目的地</p>--%>
-<%--                                    <p class="text-sm font-medium text-gray-900" id="detailDestination"></p>--%>
-<%--                                </div>--%>
-<%--                                <div class="col-span-2">--%>
-<%--                                    <p class="text-sm text-gray-500">审核状态</p>--%>
-<%--                                    <p class="text-sm font-medium text-gray-900" id="detailApplicationStatus"></p>
-<%--                                </div>--%>
-<%--                                <div class="col-span-2">--%>
-<%--                                    <p class="text-sm text-gray-500">审核备注</p>--%>
-<%--                                    <p class="text-sm font-medium text-gray-900" id="detailApplicationRemark"></p>
-<%--                                </div>--%>
-<%--                            </div>--%>
-<%--                        </div>--%>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -571,13 +548,6 @@
         </div>
     </div>
 
-    <!-- 引入 jQuery -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <!-- 引入 Bootstrap JS 和 Popper.js -->
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.10.2/dist/umd/popper.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.min.js"></script>
-    <!-- 引入验证脚本 -->
-    <script src="${pageContext.request.contextPath}/static/js/student-validation.js"></script>
 
 
     <script>
@@ -1165,31 +1135,6 @@
                         }
                     });
 
-                    <%--// 获取晚归申请--%>
-                    <%--$.ajax({--%>
-                    <%--    url: '${pageContext.request.contextPath}/application/' + applicationId,--%>
-                    <%--    type: 'GET',--%>
-                    <%--    success: function(response) {--%>
-                    <%--        // 从Result 对象中获取数据--%>
-                    <%--        const application = response.data;--%>
-
-                    <%--        if (application) {--%>
-                    <%--            $('#applicationSection').show();--%>
-                    <%--            $('#detailApplyTime').text(new Date(application.applyTime).toLocaleString('zh-CN'));--%>
-                    <%--            $('#detailExpectedReturnTime').text(new Date(application.expectedReturnTime).toLocaleString('zh-CN'));--%>
-                    <%--            $('#detailReason').text(application.reason || '-');--%>
-                    <%--            $('#detailDestination').text(application.destination || '-');--%>
-                    <%--            $('#detailApplicationStatus').text(getAuditStatusText(application.auditStatus));--%>
-                    <%--            $('#detailApplicationRemark').text(application.auditRemark || '-');--%>
-                    <%--        } else {--%>
-                    <%--            $('#applicationSection').hide();--%>
-                    <%--        }--%>
-                    <%--    },--%>
-                    <%--    error: function() {--%>
-                    <%--        $('#applicationSection').hide();--%>
-                    <%--    }--%>
-                    <%--});--%>
-
                     // 显示模态框
                     $('#lateReturnDetailModal').modal('show');
                 },
@@ -1541,7 +1486,8 @@
             // 保存当前位置信息
             window.currentPosition = {
               latitude: lat,
-              longitude: lng
+              longitude: lng,
+              accuracy: data.accuracy // 新增精度字段
             };
 
             // 2. 清空地图上的覆盖物
@@ -1642,7 +1588,7 @@
                                     }).replace(/\//g, '-'),
                                     speed: 0,
                                     direction: 0,
-                                    locationAccuracy: 10
+                                    locationAccuracy: window.currentPosition.accuracy
                                 };
                                 currentWebSocket.send(JSON.stringify(locationData));
                             } else {
@@ -1719,6 +1665,8 @@
             });
         });
     </script>
+
+
 
     <!-- 非Ajax形式请求的错误弹框提示 -->
     <c:if test="${not empty sessionScope.errorMsg}">

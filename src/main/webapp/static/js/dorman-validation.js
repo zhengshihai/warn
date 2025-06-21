@@ -1,5 +1,4 @@
-
-const Validation = {
+const DormanValidation = {
     // 检查是否为空
     isEmpty: function(value) {
         return value === null || value === undefined || value.trim() === '';

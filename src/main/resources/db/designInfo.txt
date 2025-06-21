@@ -334,19 +334,75 @@
     ├── 异常检测
     └── 告警通知
 
-// 前端建立WebSocket连接
-const ws = new WebSocket('ws://your-server/ws?alarmNo=' + alarmNo);
+定位展示设计思路和任务
 
-// 发送位置信息
-ws.send(JSON.stringify({
-    alarmNo: alarmNo,
-    latitude: latitude,
-    longitude: longitude,
-    timestamp: Date.now()
-}));
+1 学生端和教师端接受相关条款并签名
+  手机/电脑权限控制 机型适配
+2 学生端增加一键报警按钮
+3 班级管理员端增加报警学生定位信息
+4 存储第三方API到服务端（mysql redis)
+5 班级管理员端
 
-// 接收消息
-ws.onmessage = function(event) {
-    const message = JSON.parse(event.data);
-    // 处理接收到的消息
-};
+
+定位信息存储业务流程（含重试与补偿机制）
+1. 实时写入Redis
+学生端/前端上传定位信息到后端。
+后端首先将定位信息写入Redis（如GEO结构、ZSet等），保证教师端实时查询轨迹的高可用和低延迟。
+2. 异步写入MySQL
+写入Redis后，异步尝试将定位信息写入MySQL，以保证数据最终持久化。
+异步写入MySQL时，最多重试3次（或你设定的次数），每次失败会记录日志。
+3. RocketMQ补偿队列
+如果异步写MySQL连续重试3次仍然失败，则将该定位信息发送到RocketMQ的补偿Topic（如alarm-location-compensate）。
+补偿消息内容为定位信息对象（含所有字段），可额外带上retryCount字段。
+4. RocketMQ补偿消费
+有专门的RocketMQ Consumer监听补偿Topic。
+Consumer收到补偿消息后，再次尝试写入MySQL。
+如果写入成功，消息消费完成。
+如果写入失败，RocketMQ会自动重试消费，直到成功或达到最大重试次数（RocketMQ可配置）。
+5. Redis List兜底
+如果RocketMQ不可用（如网络故障、服务不可达等），则将补偿消息写入Redis List（如location:compensate:redis），并带上retryCount字段（初始为0）。
+这样可以保证即使消息队列不可用，数据也不会丢失。
+6. Redis List定时补偿任务
+有定时任务（如每分钟）扫描Redis List，每次最多处理10条。
+取出一条后，尝试再次投递到RocketMQ补偿Topic。
+如果投递成功，该条数据流程结束。
+如果投递失败，解析并累加retryCount字段：
+如果retryCount未达到最大重试次数（如10次），则retryCount+1后重新入队，等待下次定时任务再补偿。
+如果retryCount已达到最大重试次数，则将该数据写入死信队列（如location:compensate:dead），并记录日志或告警，便于人工后续处理。
+7. 死信队列与人工处理
+死信队列中的数据需要人工巡查、导出或通过管理后台进行补偿或告警。
+可以定期监控死信队列长度，超阈值自动告警。
+
+
+【业务流程图（文字版）】
+前端上传定位信息
+        ↓
+  1. 写入Redis（实时轨迹）
+        ↓
+  2. 异步写MySQL（最多重试3次）
+        ↓
+    成功 | 失败
+        |——> 3. 发送RocketMQ补偿Topic
+                ↓
+        4. Consumer重试写MySQL
+                ↓
+        成功 | 失败
+                |——> 5. RocketMQ不可用时写入Redis List兜底
+                        ↓
+        6. 定时任务扫描Redis List，重试投递RocketMQ
+                        ↓
+        成功 | 失败（重试次数超限）
+                |——> 7. 写入死信队列，人工处理
+
+手工/模拟异常测试建议
+2.1 模拟MySQL异常
+在异步写MySQL的代码里临时加一个throw new RuntimeException("mock db error")，观察是否能进入补偿队列。
+检查补偿队列、死信队列是否有数据。
+2.2 关闭RocketMQ服务
+停掉RocketMQ服务，观察补偿消息是否写入Redis List兜底。
+恢复RocketMQ后，观察定时任务是否能自动补偿成功。
+2.3 造数据测试死信队列
+手动将一条数据的retryCount设为9，模拟补偿失败，看是否能进入死信队列。
+2.4 日志与监控
+检查日志输出，确认每个环节的异常、重试、死信等都有明确日志。
+可以临时加System.out.println或logger.info辅助观察。

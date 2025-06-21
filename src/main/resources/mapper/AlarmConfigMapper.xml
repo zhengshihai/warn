@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tianhai.warn.mapper.AlarmConfigMapper">
+    <resultMap id="BaseResultMap" type="com.tianhai.warn.model.AlarmConfig">
+        <id column="id" property="id"/>
+        <result column="api_provider" property="apiProvider"/>
+        <result column="api_key" property="apiKey"/>
+        <result column="api_secret" property="apiSecret"/>
+        <result column="description" property="description"/>
+        <result column="is_active" property="isActive"/>
+        <result column="version" property="version"/>
+        <result column="last_modified_by" property="lastModifiedBy"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, api_provider, api_key, api_secret, description, is_active, version,
+        last_modified_by, created_at, updated_at
+    </sql>
+
+    <select id="selectByApiProvider" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM alarm_config
+        WHERE api_provider = #{apiProvider}
+    </select>
+
+    <select id="selectByPrimaryKey" resultMap="BaseResultMap">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM alarm_config
+        WHERE id = #{id}
+    </select>
+
+    <insert id="insert" parameterType="com.tianhai.warn.model.AlarmConfig">
+        INSERT INTO alarm_config (
+            api_provider, api_key, api_secret, description,
+            is_active, version, last_modified_by
+        ) VALUES (
+            #{apiProvider}, #{apiKey}, #{apiSecret}, #{description},
+            #{isActive}, #{version}, #{lastModifiedBy}
+        )
+    </insert>
+
+    <update id="updateByPrimaryKey" parameterType="com.tianhai.warn.model.AlarmConfig">
+        UPDATE alarm_config
+        SET api_provider = #{apiProvider},
+            api_key = #{apiKey},
+            api_secret = #{apiSecret},
+            description = #{description},
+            is_active = #{isActive},
+            version = version + 1,
+            last_modified_by = #{lastModifiedBy}
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteByPrimaryKey">
+        DELETE FROM alarm_config
+        WHERE id = #{id}
+    </delete>
+
+    <!-- 查询所有配置 -->
+    <select id="selectAll" resultType="com.tianhai.warn.model.AlarmConfig">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM alarm_config
+        ORDER BY id DESC
+    </select>
+
+    <!-- 查询所有启用的配置 -->
+    <select id="selectActive" resultType="com.tianhai.warn.model.AlarmConfig">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM alarm_config
+        WHERE is_active = 1
+        ORDER BY id DESC
+    </select>
+
+    <!-- 更新配置状态 -->
+    <update id="updateStatus" parameterType="com.tianhai.warn.model.AlarmConfig">
+        UPDATE alarm_config
+        SET
+            is_active = #{isActive},
+            version = version + 1,
+            last_modified_by = #{lastModifiedBy},
+            updated_at = #{updatedAt}
+        WHERE config_key = #{configKey}
+    </update>
+</mapper>

@@ -178,4 +178,90 @@
         WHERE id = #{id}
     </update>
 
+    <!-- 根据查询条件搜索学生信息（支持批量查询） -->
+    <select id="searchByStudentQuery" resultMap="BaseResultMap" parameterType="com.tianhai.warn.query.StudentQuery">
+        SELECT 
+        <include refid="Base_Column_List"/>
+        FROM student
+        <where>
+            <if test="id != null">
+                AND id = #{id}
+            </if>
+            <if test="studentNo != null and studentNo != ''">
+                AND student_no = #{studentNo}
+            </if>
+            <if test="name != null and name != ''">
+                AND name = #{name}
+            </if>
+            <if test="nameLike != null and nameLike != ''">
+                AND name LIKE CONCAT('%', #{nameLike}, '%')
+            </if>
+            <if test="college != null and college != ''">
+                AND college = #{college}
+            </if>
+            <if test="className != null and className != ''">
+                AND class_name = #{className}
+            </if>
+            <if test="dormitory != null and dormitory != ''">
+                AND dormitory = #{dormitory}
+            </if>
+            <if test="phone != null and phone != ''">
+                AND phone = #{phone}
+            </if>
+            <if test="email != null and email != ''">
+                AND email = #{email}
+            </if>
+            <if test="fatherName != null and fatherName != ''">
+                AND father_name = #{fatherName}
+            </if>
+            <if test="fatherPhone != null and fatherPhone != ''">
+                AND father_phone = #{fatherPhone}
+            </if>
+            <if test="motherName != null and motherName != ''">
+                AND mother_name = #{motherName}
+            </if>
+            <if test="motherPhone != null and motherPhone != ''">
+                AND mother_phone = #{motherPhone}
+            </if>
+            
+            <!-- 批量查询条件 -->
+            <if test="studentNos != null and studentNos.size() > 0">
+                AND student_no IN
+                <foreach collection="studentNos" item="studentNo" open="(" separator="," close=")">
+                    #{studentNo}
+                </foreach>
+            </if>
+            <if test="colleges != null and colleges.size() > 0">
+                AND college IN
+                <foreach collection="colleges" item="college" open="(" separator="," close=")">
+                    #{college}
+                </foreach>
+            </if>
+            <if test="classesNames != null and classesNames.size() > 0">
+                AND class_name IN
+                <foreach collection="classesNames" item="className" open="(" separator="," close=")">
+                    #{className}
+                </foreach>
+            </if>
+            <if test="dormitories != null and dormitories.size() > 0">
+                AND dormitory IN
+                <foreach collection="dormitories" item="dormitory" open="(" separator="," close=")">
+                    #{dormitory}
+                </foreach>
+            </if>
+        </where>
+        <if test="orderBy != null and orderBy != ''">
+            ORDER BY ${orderBy}
+        </if>
+        <if test="orderBy == null or orderBy == ''">
+            ORDER BY id DESC
+        </if>
+        <if test="limit != null and limit > 0">
+            LIMIT #{limit}
+        </if>
+        <if test="offset != null and offset >= 0">
+            OFFSET #{offset}
+        </if>
+    </select>
+
 </mapper> 

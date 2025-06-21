@@ -37,8 +37,19 @@
     <!-- 基层管理人员（宿管、辅导员、班主任）主页 -->
      <!-- todo 修改个人信息需要进行根据不同角色的适配 院级领导有个按钮入口可查看全校总览数据-->
     <title>学生晚归预警系统 - 晚归管理主页</title>
-    <link href="https://cdn.bootcdn.net/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
-    <link href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+<%--    <link href="https://cdn.bootcdn.net/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">--%>
+<%--    <link href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">--%>
+    <!-- 引入 CSS 文件 -->
+    <link href="${pageContext.request.contextPath}/static/css/tailwind.min.css" rel="stylesheet">
+    <link href="${pageContext.request.contextPath}/static/css/fontawesome.min.css" rel="stylesheet">
+    <link href="${pageContext.request.contextPath}/static/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- 引入 JS 文件 -->
+    <script src="${pageContext.request.contextPath}/static/js/jquery.min.js"></script>
+    <script src="${pageContext.request.contextPath}/static/js/popper.min.js"></script>
+    <script src="${pageContext.request.contextPath}/static/js/bootstrap.bundle.min.js"></script>
+
+    <script src="https://webapi.amap.com/maps?v=2.0&key=c34c1fdbcbe4d043906c95993710fbcc"></script>
     <style>
         .dashboard-container {
             min-height: 100vh;
@@ -243,7 +254,11 @@
             </div>
         </div>
 
-        
+        <!-- 1. 地图容器 -->
+        <div id="map-container" style="width:100%;height:300px;" class="mb-6"></div>
+        <div id="location-info" class="mb-4 text-sm text-gray-600"></div>
+
+
         <!-- 主要内容区域 -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <!-- 待处理晚归记录 -->
@@ -316,6 +331,9 @@
         <!-- 引入验证脚本 -->
         <script type="text/javascript" src="${pageContext.request.contextPath}/static/js/dorman-validation.js"></script>
         <script type="text/javascript" src="${pageContext.request.contextPath}/static/js/sysuser-validation.js"></script>
+
+        <!-- 2. 高德地图API -->
+        <script src="https://webapi.amap.com/maps?v=2.0&key=你的高德key"></script>
 
         <script>
             // 数据验证
@@ -848,6 +866,55 @@
                     minute: '2-digit'
                 });
             }
+
+            // 1. 显示班级管理员自己的位置
+            AMap.plugin('AMap.Geolocation', function() {
+                var map = new AMap.Map('map-container', { resizeEnable: true, zoom: 16 });
+                var geolocation = new AMap.Geolocation({
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    buttonPosition: 'RB',
+                    zoomToAccuracy: true,
+                    needAddress: true
+                });
+                map.addControl(geolocation);
+                geolocation.getCurrentPosition();
+
+                geolocation.on('complete', function(data) {
+                    var lng = data.position.lng, lat = data.position.lat;
+                    var marker = new AMap.Marker({
+                        position: [lng, lat],
+                        icon: 'https://webapi.amap.com/theme/v1.3/markers/n/mark_b.png', // 蓝色
+                        title: '班级管理员当前位置'
+                    });
+                    map.add(marker);
+                    map.setCenter([lng, lat]);
+                });
+
+                geolocation.on('error', function(err) {
+                    document.getElementById('location-info').innerHTML = '定位失败: ' + err.message;
+                });
+
+                // 2. 查询学生报警位置
+                function showStudentLocation(alarmNo) {
+                    $.ajax({
+                        url: '${pageContext.request.contextPath}/alarm/location?alarmNo=' + alarmNo,
+                        type: 'GET',
+                        success: function(res) {
+                            if (res && res.longitude && res.latitude) {
+                                var marker = new AMap.Marker({
+                                    position: [res.longitude, res.latitude],
+                                    icon: 'https://webapi.amap.com/theme/v1.3/markers/n/mark_r.png', // 红色
+                                    title: '学生报警位置'
+                                });
+                                map.add(marker);
+                            }
+                        }
+                    });
+                }
+
+                // TODO: 通过下拉框/按钮选择报警编号，调用 showStudentLocation(alarmNo)
+            });
         </script>
 
         
