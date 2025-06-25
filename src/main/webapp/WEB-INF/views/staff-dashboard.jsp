@@ -85,13 +85,13 @@
       <div class="flex items-center space-x-4">
                     <span class="text-gray-600">欢迎，${sessionScope.user.name}（
                         <c:choose>
-                          <c:when test="${fn:toLowerCase(sessionScope.role) eq 'dormitorymanager'}">宿管</c:when>
-                          <c:when test="${fn:toLowerCase(sessionScope.role) eq 'systemuser'}">
+                          <c:when test="${sessionScope.user['class'].simpleName eq 'DormitoryManager'}">宿管</c:when>
+                          <c:when test="${sessionScope.user['class'].simpleName eq 'SysUser'}">
                             <c:choose>
                               <c:when test="${not empty jobRole and fn:toLowerCase(jobRole) eq 'counselor'}">辅导员</c:when>
                               <c:when test="${not empty jobRole and fn:toLowerCase(jobRole) eq 'class_teacher'}">班主任</c:when>
                               <c:when test="${not empty jobRole and fn:toLowerCase(jobRole) eq 'dean'}">院级领导</c:when>
-                              <c:otherwise></c:otherwise>
+                              <c:otherwise>系统用户</c:otherwise>
                             </c:choose>
                           </c:when>
                         </c:choose>
@@ -257,7 +257,19 @@
   <!-- 1. 地图容器 -->
   <div class="card p-6 mb-6">
     <div class="flex items-center mb-4">
-      <h2 class="text-lg font-medium text-gray-900">位置信息</h2>
+      <h2 class="text-lg font-medium text-gray-900">
+        <c:choose>
+          <c:when test="${sessionScope.user['class'].simpleName eq 'DormitoryManager'}">宿管位置信息</c:when>
+          <c:when test="${sessionScope.user['class'].simpleName eq 'SysUser'}">
+            <c:choose>
+              <c:when test="${not empty jobRole and fn:toLowerCase(jobRole) eq 'counselor'}">辅导员位置信息</c:when>
+              <c:when test="${not empty jobRole and fn:toLowerCase(jobRole) eq 'class_teacher'}">班主任位置信息</c:when>
+              <c:when test="${not empty jobRole and fn:toLowerCase(jobRole) eq 'dean'}">院级领导位置信息</c:when>
+              <c:otherwise>系统用户位置信息</c:otherwise>
+            </c:choose>
+          </c:when>
+        </c:choose>
+      </h2>
     </div>
     <div id="map-container" style="width:100%;height:300px;"></div>
     <div id="location-info" class="mt-4 text-sm text-gray-600"></div>
@@ -359,13 +371,33 @@
   </c:if>
 
   $(document).ready(function() {
+    // 添加CSS动画
+    $('<style>')
+      .prop('type', 'text/css')
+      .html(`
+        @keyframes slideInUp {
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `)
+      .appendTo('head');
+
+    // 页面初始化
+    initializePage();
+    
     // 修改个人信息按钮点击事件
     $('button[data-bs-toggle="modal"]').click(function() {
       <c:choose>
-      <c:when test="${fn:toLowerCase(sessionScope.role) eq 'dormitorymanager'}">
+      <c:when test="${sessionScope.user['class'].simpleName eq 'DormitoryManager'}">
       $('#dormitoryManagerModal').modal('show');
       </c:when>
-      <c:when test="${fn:toLowerCase(sessionScope.role) eq 'systemuser'}">
+      <c:when test="${sessionScope.user['class'].simpleName eq 'SysUser'}">
       $('#systemUserModal').modal('show');
       </c:when>
       </c:choose>
@@ -896,6 +928,36 @@
       needAddress: true
     });
     map.addControl(geolocation);
+    
+    // 存储标记的数组，避免重复创建
+    var markers = [];
+    
+    // 清除所有标记的函数
+    function clearAllMarkers() {
+      markers.forEach(function(marker) {
+        map.remove(marker);
+      });
+      markers = [];
+    }
+    
+    // 获取用户角色和显示名称
+    var userRole = '${sessionScope.user["class"].simpleName}';
+    var roleDisplayName = '';
+    if (userRole === 'DormitoryManager') {
+      roleDisplayName = '宿管';
+    } else if (userRole === 'SysUser') {
+      var jobRole = '${jobRole}';
+      if (jobRole === 'counselor') {
+        roleDisplayName = '辅导员';
+      } else if (jobRole === 'class_teacher') {
+        roleDisplayName = '班主任';
+      } else if (jobRole === 'dean') {
+        roleDisplayName = '院级领导';
+      } else {
+        roleDisplayName = '系统用户';
+      }
+    }
+    
     geolocation.getCurrentPosition();
 
     geolocation.on('complete', function(data) {
@@ -903,9 +965,10 @@
       var marker = new AMap.Marker({
         position: [lng, lat],
         icon: 'https://webapi.amap.com/theme/v1.3/markers/n/mark_b.png', // 蓝色
-        title: '班级管理员当前位置'
+        title: roleDisplayName + '当前位置'
       });
       map.add(marker);
+      markers.push(marker); // 添加到标记数组
       map.setCenter([lng, lat]);
     });
 
@@ -915,6 +978,14 @@
 
     // 2. 查询学生报警位置
     function showStudentLocation(alarmNo) {
+      // 清除之前的学生标记
+      markers.forEach(function(marker, index) {
+        if (marker.getTitle() && marker.getTitle().includes('学生报警位置')) {
+          map.remove(marker);
+          markers.splice(index, 1);
+        }
+      });
+      
       $.ajax({
         url: '${pageContext.request.contextPath}/alarm/location?alarmNo=' + alarmNo,
         type: 'GET',
@@ -926,12 +997,15 @@
               title: '学生报警位置'
             });
             map.add(marker);
+            markers.push(marker); // 添加到标记数组
           }
         }
       });
     }
 
-
+    // 将showStudentLocation函数暴露到全局作用域，以便其他函数调用
+    window.showStudentLocation = showStudentLocation;
+    window.clearAllMarkers = clearAllMarkers;
 
     // TODO: 通过下拉框/按钮选择报警编号，调用 showStudentLocation(alarmNo)
   });
@@ -950,6 +1024,7 @@
     var userRole = '${sessionScope.user["class"].simpleName}';
     var helperNo = '';
     if (userRole === 'DormitoryManager') {
+      userRole = 'dormitorymanager';
       helperNo = '${managerId}';
     } else if (userRole === 'SysUser') {
       userRole = 'systemuser';
@@ -1021,6 +1096,18 @@
               '<i class="fas fa-exclamation-circle mr-1"></i>' +
               '报警中' +
             '</span>' +
+          '</div>' +
+          '<div class="flex justify-between items-center mb-4">' +
+            '<div class="flex space-x-2">' +
+              '<button onclick="showStudentLocation(\'' + (student.alarmNo || '') + '\')" class="bg-blue-500 hover:bg-blue-600 text-white text-xs px-3 py-2 rounded-md transition-colors duration-200 flex items-center">' +
+                '<i class="fas fa-map-marker-alt mr-1"></i>' +
+                '查看位置' +
+              '</button>' +
+              '<button onclick="clearAllMarkers()" class="bg-gray-500 hover:bg-gray-600 text-white text-xs px-3 py-2 rounded-md transition-colors duration-200 flex items-center">' +
+                '<i class="fas fa-times mr-1"></i>' +
+                '清除标记' +
+              '</button>' +
+            '</div>' +
           '</div>' +
           '<div class="grid grid-cols-1 md:grid-cols-2 gap-4">' +
             '<div class="bg-gradient-to-r from-blue-50 to-blue-100 p-4 rounded-lg border border-blue-200">' +
@@ -1152,22 +1239,20 @@
     }, 3000);
   }
 
-  // 添加CSS动画
-  $('<style>')
-    .prop('type', 'text/css')
-    .html(`
-      @keyframes slideInUp {
-        from {
-          opacity: 0;
-          transform: translateY(30px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-    `)
-    .appendTo('head');
+  // 页面初始化函数
+  function initializePage() {
+    // 加载报警学生信息
+    loadAlarmContacts();
+    
+    // 加载统计数据
+    loadStatistics();
+    
+    // 加载通知列表
+    loadNotifications();
+    
+    // 加载晚归记录
+    loadLateReturns();
+  }
 </script>
 
 

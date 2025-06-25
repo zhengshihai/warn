@@ -116,7 +116,8 @@
                             console.log('用户角色:', response.data.role);
                             console.log('职业角色:', response.data.job_role);
                             console.log('用户数据:', response.data);
-                            
+
+
                             // 登录成功，根据角色跳转到不同页面
                             switch(response.data.role) {
                                 case 'student':
@@ -166,7 +167,7 @@
                     error: function(xhr, status, error) {
                         console.error('登录请求失败:', error);  // 添加调试日志
                         // 显示错误信息
-                        $('#error-message').text('服务器错误，请稍后重试').removeClass('hidden');
+                        $('#error-message').text('登录失败，请检查您的账号密码是否正确，或稍后重试').removeClass('hidden');
                     }
                 });
             });

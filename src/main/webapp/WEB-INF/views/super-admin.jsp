@@ -6,12 +6,7 @@
 <html>
 <head>
     <title>学生晚归预警系统 - 超级管理员</title>
-<%--    <link href="https://cdn.bootcdn.net/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">--%>
-<%--    <link href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">--%>
-<%--    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">--%>
-<%--    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.10.2/dist/umd/popper.min.js"></script>--%>
-<%--    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.min.js"></script>--%>
-<%--    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>--%>
+
     <!-- 引入 CSS 文件 -->
     <link href="${pageContext.request.contextPath}/static/css/tailwind.min.css" rel="stylesheet">
     <link href="${pageContext.request.contextPath}/static/css/fontawesome.min.css" rel="stylesheet">
@@ -38,6 +33,22 @@
             color: #3b82f6;
             border-color: #3b82f6;
         }
+        /* 新增：表格字体缩小，横向滚动 */
+        .table-responsive {
+            overflow-x: auto;
+        }
+        .table {
+            font-size: 14px;
+            white-space: nowrap;
+        }
+        .table th, .table td {
+            vertical-align: middle;
+            text-align: center;
+        }
+        .table thead th {
+            background-color: #f8fafc;
+            font-weight: 600;
+        }
     </style>
 </head>
 <body>
@@ -49,460 +60,573 @@
                 <div class="flex items-center space-x-4">
                     <span class="text-gray-600">欢迎，${sessionScope.user.name}（超级管理员）</span>
                     <button class="text-sm text-blue-600 hover:text-blue-800" data-bs-toggle="modal" data-bs-target="#editProfileModal">修改个人信息</button>
-                    <button class="text-sm text-red-600 hover:text-red-800" onclick="handleLogout()">退出登录</button>
+                    <button class="text-sm text-red-600 hover:text-red-800" onclick="handleLogout()" >退出登录</button>
                 </div>
             </div>
         </nav>
 
-        <!-- 主要内容区域 -->
-        <div class="card p-6">
-            <!-- 标签页导航 -->
-            <ul class="nav nav-tabs mb-4" id="adminTabs" role="tablist">
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link active" id="users-tab" data-bs-toggle="tab" data-bs-target="#users" type="button" role="tab">用户管理</button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="logs-tab" data-bs-toggle="tab" data-bs-target="#logs" type="button" role="tab">操作日志</button>
-                </li>
-            </ul>
-
-            <!-- 标签页内容 -->
-            <div class="tab-content" id="adminTabsContent">
-                <!-- 用户管理标签页 -->
-                <div class="tab-pane fade show active" id="users" role="tabpanel">
-                    <div class="mb-4 flex justify-between items-center">
-                        <h3 class="text-lg font-medium text-gray-900">用户列表</h3>
-                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addUserModal">
-                            <i class="fas fa-plus"></i> 添加用户
-                        </button>
-                    </div>
-                    
-                    <!-- 用户搜索和筛选 -->
-                    <div class="mb-4 grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div class="col-span-2">
-                            <input type="text" class="form-control" placeholder="搜索用户..." id="userSearch">
-                        </div>
-                        <div>
-                            <select class="form-select" id="userRole">
-                                <option value="">所有角色</option>
-                                <option value="ADMIN">管理员</option>
-                                <option value="STAFF">工作人员</option>
-                                <option value="USER">普通用户</option>
-                            </select>
-                        </div>
-                        <div>
-                            <select class="form-select" id="userStatus">
-                                <option value="">所有状态</option>
-                                <option value="ACTIVE">正常</option>
-                                <option value="INACTIVE">禁用</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <!-- 用户列表表格 -->
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>用户名</th>
-                                    <th>姓名</th>
-                                    <th>角色</th>
-                                    <th>状态</th>
-                                    <th>最后登录</th>
-                                    <th>操作</th>
-                                </tr>
-                            </thead>
-                            <tbody id="userTableBody">
-                                <!-- 用户数据将通过JavaScript动态加载 -->
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <!-- 分页控件 -->
-                    <div class="d-flex justify-content-between align-items-center mt-4">
-                        <div class="text-sm text-gray-500">
-                            显示 <span id="startRecord">1</span> 到 <span id="endRecord">10</span> 条，共 <span id="totalRecords">100</span> 条记录
-                        </div>
-                        <nav>
-                            <ul class="pagination">
-                                <li class="page-item"><a class="page-link" href="#">上一页</a></li>
-                                <li class="page-item active"><a class="page-link" href="#">1</a></li>
-                                <li class="page-item"><a class="page-link" href="#">2</a></li>
-                                <li class="page-item"><a class="page-link" href="#">3</a></li>
-                                <li class="page-item"><a class="page-link" href="#">下一页</a></li>
-                            </ul>
-                        </nav>
-                    </div>
+        <!-- 学生列表内容区域 -->
+        <div class="card p-6 mb-6">
+            <div class="mb-4 flex justify-between items-center">
+                <h3 class="text-lg font-medium text-gray-900">学生列表</h3>
+                <div>
+                    <input type="text" id="studentSearch" class="form-control d-inline-block w-auto" placeholder="搜索姓名...">
+                    <button class="btn btn-primary ml-2" id="searchStudentBtn">搜索</button>
                 </div>
-
-                <!-- 操作日志标签页 -->
-                <div class="tab-pane fade" id="logs" role="tabpanel">
-                    <div class="mb-4">
-                        <h3 class="text-lg font-medium text-gray-900">操作日志</h3>
-                    </div>
-
-                    <!-- 日志筛选 -->
-                    <div class="mb-4 grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div class="col-span-2">
-                            <input type="text" class="form-control" placeholder="搜索操作内容..." id="logSearch">
-                        </div>
-                        <div>
-                            <select class="form-select" id="logType">
-                                <option value="">所有类型</option>
-                                <option value="LOGIN">登录</option>
-                                <option value="CREATE">创建</option>
-                                <option value="UPDATE">更新</option>
-                                <option value="DELETE">删除</option>
-                            </select>
-                        </div>
-                        <div>
-                            <input type="date" class="form-control" id="logDate">
-                        </div>
-                    </div>
-
-                    <!-- 日志列表表格 -->
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>时间</th>
-                                    <th>用户</th>
-                                    <th>操作类型</th>
-                                    <th>操作内容</th>
-                                    <th>IP地址</th>
-                                </tr>
-                            </thead>
-                            <tbody id="logTableBody">
-                                <!-- 日志数据将通过JavaScript动态加载 -->
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <!-- 分页控件 -->
-                    <div class="d-flex justify-content-between align-items-center mt-4">
-                        <div class="text-sm text-gray-500">
-                            显示 <span id="logStartRecord">1</span> 到 <span id="logEndRecord">10</span> 条，共 <span id="logTotalRecords">100</span> 条记录
-                        </div>
-                        <nav>
-                            <ul class="pagination">
-                                <li class="page-item"><a class="page-link" href="#">上一页</a></li>
-                                <li class="page-item active"><a class="page-link" href="#">1</a></li>
-                                <li class="page-item"><a class="page-link" href="#">2</a></li>
-                                <li class="page-item"><a class="page-link" href="#">3</a></li>
-                                <li class="page-item"><a class="page-link" href="#">下一页</a></li>
-                            </ul>
-                        </nav>
-                    </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover table-striped table-bordered align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>学号</th>
+                            <th>姓名</th>
+                            <th>学院</th>
+                            <th>班级</th>
+                            <th>宿舍</th>
+                            <th>邮箱</th>
+                            <th>电话</th>
+                            <th>父亲姓名</th>
+                            <th>父亲电话</th>
+                            <th>母亲姓名</th>
+                            <th>母亲电话</th>
+                            <th>创建时间</th>
+                            <th>更新时间</th>
+                            <th>最后登录时间</th>
+                            <th style="min-width:120px;">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="studentTableBody">
+                        <!-- 学生数据将通过JS动态加载 -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="d-flex justify-content-between align-items-center mt-4">
+                <div class="text-sm text-gray-500">
+                    显示 <span id="studentStartRecord">1</span> 到 <span id="studentEndRecord">10</span> 条，共 <span id="studentTotalRecords">0</span> 条记录
                 </div>
+                <nav>
+                    <ul class="pagination" id="studentPagination">
+                        <!-- 分页按钮JS生成 -->
+                    </ul>
+                </nav>
+            </div>
+        </div>
+
+        <!-- 班级管理员列表内容区域 -->
+        <div class="card p-6 mb-6">
+            <div class="mb-4 flex justify-between items-center">
+                <h3 class="text-lg font-medium text-gray-900">班级管理员列表</h3>
+                <div>
+                    <input type="text" id="sysUserSearch" class="form-control d-inline-block w-auto" placeholder="搜索姓名...">
+                    <button class="btn btn-primary ml-2" id="searchSysUserBtn">搜索</button>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover table-striped table-bordered align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>工号</th>
+                            <th>姓名</th>
+                            <th>电话</th>
+                            <th>邮箱</th>
+                            <th>职位角色</th>
+                            <th>状态</th>
+                            <th>最后登录时间</th>
+                            <th>创建时间</th>
+                            <th>更新时间</th>
+                            <th style="min-width:160px;">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="sysUserTableBody">
+                        <!-- 班级管理员数据将通过JS动态加载 -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="d-flex justify-content-between align-items-center mt-4">
+                <div class="text-sm text-gray-500">
+                    显示 <span id="sysUserStartRecord">1</span> 到 <span id="sysUserEndRecord">10</span> 条，共 <span id="sysUserTotalRecords">0</span> 条记录
+                </div>
+                <nav>
+                    <ul class="pagination" id="sysUserPagination">
+                        <!-- 分页按钮JS生成 -->
+                    </ul>
+                </nav>
+            </div>
+        </div>
+
+        <!-- 超级管理员列表内容区域 -->
+        <div class="card p-6 mb-6">
+            <div class="mb-4 flex justify-between items-center">
+                <h3 class="text-lg font-medium text-gray-900">超级管理员列表</h3>
+                <div>
+                    <input type="text" id="superAdminSearch" class="form-control d-inline-block w-auto" placeholder="搜索姓名...">
+                    <button class="btn btn-primary ml-2" id="searchSuperAdminBtn">搜索</button>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover table-striped table-bordered align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>姓名</th>
+                            <th>邮箱</th>
+                            <th>状态</th>
+                            <th>创建时间</th>
+                            <th>更新时间</th>
+                            <th>最后登录时间</th>
+                            <th>版本号</th>
+                            <th style="min-width:160px;">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="superAdminTableBody">
+                        <!-- 超级管理员数据将通过JS动态加载 -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="d-flex justify-content-between align-items-center mt-4">
+                <div class="text-sm text-gray-500">
+                    显示 <span id="superAdminStartRecord">1</span> 到 <span id="superAdminEndRecord">10</span> 条，共 <span id="superAdminTotalRecords">0</span> 条记录
+                </div>
+                <nav>
+                    <ul class="pagination" id="superAdminPagination">
+                        <!-- 分页按钮JS生成 -->
+                    </ul>
+                </nav>
             </div>
         </div>
     </div>
 
-    <!-- 添加用户模态框 -->
-    <div class="modal fade" id="addUserModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">添加新用户</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="addUserForm">
-                        <div class="mb-3">
-                            <label class="form-label">用户名</label>
-                            <input type="text" class="form-control" name="username" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">姓名</label>
-                            <input type="text" class="form-control" name="name" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">密码</label>
-                            <input type="password" class="form-control" name="password" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">角色</label>
-                            <select class="form-select" name="role" required>
-                                <option value="ADMIN">管理员</option>
-                                <option value="STAFF">工作人员</option>
-                                <option value="USER">普通用户</option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">邮箱</label>
-                            <input type="email" class="form-control" name="email" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">手机号</label>
-                            <input type="tel" class="form-control" name="phone" required>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                    <button type="button" class="btn btn-primary" id="saveUserBtn">保存</button>
-                </div>
+    <!-- 修改个人信息模态框 -->
+    <div class="modal fade" id="editProfileModal" tabindex="-1" aria-labelledby="editProfileModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <form id="editProfileForm">
+            <div class="modal-header">
+              <h5 class="modal-title" id="editProfileModalLabel">修改个人信息</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="关闭"></button>
             </div>
-        </div>
-    </div>
-
-    <!-- 编辑用户模态框 -->
-    <div class="modal fade" id="editUserModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">编辑用户</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="editUserForm">
-                        <input type="hidden" name="userId">
-                        <div class="mb-3">
-                            <label class="form-label">用户名</label>
-                            <input type="text" class="form-control" name="username" readonly>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">姓名</label>
-                            <input type="text" class="form-control" name="name" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">角色</label>
-                            <select class="form-select" name="role" required>
-                                <option value="ADMIN">管理员</option>
-                                <option value="STAFF">工作人员</option>
-                                <option value="USER">普通用户</option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">状态</label>
-                            <select class="form-select" name="status" required>
-                                <option value="ACTIVE">正常</option>
-                                <option value="INACTIVE">禁用</option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">邮箱</label>
-                            <input type="email" class="form-control" name="email" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">手机号</label>
-                            <input type="tel" class="form-control" name="phone" required>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                    <button type="button" class="btn btn-primary" id="updateUserBtn">更新</button>
-                </div>
+            <div class="modal-body">
+              <div class="mb-3">
+                <label for="editName" class="form-label">姓名</label>
+                <input type="text" class="form-control" id="editName" name="name" required>
+              </div>
+              <div class="mb-3">
+                <label for="editEmail" class="form-label">邮箱</label>
+                <input type="email" class="form-control" id="editEmail" name="email" required>
+              </div>
+              <div class="mb-3">
+                <label for="editPassword" class="form-label">新密码</label>
+                <input type="password" class="form-control" id="editPassword" name="password" placeholder="如不修改请留空">
+              </div>
             </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+              <button type="submit" class="btn btn-primary">保存修改</button>
+            </div>
+          </form>
         </div>
+      </div>
     </div>
 
     <script>
-        // 页面加载完成后执行
-        $(document).ready(function() {
-            // 加载用户列表
-            loadUsers();
-            // 加载操作日志
-            loadLogs();
-
-            // 用户搜索和筛选事件
-            $('#userSearch, #userRole, #userStatus').on('change keyup', function() {
-                loadUsers();
-            });
-
-            // 日志搜索和筛选事件
-            $('#logSearch, #logType, #logDate').on('change keyup', function() {
-                loadLogs();
-            });
-
-            // 保存新用户
-            $('#saveUserBtn').click(function() {
-                const formData = $('#addUserForm').serialize();
-                $.ajax({
-                    url: '${pageContext.request.contextPath}/admin/users',
-                    type: 'POST',
-                    data: formData,
-                    success: function(response) {
-                        $('#addUserModal').modal('hide');
-                        loadUsers();
-                        showToast('用户添加成功');
-                    },
-                    error: function(xhr) {
-                        showToast('添加失败：' + xhr.responseText, 'error');
-                    }
-                });
-            });
-
-            // 更新用户信息
-            $('#updateUserBtn').click(function() {
-                const formData = $('#editUserForm').serialize();
-                $.ajax({
-                    url: '${pageContext.request.contextPath}/admin/users',
-                    type: 'PUT',
-                    data: formData,
-                    success: function(response) {
-                        $('#editUserModal').modal('hide');
-                        loadUsers();
-                        showToast('用户更新成功');
-                    },
-                    error: function(xhr) {
-                        showToast('更新失败：' + xhr.responseText, 'error');
-                    }
-                });
-            });
-        });
-
-        // 加载用户列表
-        function loadUsers() {
-            const searchParams = {
-                search: $('#userSearch').val(),
-                role: $('#userRole').val(),
-                status: $('#userStatus').val()
-            };
-
-            $.ajax({
-                url: '${pageContext.request.contextPath}/admin/users',
-                type: 'GET',
-                data: searchParams,
-                success: function(response) {
-                    updateUserTable(response);
-                },
-                error: function(xhr) {
-                    showToast('加载用户列表失败：' + xhr.responseText, 'error');
-                }
-            });
+        function formatDate(dateStr) {
+            if (!dateStr) return '-';
+            // 兼容 yyyy-MM-dd HH:mm:ss 格式
+            // 替换为 yyyy/MM/dd HH:mm:ss，保证所有浏览器都能解析
+            var safeStr = dateStr.replace(/-/g, '/');
+            var d = new Date(safeStr);
+            if (isNaN(d.getTime())) return dateStr; // 解析失败就原样返回
+            var y = d.getFullYear();
+            var m = ('0' + (d.getMonth() + 1)).slice(-2);
+            var day = ('0' + d.getDate()).slice(-2);
+            var h = ('0' + d.getHours()).slice(-2);
+            var min = ('0' + d.getMinutes()).slice(-2);
+            var s = ('0' + d.getSeconds()).slice(-2);
+            return y + '-' + m + '-' + day + ' ' + h + ':' + min + ':' + s;
         }
 
-        // 加载操作日志
-        function loadLogs() {
-            const searchParams = {
-                search: $('#logSearch').val(),
-                type: $('#logType').val(),
-                date: $('#logDate').val()
-            };
-
-            $.ajax({
-                url: '${pageContext.request.contextPath}/admin/logs',
-                type: 'GET',
-                data: searchParams,
-                success: function(response) {
-                    updateLogTable(response);
-                },
-                error: function(xhr) {
-                    showToast('加载操作日志失败：' + xhr.responseText, 'error');
-                }
-            });
-        }
-
-        // 更新用户表格
-        function updateUserTable(data) {
-            const tbody = $('#userTableBody');
-            tbody.empty();
-
-            data.users.forEach(user => {
-                tbody.append(`
-                    <tr>
-                        <td>${user.id}</td>
-                        <td>${user.username}</td>
-                        <td>${user.name}</td>
-                        <td>${user.role}</td>
-                        <td>
-                            <span class="badge ${user.status == 'ACTIVE' ? 'bg-success' : 'bg-danger'}">
-                                ${user.status == 'ACTIVE' ? '正常' : '禁用'}
-                            </span>
-                        </td>
-                        <td><fmt:formatDate value="${user.lastLoginTime}" pattern="yyyy-MM-dd HH:mm:ss"/></td>
-                        <td>
-                            <button class="btn btn-sm btn-primary" onclick="editUser(${user.id})">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="btn btn-sm btn-danger" onclick="deleteUser(${user.id})">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </td>
-                    </tr>
-                `);
-            });
-        }
-
-        // 更新日志表格
-        function updateLogTable(data) {
-            const tbody = $('#logTableBody');
-            tbody.empty();
-
-            data.logs.forEach(log => {
-                tbody.append(`
-                    <tr>
-                        <td>${formatDate(log.operationTime)}</td>
-                        <td>${log.username}</td>
-                        <td>${log.operationType}</td>
-                        <td>${log.operationContent}</td>
-                        <td>${log.ipAddress}</td>
-                    </tr>
-                `);
-            });
-        }
-
-        // 编辑用户
-        function editUser(userId) {
-            $.ajax({
-                url: '${pageContext.request.contextPath}/admin/users/' + userId,
-                type: 'GET',
-                success: function(user) {
-                    const form = $('#editUserForm');
-                    form.find('[name=userId]').val(user.id);
-                    form.find('[name=username]').val(user.username);
-                    form.find('[name=name]').val(user.name);
-                    form.find('[name=role]').val(user.role);
-                    form.find('[name=status]').val(user.status);
-                    form.find('[name=email]').val(user.email);
-                    form.find('[name=phone]').val(user.phone);
-                    $('#editUserModal').modal('show');
-                },
-                error: function(xhr) {
-                    showToast('获取用户信息失败：' + xhr.responseText, 'error');
-                }
-            });
-        }
-
-        // 删除用户
-        function deleteUser(userId) {
-            if (confirm('确定要删除这个用户吗？')) {
-                $.ajax({
-                    url: '${pageContext.request.contextPath}/admin/users/' + userId,
-                    type: 'DELETE',
-                    success: function() {
-                        loadUsers();
-                        showToast('用户删除成功');
-                    },
-                    error: function(xhr) {
-                        showToast('删除失败：' + xhr.responseText, 'error');
-                    }
-                });
-            }
-        }
-
-        // 格式化日期
-        function formatDate(dateString) {
-            if (!dateString) return '-';
-            const date = new Date(dateString);
-            return date.toLocaleString();
-        }
-
-        // 显示提示消息
-        function showToast(message, type = 'success') {
-            // 这里可以实现一个简单的提示消息显示功能
-            alert(message);
-        }
-
-        // 退出登录
         function handleLogout() {
             if (confirm('确定要退出登录吗？')) {
                 window.location.href = '${pageContext.request.contextPath}/logout';
             }
         }
+        
+        $(document).ready(function() {
+            // 填充当前信息
+            $('#editProfileModal').on('show.bs.modal', function () {
+                $('#editName').val('${sessionScope.user.name}');
+                $('#editEmail').val('${sessionScope.user.email}');
+                $('#editPassword').val('');
+            });
+
+            // 表单提交
+            $('#editProfileForm').on('submit', function(e) {
+                e.preventDefault();
+                var formData = {
+                    name: $('#editName').val(),
+                    email: $('#editEmail').val(),
+                    password: $('#editPassword').val()
+                };
+                $.ajax({
+                    url: '${pageContext.request.contextPath}/super-admin/update/per-info',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(formData),
+                    success: function(response) {
+                        if (response.success) {
+                            $('#editProfileModal').modal('hide');
+                            alert('修改成功，请重新登录或刷新页面！');
+                            location.reload();
+                        } else {
+                            alert('修改失败：' + (response.message || '未知错误'));
+                        }
+                    },
+                    error: function(xhr) {
+                        alert('请求失败：' + (xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : '服务器错误'));
+                    }
+                });
+            });
+
+            // 学生列表相关
+            var studentPageNum = 1;
+            var studentPageSize = 10;
+            function loadStudentList(pageNum) {
+                pageNum = pageNum || 1;
+                var nameLike = $('#studentSearch').val();
+                $.ajax({
+                    url: '${pageContext.request.contextPath}/student/page-list',
+                    type: 'GET',
+                    data: {
+                        pageNum: pageNum,
+                        pageSize: studentPageSize,
+                        nameLike: nameLike
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            // 兼容Result<PageResult<Student>>结构
+                            var pageData = response.data && response.data.data ? response.data : response.data;
+                            var students = pageData.data || [];
+                            var total = pageData.total || 0;
+                            var pageNum = pageData.pageNum || 1;
+                            var pageSize = pageData.pageSize || 10;
+                            updateStudentTable(students);
+                            updateStudentPagination(pageNum, pageSize, total);
+                        } else {
+                            $('#studentTableBody').html('<tr><td colspan="16">加载失败：' + (response.message || '未知错误') + '</td></tr>');
+                        }
+                    },
+                    error: function(xhr) {
+                        $('#studentTableBody').html('<tr><td colspan="16">请求失败</td></tr>');
+                    }
+                });
+            }
+            function updateStudentTable(students) {
+                var tbody = $('#studentTableBody');
+                tbody.empty();
+                if (!students || students.length === 0) {
+                    tbody.append('<tr><td colspan="16" class="text-center">暂无数据</td></tr>');
+                    return;
+                }
+                students.forEach(function(stu) {
+                    tbody.append('<tr>' +
+                        '<td>' + (stu.id || '-') + '</td>' +
+                        '<td>' + (stu.studentNo || '-') + '</td>' +
+                        '<td>' + (stu.name || '-') + '</td>' +
+                        '<td>' + (stu.college || '-') + '</td>' +
+                        '<td>' + (stu.className || '-') + '</td>' +
+                        '<td>' + (stu.dormitory || '-') + '</td>' +
+                        '<td>' + (stu.email || '-') + '</td>' +
+                        '<td>' + (stu.phone || '-') + '</td>' +
+                        '<td>' + (stu.fatherName || '-') + '</td>' +
+                        '<td>' + (stu.fatherPhone || '-') + '</td>' +
+                        '<td>' + (stu.motherName || '-') + '</td>' +
+                        '<td>' + (stu.motherPhone || '-') + '</td>' +
+                        '<td>' + (stu.createTime ? formatDate(stu.createTime) : '-') + '</td>' +
+                        '<td>' + (stu.updateTime ? formatDate(stu.updateTime) : '-') + '</td>' +
+                        '<td>' + (stu.lastLoginTime ? formatDate(stu.lastLoginTime) : '-') + '</td>' +
+                        '<td>' +
+                            '<button class="btn btn-sm btn-primary me-2 edit-student-btn" data-id="' + (stu.id || '') + '">修改</button>' +
+                            '<button class="btn btn-sm btn-danger delete-student-btn" data-id="' + (stu.id || '') + '">删除</button>' +
+                        '</td>' +
+                    '</tr>');
+                });
+            }
+            function updateStudentPagination(pageNum, pageSize, total) {
+                var start = (total === 0) ? 0 : ((pageNum - 1) * pageSize + 1);
+                var end = Math.min(pageNum * pageSize, total);
+                $('#studentStartRecord').text(start);
+                $('#studentEndRecord').text(end);
+                $('#studentTotalRecords').text(total);
+                var totalPages = Math.ceil(total / pageSize);
+                var pagin = $('#studentPagination');
+                pagin.empty();
+                if (totalPages <= 1) return;
+                // 上一页
+                pagin.append('<li class="page-item' + (pageNum === 1 ? ' disabled' : '') + '"><a class="page-link" href="#" data-page="' + (pageNum - 1) + '">上一页</a></li>');
+                for (var i = 1; i <= totalPages; i++) {
+                    pagin.append('<li class="page-item' + (i === pageNum ? ' active' : '') + '"><a class="page-link" href="#" data-page="' + i + '">' + i + '</a></li>');
+                }
+                // 下一页
+                pagin.append('<li class="page-item' + (pageNum === totalPages ? ' disabled' : '') + '"><a class="page-link" href="#" data-page="' + (pageNum + 1) + '">下一页</a></li>');
+            }
+            // 分页点击
+            $(document).on('click', '#studentPagination .page-link', function(e) {
+                e.preventDefault();
+                var page = parseInt($(this).data('page'));
+                if (!isNaN(page)) {
+                    studentPageNum = page;
+                    loadStudentList(studentPageNum);
+                }
+            });
+            // 搜索按钮
+            $('#searchStudentBtn').on('click', function() {
+                studentPageNum = 1;
+                loadStudentList(studentPageNum);
+            });
+            // 页面加载时自动加载第一页
+            loadStudentList(1);
+
+            // 编辑按钮事件
+            $(document).on('click', '.edit-student-btn', function() {
+                var studentId = $(this).data('id');
+                // TODO: 打开编辑模态框，填充学生信息
+                alert('点击了修改，学生ID: ' + studentId);
+            });
+            // 删除按钮事件
+            $(document).on('click', '.delete-student-btn', function() {
+                var studentId = $(this).data('id');
+                if (confirm('确定要删除该学生吗？')) {
+                    // TODO: 发送删除请求
+                    alert('已确认删除，学生ID: ' + studentId);
+                }
+            });
+
+            // 班级管理员列表相关
+            var sysUserPageNum = 1;
+            var sysUserPageSize = 10;
+            function loadSysUserList(pageNum) {
+                pageNum = pageNum || 1;
+                var nameLike = $('#sysUserSearch').val();
+                $.ajax({
+                    url: '${pageContext.request.contextPath}/sysuser/page-list',
+                    type: 'GET',
+                    data: {
+                        pageNum: pageNum,
+                        pageSize: sysUserPageSize,
+                        nameLike: nameLike
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            var pageData = response.data && response.data.data ? response.data : response.data;
+                            var sysUsers = pageData.data || [];
+                            var total = pageData.total || 0;
+                            var pageNum = pageData.pageNum || 1;
+                            var pageSize = pageData.pageSize || 10;
+                            updateSysUserTable(sysUsers);
+                            updateSysUserPagination(pageNum, pageSize, total);
+                        } else {
+                            $('#sysUserTableBody').html('<tr><td colspan="11">加载失败：' + (response.message || '未知错误') + '</td></tr>');
+                        }
+                    },
+                    error: function(xhr) {
+                        $('#sysUserTableBody').html('<tr><td colspan="11">请求失败</td></tr>');
+                    }
+                });
+            }
+            function updateSysUserTable(sysUsers) {
+                var tbody = $('#sysUserTableBody');
+                tbody.empty();
+                if (!sysUsers || sysUsers.length === 0) {
+                    tbody.append('<tr><td colspan="11" class="text-center">暂无数据</td></tr>');
+                    return;
+                }
+                sysUsers.forEach(function(user) {
+                    var statusBadge = user.status === 'ENABLE' || user.status === '启用' ? '<span class="badge bg-success">启用</span>' : '<span class="badge bg-secondary">禁用</span>';
+                    var toggleBtnText = (user.status === 'ENABLE' || user.status === '启用') ? '禁用' : '启用';
+                    tbody.append('<tr>' +
+                        '<td>' + (user.id || '-') + '</td>' +
+                        '<td>' + (user.sysUserNo || '-') + '</td>' +
+                        '<td>' + (user.name || '-') + '</td>' +
+                        '<td>' + (user.phone || '-') + '</td>' +
+                        '<td>' + (user.email || '-') + '</td>' +
+                        '<td>' + (user.jobRole || '-') + '</td>' +
+                        '<td>' + statusBadge + '</td>' +
+                        '<td>' + (user.lastLoginTime ? formatDate(user.lastLoginTime) : '-') + '</td>' +
+                        '<td>' + (user.createTime ? formatDate(user.createTime) : '-') + '</td>' +
+                        '<td>' + (user.updateTime ? formatDate(user.updateTime) : '-') + '</td>' +
+                        '<td>' +
+                            '<button class="btn btn-sm btn-primary me-2 edit-sysuser-btn" data-id="' + (user.id || '') + '">修改</button>' +
+                            '<button class="btn btn-sm btn-danger me-2 delete-sysuser-btn" data-id="' + (user.id || '') + '">删除</button>' +
+                            '<button class="btn btn-sm btn-warning toggle-sysuser-btn" data-id="' + (user.id || '') + '">' + toggleBtnText + '</button>' +
+                        '</td>' +
+                    '</tr>');
+                });
+            }
+            function updateSysUserPagination(pageNum, pageSize, total) {
+                var start = (total === 0) ? 0 : ((pageNum - 1) * pageSize + 1);
+                var end = Math.min(pageNum * pageSize, total);
+                $('#sysUserStartRecord').text(start);
+                $('#sysUserEndRecord').text(end);
+                $('#sysUserTotalRecords').text(total);
+                var totalPages = Math.ceil(total / pageSize);
+                var pagin = $('#sysUserPagination');
+                pagin.empty();
+                if (totalPages <= 1) return;
+                pagin.append('<li class="page-item' + (pageNum === 1 ? ' disabled' : '') + '"><a class="page-link" href="#" data-page="' + (pageNum - 1) + '">上一页</a></li>');
+                for (var i = 1; i <= totalPages; i++) {
+                    pagin.append('<li class="page-item' + (i === pageNum ? ' active' : '') + '"><a class="page-link" href="#" data-page="' + i + '">' + i + '</a></li>');
+                }
+                pagin.append('<li class="page-item' + (pageNum === totalPages ? ' disabled' : '') + '"><a class="page-link" href="#" data-page="' + (pageNum + 1) + '">下一页</a></li>');
+            }
+            // 分页点击
+            $(document).on('click', '#sysUserPagination .page-link', function(e) {
+                e.preventDefault();
+                var page = parseInt($(this).data('page'));
+                if (!isNaN(page)) {
+                    sysUserPageNum = page;
+                    loadSysUserList(sysUserPageNum);
+                }
+            });
+            // 搜索按钮
+            $('#searchSysUserBtn').on('click', function() {
+                sysUserPageNum = 1;
+                loadSysUserList(sysUserPageNum);
+            });
+            // 页面加载时自动加载第一页
+            loadSysUserList(1);
+            // 操作按钮事件
+            $(document).on('click', '.edit-sysuser-btn', function() {
+                var id = $(this).data('id');
+                alert('点击了修改，班级管理员ID: ' + id);
+            });
+            $(document).on('click', '.delete-sysuser-btn', function() {
+                var id = $(this).data('id');
+                if (confirm('确定要删除该班级管理员吗？')) {
+                    alert('已确认删除，班级管理员ID: ' + id);
+                }
+            });
+            $(document).on('click', '.toggle-sysuser-btn', function() {
+                var id = $(this).data('id');
+                alert('点击了启用/禁用，班级管理员ID: ' + id);
+            });
+
+            // 超级管理员列表相关
+            var superAdminPageNum = 1;
+            var superAdminPageSize = 10;
+            function loadSuperAdminList(pageNum) {
+                pageNum = pageNum || 1;
+                var nameLike = $('#superAdminSearch').val();
+                $.ajax({
+                    url: '${pageContext.request.contextPath}/super-admin/page-list',
+                    type: 'GET',
+                    data: {
+                        pageNum: pageNum,
+                        pageSize: superAdminPageSize,
+                        nameLike: nameLike
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            var pageData = response.data && response.data.data ? response.data : response.data;
+                            var superAdmins = pageData.data || [];
+                            var total = pageData.total || 0;
+                            var pageNum = pageData.pageNum || 1;
+                            var pageSize = pageData.pageSize || 10;
+                            updateSuperAdminTable(superAdmins);
+                            updateSuperAdminPagination(pageNum, pageSize, total);
+                        } else {
+                            $('#superAdminTableBody').html('<tr><td colspan="9">加载失败：' + (response.message || '未知错误') + '</td></tr>');
+                        }
+                    },
+                    error: function(xhr) {
+                        $('#superAdminTableBody').html('<tr><td colspan="9">请求失败</td></tr>');
+                    }
+                });
+            }
+            function updateSuperAdminTable(superAdmins) {
+                var tbody = $('#superAdminTableBody');
+                tbody.empty();
+                if (!superAdmins || superAdmins.length === 0) {
+                    tbody.append('<tr><td colspan="9" class="text-center">暂无数据</td></tr>');
+                    return;
+                }
+                superAdmins.forEach(function(admin) {
+                    var statusBadge = admin.enabled === 1 ? '<span class="badge bg-success">启用</span>' : '<span class="badge bg-secondary">禁用</span>';
+                    var toggleBtnText = admin.enabled === 1 ? '禁用' : '启用';
+                    tbody.append('<tr>' +
+                        '<td>' + (admin.id || '-') + '</td>' +
+                        '<td>' + (admin.name || '-') + '</td>' +
+                        '<td>' + (admin.email || '-') + '</td>' +
+                        '<td>' + statusBadge + '</td>' +
+                        '<td>' + (admin.createTime ? formatDate(admin.createTime) : '-') + '</td>' +
+                        '<td>' + (admin.updateTime ? formatDate(admin.updateTime) : '-') + '</td>' +
+                        '<td>' + (admin.lastLoginTime ? formatDate(admin.lastLoginTime) : '-') + '</td>' +
+                        '<td>' + (admin.version != null ? admin.version : '-') + '</td>' +
+                        '<td>' +
+                            '<button class="btn btn-sm btn-primary me-2 edit-superadmin-btn" data-id="' + (admin.id || '') + '">修改</button>' +
+                            '<button class="btn btn-sm btn-danger me-2 delete-superadmin-btn" data-id="' + (admin.id || '') + '">删除</button>' +
+                            '<button class="btn btn-sm btn-warning toggle-superadmin-btn" data-id="' + (admin.id || '') + '">' + toggleBtnText + '</button>' +
+                        '</td>' +
+                    '</tr>');
+                });
+            }
+            function updateSuperAdminPagination(pageNum, pageSize, total) {
+                var start = (total === 0) ? 0 : ((pageNum - 1) * pageSize + 1);
+                var end = Math.min(pageNum * pageSize, total);
+                $('#superAdminStartRecord').text(start);
+                $('#superAdminEndRecord').text(end);
+                $('#superAdminTotalRecords').text(total);
+                var totalPages = Math.ceil(total / pageSize);
+                var pagin = $('#superAdminPagination');
+                pagin.empty();
+                if (totalPages <= 1) return;
+                pagin.append('<li class="page-item' + (pageNum === 1 ? ' disabled' : '') + '"><a class="page-link" href="#" data-page="' + (pageNum - 1) + '">上一页</a></li>');
+                for (var i = 1; i <= totalPages; i++) {
+                    pagin.append('<li class="page-item' + (i === pageNum ? ' active' : '') + '"><a class="page-link" href="#" data-page="' + i + '">' + i + '</a></li>');
+                }
+                pagin.append('<li class="page-item' + (pageNum === totalPages ? ' disabled' : '') + '"><a class="page-link" href="#" data-page="' + (pageNum + 1) + '">下一页</a></li>');
+            }
+            // 分页点击
+            $(document).on('click', '#superAdminPagination .page-link', function(e) {
+                e.preventDefault();
+                var page = parseInt($(this).data('page'));
+                if (!isNaN(page)) {
+                    superAdminPageNum = page;
+                    loadSuperAdminList(superAdminPageNum);
+                }
+            });
+            // 搜索按钮
+            $('#searchSuperAdminBtn').on('click', function() {
+                superAdminPageNum = 1;
+                loadSuperAdminList(superAdminPageNum);
+            });
+            // 页面加载时自动加载第一页
+            loadSuperAdminList(1);
+            // 操作按钮事件
+            $(document).on('click', '.edit-superadmin-btn', function() {
+                var id = $(this).data('id');
+                alert('点击了修改，超级管理员ID: ' + id);
+            });
+            $(document).on('click', '.delete-superadmin-btn', function() {
+                var id = $(this).data('id');
+                if (confirm('确定要删除该超级管理员吗？')) {
+                    alert('已确认删除，超级管理员ID: ' + id);
+                }
+            });
+            $(document).on('click', '.toggle-superadmin-btn', function() {
+                var id = $(this).data('id');
+                alert('点击了启用/禁用，超级管理员ID: ' + id);
+            });
+        });
     </script>
+
+    <!-- 非Ajax形式请求的错误弹框提示 -->
+    <c:if test="${not empty sessionScope.errorMsg}">
+        <script>
+            alert("${fn:escapeXml(sessionScope.errorMsg)}");
+        </script>
+        <c:remove var="errorMsg" scope="session" />
+    </c:if>
 </body>
 </html> 
