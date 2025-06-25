@@ -1,12 +1,15 @@
 package com.tianhai.warn.query;
 
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.io.Serial;
 import java.io.Serializable;
 
-@Getter
-@Setter
+@Data
+@SuperBuilder
+@NoArgsConstructor
+@AllArgsConstructor
 public class BaseQuery implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
@@ -17,6 +20,5 @@ public class BaseQuery implements Serializable {
     private Integer pageSize = 10;
 
     private Boolean allowFullUpdate; // 是否允许全量更新
-
 
 }

@@ -128,7 +128,7 @@ public class VerificationServiceImpl implements VerificationService {
 
     /**
      * 检查注册频率限制
-     * 限制同一会话在60秒内最多进行3次注册操作
+     * 限制同一会话在60秒内最多进行20次注册操作
      * @param sessionId 会话ID
      * @param businessType 业务类型
      * @return 检查结果
@@ -139,8 +139,8 @@ public class VerificationServiceImpl implements VerificationService {
         String countStr = (String) redisTemplate.opsForHash().get(hashKey, sessionId);
         int count = countStr != null ? Integer.parseInt(countStr) : 0;
 
-        // 检查是否超过限制（3次）
-        if (count >= 5) {
+        // 检查是否超过限制（20次）
+        if (count >= 20) {
             return Result.error("操作过于频繁，请稍后再试");
         }
 

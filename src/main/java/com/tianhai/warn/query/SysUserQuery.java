@@ -6,14 +6,14 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.experimental.SuperBuilder;
 
 import java.util.List;
 
-@Getter
-@Setter
-@Builder
-@NoArgsConstructor
+@Data
+@SuperBuilder
 @AllArgsConstructor
+@NoArgsConstructor
 public class SysUserQuery extends BaseQuery {
 
     private Integer id;
@@ -31,21 +31,4 @@ public class SysUserQuery extends BaseQuery {
     private List<String> emails; // 邮箱批量查询
     private List<String> jobRoles; // 多种职位角色查询
 
-    @Override
-    public String toString() {
-        return "SysUserQuery{" +
-                "id=" + id +
-                ", name='" + name + '\'' +
-                ", sysUserNo='" + sysUserNo + '\'' +
-                ", phone='" + phone + '\'' +
-                ", email='" + email + '\'' +
-                ", jobRole='" + jobRole + '\'' +
-                ", status='" + status + '\'' +
-                ", nameLike='" + nameLike + '\'' +
-                ", ids=" + ids +
-                ", sysUserNos=" + sysUserNos +
-                ", emails=" + emails +
-                ", jobRoles=" + jobRoles +
-                '}';
-    }
 }

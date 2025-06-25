@@ -1,6 +1,8 @@
 package com.tianhai.warn.service;
 
 import com.tianhai.warn.model.Student;
+import com.tianhai.warn.query.StudentQuery;
+import com.tianhai.warn.utils.PageResult;
 import com.tianhai.warn.utils.Result;
 import java.util.List;
 
@@ -99,4 +101,13 @@ public interface StudentService {
      * @param id  主键
      */
     void updateLastLoginTime(Integer id);
+
+    List<Student> searchByStudentQuery(StudentQuery studentQuery);
+
+    /**
+     * 分页查询学生信息
+     * @param  studentQuery    查询条件
+     * @return      学生信息
+     */
+    PageResult<Student> selectByPageQuery(StudentQuery studentQuery);
 }

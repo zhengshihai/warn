@@ -42,7 +42,6 @@ public class PageController {
     }
 
 
-
     @GetMapping("/dashboard")
     public String dashboard() {
         return "dashboard";
@@ -58,10 +57,7 @@ public class PageController {
         return "rule";
     }
 
-    @GetMapping("/super-admin")
-    public String superAdmin() {
-        return "super-admin";
-    }
+
 
     @GetMapping("/system")
     public String system() {

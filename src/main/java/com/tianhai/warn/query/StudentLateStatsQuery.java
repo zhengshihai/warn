@@ -2,14 +2,15 @@ package com.tianhai.warn.query;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.util.Date;
 import java.util.List;
 
 @Data
-@Builder
-@NoArgsConstructor
+@SuperBuilder
 @AllArgsConstructor
+@NoArgsConstructor
 public class StudentLateStatsQuery extends BaseQuery{
     private Integer id; // 主键
     private String statsId; // 统计编号

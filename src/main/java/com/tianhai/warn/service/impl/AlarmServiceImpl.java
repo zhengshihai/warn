@@ -2,6 +2,7 @@ package com.tianhai.warn.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import com.tianhai.warn.constants.AlarmConstants;
+import com.tianhai.warn.constants.Constants;
 import com.tianhai.warn.dto.CancelAlarmDTO;
 import com.tianhai.warn.dto.LocationUpdateDTO;
 import com.tianhai.warn.dto.OneClickAlarmDTO;
@@ -9,21 +10,30 @@ import com.tianhai.warn.enums.AlarmStatus;
 import com.tianhai.warn.enums.ResultCode;
 import com.tianhai.warn.exception.BusinessException;
 import com.tianhai.warn.exception.SystemException;
+import com.tianhai.warn.mapper.AlarmRecordMapper;
 import com.tianhai.warn.mapper.StudentMapper;
 import com.tianhai.warn.model.AlarmRecord;
+import com.tianhai.warn.model.DormitoryManager;
+import com.tianhai.warn.model.Student;
 import com.tianhai.warn.mq.AlarmContext;
+import com.tianhai.warn.query.StudentQuery;
 import com.tianhai.warn.service.*;
+import com.tianhai.warn.vo.StudentAlarmContactsVO;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.servlet.resource.ResourceUrlProvider;
 
-import java.util.Date;
-import java.util.HashMap;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 public class AlarmServiceImpl implements AlarmService {
@@ -53,12 +63,19 @@ public class AlarmServiceImpl implements AlarmService {
 
     @Autowired
     private AlarmRecordService alarmRecordService;
-    private StudentMapper studentMapper;
 
-//    @Value("${amap.api.url}")
-//    private String amapApiUrl; //高德地图API基础URL
-//    @Autowired
-//    private RestTemplate restTemplate;
+    @Autowired
+    private SysUserClassService sysUserClassService;
+
+    @Autowired
+    private StudentService studentService;
+
+    @Autowired
+    private DormitoryManagerService dormitoryManagerService;
+
+    @Autowired
+    private AlarmRecordMapper alarmRecordMapper;
+
 
     //处理一键报警
     @Override
@@ -73,8 +90,6 @@ public class AlarmServiceImpl implements AlarmService {
         AlarmContext alarmContext = buiLdAlarmContext(oneClickAlarmDTO);
 
         // 4. 发送一键报警短信
-        // notificationService.sendOneClickAlarmNotification(
-        // oneClickAlarmDTO.getStudentNo(), oneClickAlarmDTO.getAlarmLevel());
         smsService.sendTriggerOneClickAlarmSms(
                 oneClickAlarmDTO.getStudentNo(),
                 oneClickAlarmDTO.getAlarmLevel(),
@@ -113,7 +128,7 @@ public class AlarmServiceImpl implements AlarmService {
         }
 
 
-        //  删除redis中一键报警状态 //todo 这里应该是更改状态还是删除呢
+        //  删除redis中一键报警状态 
         AlarmStatus cachedAlarmStatus = (AlarmStatus) redisTemplate.opsForValue().get(alarmStatusKey);
         if (cachedAlarmStatus == AlarmStatus.CLOSED || cachedAlarmStatus == AlarmStatus.PROCESSED) {
             logger.debug("该一键报警已被关闭或已经处理完成");
@@ -142,8 +157,166 @@ public class AlarmServiceImpl implements AlarmService {
         //  清理WebSocket
         webSocketService.closeConnection(alarmNo);
 
-        // todo 将redis中对应的位置信息持久化到mysql
+        // 取消报警后，设置位置信息缓存过期
+        locationTrackService.expireLocationCacheByAlarmNo(alarmNo);
+    }
 
+
+
+    /**
+     * 获取学生 报警 紧急联系人的基本信息
+     * @param helperNo      紧急联系人（宿管，父母）
+     * @param role          紧急联系人角色（班级管理员，宿管）
+     * @return              基本信息
+     */
+    @Override
+    public List<StudentAlarmContactsVO> searchStudentAlarmContactInfo(String helperNo, String role) {
+        // 宿舍管理员管辖范围
+        if (Constants.DORMITORY_MANAGER.equalsIgnoreCase(role)) {
+            return searchForDormitoryManager(helperNo);
+        }
+
+        // 班级管理员管辖范围
+        if (Constants.SYSTEM_USER.equalsIgnoreCase(role)) {
+            return searchForClassManager(helperNo);
+        }
+
+        // todo 其他角色待实现
+        return Collections.emptyList();
+    }
+
+
+    private List<StudentAlarmContactsVO> searchForDormitoryManager(String helperNo) {
+        // 获取未结束的报警记录
+        List<AlarmRecord> alarmRecordList =  alarmRecordMapper.selectNotEndedAlarms();
+        if (alarmRecordList.isEmpty()) {
+            logger.info("没有未结束的报警记录");
+            return Collections.emptyList();
+        }
+
+        // 获取和报警记录有关的学号列表
+        List<String> studentNoList = alarmRecordList.stream()
+                .map(AlarmRecord::getStudentNo)
+                .distinct()
+                .toList();
+
+        // 查询学号对应的学生信息
+        StudentQuery studentQuery = StudentQuery.builder().studentNos(studentNoList).build();
+        List<Student> studentList = studentService.searchByStudentQuery(studentQuery);
+
+        // 获取管理的宿舍楼
+        DormitoryManager dormitoryManager = dormitoryManagerService.selectByManagerId(helperNo);
+        String managedBuilding = dormitoryManager.getBuilding();
+
+        // 过滤掉不在宿舍管理员管理楼栋的学生
+        List<Student> matchedStudentList = studentList.stream()
+                .filter(student -> {
+                    String dormitory = student.getDormitory();
+
+                    return StringUtils.isNotBlank(dormitory)
+                            && dormitory.charAt(0) == managedBuilding.charAt(0);
+                })
+                .toList();
+
+        Map<String, Student> studentMap = matchedStudentList.stream()
+                .collect(Collectors.toMap(
+                        Student::getStudentNo,
+                        Function.identity(),
+                        (existing, duplicate) -> existing // 学号重复是保留第一个学生对象
+                ));
+
+        // 构造结果
+        return alarmRecordList.stream()
+                .map(alarmRecord -> {
+                    Student student = studentMap.get(alarmRecord.getStudentNo());
+                    if (student == null) return null;
+
+                    return StudentAlarmContactsVO.builder()
+                            .studentName(student.getName())
+                            .studentNo(student.getStudentNo())
+                            .alarmNo(alarmRecord.getAlarmNo())
+                            .fatherPhone(student.getFatherPhone())
+                            .motherPhone(student.getMotherPhone())
+                            .build();
+                })
+                .filter(Objects::nonNull)
+                .toList();
+
+    }
+
+    private List<StudentAlarmContactsVO> searchForClassManager(String helperNo) {
+        // 获取班级信息
+        List<String> classNameList = sysUserClassService.getUserClasses(helperNo);
+        if (classNameList == null || classNameList.isEmpty()) {
+            logger.warn("该班级管理员没有管理班级，helperNo: {}", helperNo);
+            return Collections.emptyList();
+        }
+
+        // 获取未结束的报警记录
+        List<AlarmRecord> alarmRecordList =  alarmRecordMapper.selectNotEndedAlarms();
+        if (alarmRecordList.isEmpty()) {
+            logger.info("没有未结束的报警记录");
+            return Collections.emptyList();
+        }
+
+        // 获取和报警记录有关的学号列表
+        List<String> studentNoList = alarmRecordList.stream()
+                .map(AlarmRecord::getStudentNo)
+                .distinct()
+                .toList();
+
+        // 查询学号对应的学生信息
+        StudentQuery studentQuery = StudentQuery.builder().studentNos(studentNoList).build();
+        List<Student> studentList = studentService.searchByStudentQuery(studentQuery);
+
+        // 过滤掉不在班级管理员管理班级的学生
+        Set<String> classNameSet = new HashSet<>(classNameList);
+        Map<String, Student> studentMap = studentList.stream()
+                .filter(student -> classNameSet.contains(student.getClassName()))
+                .collect(Collectors.toMap(
+                        Student::getStudentNo,
+                        Function.identity(),
+                        (existing, duplicate) -> existing // 学号重复是保留第一个学生对象
+                ));
+
+        // 构造结果
+        return alarmRecordList.stream()
+                .map(alarmRecord -> {
+                    Student student = studentMap.get(alarmRecord.getStudentNo());
+                    if (student == null) return null;
+
+                    return StudentAlarmContactsVO.builder()
+                            .studentName(student.getName())
+                            .studentNo(student.getStudentNo())
+                            .alarmNo(alarmRecord.getAlarmNo())
+                            .fatherPhone(student.getFatherPhone())
+                            .motherPhone(student.getMotherPhone())
+                            .build();
+                })
+                .filter(Objects::nonNull)
+                .toList();
+    }
+
+    /**
+     * 获取所有未结束报警相关的学生信息和报警记录
+     * @return Pair<报警记录列表, 学生信息列表>
+     */
+    private Pair<List<AlarmRecord>, List<Student>> getNotEndedAlarmRecordsAndStudents() {
+        List<AlarmRecord> alarmRecordList = alarmRecordMapper.selectNotEndedAlarms();
+        if (alarmRecordList.isEmpty()) {
+            logger.info("没有未结束的报警记录");
+            return Pair.of(Collections.emptyList(), Collections.emptyList());
+        }
+
+        List<String> studentNoList = alarmRecordList.stream()
+                .map(AlarmRecord::getStudentNo)
+                .distinct()
+                .toList();
+
+        StudentQuery studentQuery = StudentQuery.builder().studentNos(studentNoList).build();
+        List<Student> studentList = studentService.searchByStudentQuery(studentQuery);
+
+        return Pair.of(alarmRecordList, studentList);
     }
 
     // 构建一键报警上下文
@@ -238,66 +411,4 @@ public class AlarmServiceImpl implements AlarmService {
         }
     }
 
-//    //获得前端地图渲染所需的信息
-//    @Override
-//    public Map<String, Object> getMapInfo(LocationDTO locationDTO, String amapKey) {
-//        try {
-//            // 构建请求URL
-//            String url = String.format("%s/regeocode?key=%s&location=%f,%f&extensions=all",
-//                    amapApiUrl,
-//                    amapKey,
-//                    locationDTO.getLatitude(),
-//                    locationDTO.getLongitude());
-//
-//            // 远程调用（非响应式）高德地图API
-//            ResponseEntity<Map> response = restTemplate.getForEntity(url, Map.class);
-//
-//            if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
-//                Map<String, Object> result = response.getBody();
-//
-//                // 检查API调用是否成功
-//                if (!"1".equals(result.get("status"))) {
-//                    logger.error("高德地图API调用失败: {}", result.get("info"));
-//                    throw new BusinessException(ResultCode.ALARM_AMAP_API_ERROR);
-//                }
-//
-//                // 提取需要的信息
-//                Map<String, Object> regeoCode = (Map<String, Object>) result.get("regeocode");
-//
-//                // 构建返回结果
-//                Map<String, Object> mapInfo = new HashMap<>();
-//                // 基础位置信息
-//                mapInfo.put("longitude", locationDTO.getLongitude());
-//                mapInfo.put("latitude", locationDTO.getLatitude());
-//                mapInfo.put("address", regeoCode.get("formatted_address"));
-//
-//                // 地图渲染所需信息
-//                mapInfo.put("zoom", 16); // 默认缩放级别
-//                mapInfo.put("mapStyle", "normal"); // 默认地图样式
-//                mapInfo.put("markerIcon", "https://webapi.amap.com/theme/v1.3/markers/n/mark_b.png"); // 默认标记图标
-//
-//                // 周边POI信息
-//                List<Map<String, Object>> pois = (List<Map<String, Object>>) regeoCode.get("pois");
-//                if (pois != null && !pois.isEmpty()) {
-//                    mapInfo.put("nearbyPois", pois.stream()
-//                            .map(poi -> {
-//                                Map<String, Object> poiInfo = new HashMap<>();
-//                                poiInfo.put("name", poi.get("name"));
-//                                poiInfo.put("type", poi.get("type"));
-//                                poiInfo.put("distance", poi.get("distance"));
-//                                poiInfo.put("location", poi.get("location"));  // 添加POI位置信息
-//                                return poiInfo;
-//                            }).collect(Collectors.toList()));
-//                }
-//
-//                return mapInfo;
-//            } else {
-//                logger.error("高德地图API调用失败，响应状态码: {}", response.getStatusCode());
-//                throw new BusinessException(ResultCode.ALARM_AMAP_API_ERROR);
-//            }
-//        } catch (Exception e) {
-//            logger.error("获取地图信息失败", e);
-//            throw new SystemException(ResultCode.ERROR);
-//        }
-//    }
 }

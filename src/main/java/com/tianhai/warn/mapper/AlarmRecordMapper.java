@@ -33,4 +33,7 @@ public interface AlarmRecordMapper {
 
     // 配置相关
     AlarmConfig selectByKey(String key);
+
+    // 查找待处理或正在处理的报警记录
+    List<AlarmRecord> selectNotEndedAlarms();
 }

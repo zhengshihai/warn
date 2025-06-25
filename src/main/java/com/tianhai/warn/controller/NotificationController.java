@@ -77,6 +77,7 @@ public class NotificationController {
 
         PageResult<Notification> notificationList =
                 notificationService.selectByPageQuery(userRoleStr, currentUser, query);
+        // 没有数据时返回空列表
         if (notificationList == null || notificationList.getData() == null
                || notificationList.getData().isEmpty()) {
             return Result.success(new PageResult<>());

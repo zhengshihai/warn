@@ -73,7 +73,6 @@ public class SysUserClassServiceImpl implements SysUserClassService {
             logger.error("更新用户班级关联失败，用户编号：{}", sysUserNo, e);
             throw new BusinessException("更新用户班级关联失败");
         }
-
     }
 
     @Override

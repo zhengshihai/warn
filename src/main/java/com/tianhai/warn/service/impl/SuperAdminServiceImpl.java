@@ -1,12 +1,18 @@
 package com.tianhai.warn.service.impl;
 
+import com.github.pagehelper.Page;
+import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
 import com.tianhai.warn.constants.Constants;
 import com.tianhai.warn.enums.ResultCode;
 import com.tianhai.warn.exception.BusinessException;
 import com.tianhai.warn.exception.SystemException;
 import com.tianhai.warn.mapper.SuperAdminMapper;
 import com.tianhai.warn.model.SuperAdmin;
+import com.tianhai.warn.query.SuperAdminQuery;
 import com.tianhai.warn.service.SuperAdminService;
+import com.tianhai.warn.utils.PageResult;
+import net.bytebuddy.implementation.bind.annotation.Super;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.tags.shaded.org.apache.regexp.RE;
 import org.slf4j.Logger;
@@ -27,19 +33,26 @@ public class SuperAdminServiceImpl implements SuperAdminService {
     @Autowired
     private SuperAdminMapper superAdminMapper;
 
+    // 查询超级管理员的的信息（不含密码）
     @Override
-    public SuperAdmin selectById(Integer id) {
+    public SuperAdmin selectByIdWithoutPassword(Integer id) {
+        if (id == null || id <= 0) {
+            throw new BusinessException(ResultCode.PARAMETER_ERROR);
+        }
+
         SuperAdmin superAdmin = superAdminMapper.selectById(id);
         superAdmin.setPassword(null);
 
         return superAdmin;
     }
 
+    //   查询超级管理员的信息（含密码）
     @Override
-    public SuperAdmin getById(Integer id) {
+    public SuperAdmin getByIdWithPassword(Integer id) {
         if (id == null || id <= 0) {
-            throw new BusinessException(ResultCode.VALIDATE_FAILED);
+            throw new BusinessException(ResultCode.PARAMETER_ERROR);
         }
+
         SuperAdmin superAdmin =  superAdminMapper.selectById(id);
         if (superAdmin == null) {
             throw new BusinessException(ResultCode.SUPER_ADMIN_NOT_FOUND);
@@ -51,14 +64,16 @@ public class SuperAdminServiceImpl implements SuperAdminService {
     @Override
     public SuperAdmin getByEmail(String email) {
         if (!checkEmailFormat(email)) {
-            throw new BusinessException(ResultCode.VALIDATE_FAILED);
+            throw new BusinessException(ResultCode.PARAMETER_ERROR);
         }
 
         SuperAdmin query = SuperAdmin.builder().email(email).build();
 
         List<SuperAdmin> superAdmins = selectByCondition(query);
         if (superAdmins.isEmpty()) {
-            return new SuperAdmin();
+//            return new SuperAdmin();
+            logger.warn("没有找到该email对应的超级管理员，email:{}", email);
+            return null;
         }
 
         return superAdmins.get(0);
@@ -67,10 +82,21 @@ public class SuperAdminServiceImpl implements SuperAdminService {
     @Override
     public void updateLastLoginTime(Integer id) {
         if (id == null || id <= 0) {
-            throw new BusinessException(ResultCode.VALIDATE_FAILED);
+            logger.error("该超级管理员id不合法，id：{}", id);
+            throw new BusinessException(ResultCode.PARAMETER_ERROR);
+        }
+        SuperAdmin superAdmin = superAdminMapper.selectById(id);
+        if (superAdmin == null) {
+            logger.error("找不到对应的超级管理员：id: {}", id);
+            throw new BusinessException(ResultCode.PARAMETER_ERROR);
         }
 
-        superAdminMapper.updateLastLoginTime(new Date());
+        superAdmin.setLastLoginTime(new Date());
+        int affectedRows = superAdminMapper.update(superAdmin);
+        if (affectedRows <= 0) {
+            logger.error("超级管理员更新出现异常，superAdmin:{}", superAdmin);
+            throw new SystemException(ResultCode.ERROR);
+        }
     }
 
     @Override
@@ -84,7 +110,6 @@ public class SuperAdminServiceImpl implements SuperAdminService {
     }
 
     @Override
-    //todo 需要增加对无限邮的防护
     public Integer insert(SuperAdmin admin) {
         if (admin == null) {
             throw new BusinessException("超级管理员信息不能为空");
@@ -94,9 +119,9 @@ public class SuperAdminServiceImpl implements SuperAdminService {
         }
 
         SuperAdmin query =SuperAdmin.builder().email(admin.getEmail()).build();
-        List<SuperAdmin> dbSuperAdmin = superAdminMapper.selectByCondition(query);
+        List<SuperAdmin> dbSuperAdminList = superAdminMapper.selectByCondition(query);
 
-        if (dbSuperAdmin != null) {
+        if (dbSuperAdminList != null && !dbSuperAdminList.isEmpty()) {
             throw new BusinessException("邮箱已被注册");
         }
 
@@ -107,6 +132,7 @@ public class SuperAdminServiceImpl implements SuperAdminService {
         }
         admin.setCreateTime(new Date());
         admin.setUpdateTime(new Date());
+        admin.setLastLoginTime(new Date());
 
         try {
             int affectedRow = superAdminMapper.insert(admin);
@@ -130,7 +156,7 @@ public class SuperAdminServiceImpl implements SuperAdminService {
     @Override
     public Integer update(SuperAdmin newSuperAdminInfo) {
         if (newSuperAdminInfo == null || newSuperAdminInfo.getId() == null) {
-            logger.error("admin的id不能为空");
+            logger.error("superAdmin的id不能为空");
             throw new BusinessException(ResultCode.VALIDATE_FAILED);
         }
 
@@ -259,4 +285,31 @@ public class SuperAdminServiceImpl implements SuperAdminService {
                 admin.getUpdateTime()
         ).allMatch(Objects::isNull);
     }
+
+    @Override
+    public PageResult<SuperAdmin> selectByPageQuery(SuperAdminQuery query) {
+        List<SuperAdmin> superAdminList;
+        PageResult<SuperAdmin> result;
+
+        try (Page<SuperAdmin> page = PageHelper.startPage(query.getPageNum(), query.getPageSize())) {
+            superAdminList = superAdminMapper.selectAll();
+            result = buildPageResult(superAdminList);
+        }
+
+        return result;
+    }
+
+    // 构建分页结果
+    private PageResult<SuperAdmin> buildPageResult(List<SuperAdmin> superAdminList) {
+        PageInfo<SuperAdmin> pageInfo = new PageInfo<>(superAdminList);
+
+        PageResult<SuperAdmin> result = new PageResult<>();
+        result.setData(pageInfo.getList());
+        result.setTotal((int) pageInfo.getTotal());
+        result.setPageNum(pageInfo.getPageNum());
+        result.setPageSize(pageInfo.getPageSize());
+
+        return result;
+    }
+
 }

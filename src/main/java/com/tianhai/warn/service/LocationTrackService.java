@@ -2,6 +2,7 @@ package com.tianhai.warn.service;
 
 import com.tianhai.warn.dto.LocationUpdateDTO;
 import com.tianhai.warn.model.LocationTrack;
+import com.tianhai.warn.vo.LatestLocationVO;
 import org.springframework.data.geo.Point;
 
 import java.util.Date;
@@ -25,5 +26,17 @@ public interface LocationTrackService {
     List<LocationTrack> selectByTimeRange(String alarmNo, Date startTime, Date endTime);
 
     LocationTrack selectById(Long id);
+
+    /**
+     * 设置指定报警编号的位置信息缓存在半小时后过期
+     * 
+     * @param alarmNo 报警编号
+     */
+    void expireLocationCacheByAlarmNo(String alarmNo);
+
+    // 返回最近一定数量的位置记录
+    List<LocationTrack> selectWithLimitByAlarmNo(String alarmNo, Integer amount);
+
+    LatestLocationVO selectLastByAlarmNo(String alarmNo);
 
 }

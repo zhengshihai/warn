@@ -4,7 +4,9 @@ import com.tianhai.warn.dto.CancelAlarmDTO;
 import com.tianhai.warn.dto.LocationDTO;
 import com.tianhai.warn.dto.LocationUpdateDTO;
 import com.tianhai.warn.dto.OneClickAlarmDTO;
+import com.tianhai.warn.vo.StudentAlarmContactsVO;
 
+import java.util.List;
 import java.util.Map;
 
 public interface AlarmService {
@@ -13,11 +15,8 @@ public interface AlarmService {
 
     void cancelOneClickAlarm(CancelAlarmDTO cancelAlarmDTO);
 
-    /**
-     * 获取地图信息
-     * @param locationDTO 位置信息
-     * @param amapKey 高德地图API Key
-     * @return 地图信息
-     */
-//    Map<String, Object> getMapInfo(LocationDTO locationDTO, String amapKey);
+    // 获取触发报警的学生的基本信息，报警信息，家长联系方式
+    List<StudentAlarmContactsVO> searchStudentAlarmContactInfo(String helperNo, String role);
+
+
 }

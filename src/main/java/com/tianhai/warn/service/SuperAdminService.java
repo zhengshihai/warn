@@ -1,6 +1,8 @@
 package com.tianhai.warn.service;
 
 import com.tianhai.warn.model.SuperAdmin;
+import com.tianhai.warn.query.SuperAdminQuery;
+import com.tianhai.warn.utils.PageResult;
 
 import java.util.List;
 
@@ -8,8 +10,12 @@ import java.util.List;
  * 超级管理员接口
  */
 public interface SuperAdminService {
+    // 查询超级管理员的信息（含密码）
+    SuperAdmin getByIdWithPassword(Integer id);
 
-    SuperAdmin getById(Integer id);
+    // 查询超级管理员的的脱敏信息（不含密码）
+    SuperAdmin selectByIdWithoutPassword(Integer id);
+
 
     List<SuperAdmin> selectByCondition(SuperAdmin superAdmin);
 
@@ -25,5 +31,10 @@ public interface SuperAdminService {
 
     void updateLastLoginTime(Integer id);
 
-    SuperAdmin selectById(Integer id);
+    /**
+     * 分页查询超级管理员信息
+     * @param query
+     * @return
+     */
+    PageResult<SuperAdmin> selectByPageQuery(SuperAdminQuery query);
 }

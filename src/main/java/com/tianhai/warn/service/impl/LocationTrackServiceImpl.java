@@ -13,6 +13,8 @@ import com.tianhai.warn.model.LocationTrack;
 import com.tianhai.warn.mq.RocketMQMessageSender;
 import com.tianhai.warn.service.LocationTrackService;
 
+import com.tianhai.warn.vo.LatestLocationVO;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +24,7 @@ import org.springframework.data.redis.connection.RedisGeoCommands;
 import org.springframework.data.redis.core.RedisOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.SessionCallback;
+import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -176,6 +179,8 @@ public class LocationTrackServiceImpl implements LocationTrackService {
      * @param point2 第二个点
      * @return 两点之间的距离（米）
      */
+    // todo 此处需改用： redisTemplate.opsForGeo().distance(key, point1, point2,
+    // Metrics.METERS);
     private double calculateDistance(Point point1, Point point2) {
         // 使用Haversine公式计算球面距离
         double R = 6371000; // 地球半径（米）
@@ -264,21 +269,7 @@ public class LocationTrackServiceImpl implements LocationTrackService {
         // 更新Redis报警状态缓存
         updateCacheAlarmStatus(locationUpdateDTO, AlarmStatus.PROCESSING);
 
-        // 异步保存位置轨迹到mysql
-        // todo 需要处理缓存不一致性问题，方案参考：1 引入“写入状态确认”机制 2 消息队列异步吸入+事件触发后处理
-        // 该定位轨迹信息存储业务以redis为主 以mysql为辅
-//        CompletableFuture.runAsync(() -> {
-//            try {
-//                // 再次验证位置有效性（因为可能是异步执行，需要重新获取最新数据）
-//                if (isValidLocation(locationUpdateDTO)) {
-//                    saveLocationTrack(locationUpdateDTO);
-//                } else {
-//                    logger.warn("位置信息无效，不保存到数据库: {}", locationUpdateDTO);
-//                }
-//            } catch (Exception e) {
-//                logger.error("异步保存位置轨迹失败: {}", locationUpdateDTO, e);
-//            }
-//        });
+        // 异步保存位置轨迹到mysql 1引入"写入状态确认"机制 2 消息队列异步吸入+事件触发后处理
         asyncSaveLocationWithCompensate(locationUpdateDTO);
     }
 
@@ -325,11 +316,11 @@ public class LocationTrackServiceImpl implements LocationTrackService {
 
         // 验证数据是否写入成功
         // 使用 ZSet 的 size 来验证，因为 GEO 数据实际上是存储在 ZSet 中的
-        Long zsetSize = redisTemplate.opsForZSet().size(trackTimeKey);
+        Long zSetSize = redisTemplate.opsForZSet().size(trackTimeKey);
         // 验证新添加的点是否存在
         Boolean pointExists = redisTemplate.opsForZSet().score(trackTimeKey, pointId) != null;
         logger.info("Redis数据验证 - trackTimeKey: {}, size: {}, pointId: {}, exists: {}",
-                trackTimeKey, zsetSize, pointId, pointExists);
+                trackTimeKey, zSetSize, pointId, pointExists);
     }
 
     /**
@@ -368,37 +359,31 @@ public class LocationTrackServiceImpl implements LocationTrackService {
      * @param locationUpdateDTO 位置更新DTO
      * @return 插入记录数
      */
-    // todo 需实现批量插入 减少mysql负担
     @Override
     public Integer saveLocationTrack(LocationUpdateDTO locationUpdateDTO) {
-        // 构建位置轨迹对象
-        LocationTrack track = new LocationTrack();
-        BeanUtil.copyProperties(locationUpdateDTO, track);
-
         // 处理时区转换
-        if (track.getLocationTime() != null) {
+        if (locationUpdateDTO.getLocationTime() != null) {
             // 检查时间格式是否包含 'Z'（UTC时间标识）
-            String timeStr = track.getLocationTime().toString();
+            String timeStr = locationUpdateDTO.getLocationTime().toString();
             if (timeStr.endsWith("Z")) {
                 // 如果是UTC时间，转换为本地时间
                 Calendar calendar = Calendar.getInstance();
-                calendar.setTime(track.getLocationTime());
+                calendar.setTime(locationUpdateDTO.getLocationTime());
                 calendar.add(Calendar.HOUR_OF_DAY, 8); // 添加8小时
-                track.setLocationTime(calendar.getTime());
+                locationUpdateDTO.setLocationTime(calendar.getTime());
             }
             // 如果是本地时间，不做转换
         }
 
         try {
-            return locationTrackMapper.insert(track);
+            return saveOrUpdateTrackWithMerge(locationUpdateDTO);
         } catch (Exception e) {
-            logger.error("保存位置轨迹到数据库失败: {}", track, e);
+            logger.error("保存位置轨迹到数据库失败: {}", locationUpdateDTO, e);
             throw new BusinessException("保存位置轨迹失败");
         }
 
-
-//        locationTrackMapper.insert(track);
-//        throw new RuntimeException("手动抛出异常，验证定位信息能否进入mq补偿队列");
+        // saveOrUpdateTrackWithMerge(locationUpdateDTO);
+        // throw new RuntimeException("手动抛出异常，验证定位信息能否进入mq补偿队列");
     }
 
     /**
@@ -453,8 +438,7 @@ public class LocationTrackServiceImpl implements LocationTrackService {
                             COMPENSATE_TOPIC,
                             "compensate",
                             locationUpdateDTO.getAlarmNo(),
-                            JSON.toJSONString(locationUpdateDTO)
-                    );
+                            JSON.toJSONString(locationUpdateDTO));
                 } catch (Exception mqEx) {
                     logger.error("补偿消息发送到RocketMQ失败，写入Redis List兜底：{}",
                             locationUpdateDTO, mqEx);
@@ -532,10 +516,147 @@ public class LocationTrackServiceImpl implements LocationTrackService {
         return locationTrackMapper.selectById(id);
     }
 
-    // Redis GEO相关操作示例：
-    // redisTemplate.opsForGeo().add(key, point, member);
-    // redisTemplate.opsForGeo().position(key, member);
-    // redisTemplate.opsForGeo().distance(key, point1, point2, Metrics.METERS);
-    // redisTemplate.opsForGeo().radius(key, circle);
+    /**
+     * 保存或合并mysql的轨迹点（静止合并）
+     * 
+     * @param locationUpdateDTO 新轨迹点
+     * @return 0-丢弃该无效点 1=插入新点，2=合并更新
+     */
+    public int saveOrUpdateTrackWithMerge(LocationUpdateDTO locationUpdateDTO) {
+        String alarmNo = locationUpdateDTO.getAlarmNo();
+        if (alarmNo == null)
+            throw new BusinessException("alarmNo不能为空");
 
+        Integer changeUnit = locationUpdateDTO.getChangeUnit();
+        if (changeUnit != null && changeUnit <= 0) {
+            logger.error("该位置信息的changeUnit不合法，locationUpdateDTO: {}", locationUpdateDTO);
+            return 0;
+        }
+
+        LocationTrack lastTrack = locationTrackMapper.selectLastByAlarmNo(alarmNo);
+        Date now = locationUpdateDTO.getLocationTime();
+        if (shouldBeMerged(lastTrack, locationUpdateDTO)) {
+            // 合并静止段
+            lastTrack.setEndLocationTime(now);
+            lastTrack.setChangeUnit(locationUpdateDTO.getChangeUnit());
+            locationTrackMapper.update(lastTrack);
+            return 2;
+
+        } else {
+            // 新增轨迹点
+            LocationTrack track = new LocationTrack();
+            BeanUtil.copyProperties(locationUpdateDTO, track);
+            track.setFirstLocationTime(now);
+            track.setEndLocationTime(now);
+            track.setCreatedAt(new Date());
+            locationTrackMapper.insert(track);
+            return 1;
+        }
+    }
+
+    private boolean shouldBeMerged(LocationTrack lastTrack, LocationUpdateDTO locationUpdateDTO) {
+        return lastTrack != null
+                && lastTrack.getLatitude() != null && lastTrack.getLongitude() != null
+                && lastTrack.getLatitude().equals(locationUpdateDTO.getLatitude())
+                && lastTrack.getLongitude().equals(locationUpdateDTO.getLongitude());
+    }
+
+    @Override
+    public void expireLocationCacheByAlarmNo(String alarmNo) {
+        String geoKey = AlarmConstants.REDIS_KEYS_ALARM_GEO + alarmNo;
+        String trackTimeKey = AlarmConstants.REDIS_KEY_ALARM_TRACK_TIME + alarmNo;
+
+        // 设置30分钟后过期
+        redisTemplate.expire(geoKey, 30, TimeUnit.MINUTES);
+        redisTemplate.expire(trackTimeKey, 30, TimeUnit.MINUTES);
+
+        logger.info("设置 alarmNo= {} 的GEO和ZSet缓存30分钟后过期", alarmNo);
+    }
+
+    @Override
+    public List<LocationTrack> selectWithLimitByAlarmNo(String alarmNo, Integer amount) {
+        if (StringUtils.isBlank(alarmNo)) {
+            logger.error("alarmNo为空");
+            throw new BusinessException(ResultCode.PARAMETER_ERROR);
+        }
+
+        if (amount <= 0) {
+            logger.error("amount不合法");
+        }
+
+        return locationTrackMapper.selectWithLimitByAlarmNo(alarmNo, amount);
+    }
+
+    @Override
+    public LatestLocationVO selectLastByAlarmNo(String alarmNo) {
+        LatestLocationVO latestLocationVO = null;
+
+        // 先从缓存中读取经纬度信息
+        Point latestPoint = searchFromCache(alarmNo);
+        if (latestPoint != null) {
+            latestLocationVO = LatestLocationVO.builder()
+                    .latitude(latestPoint.getY())
+                    .longitude(latestPoint.getX())
+                    .build();
+        }
+
+        // 从数据库中获取经纬度信息 + 定位精度
+        LocationTrack locationTrackFromDB = locationTrackMapper.selectLastByAlarmNo(alarmNo);
+
+        // 综合缓存的结果和数据库的位置信息
+        if (locationTrackFromDB == null) {
+            // 数据库没有数据，直接返回缓存数据
+            return latestLocationVO;
+        }
+
+        Double locationAccuracy = locationTrackFromDB.getLocationAccuracy();
+
+        if (latestLocationVO != null) {
+            // 缓存有数据，补充精度信息
+            if (locationAccuracy != null) {
+                latestLocationVO.setLocationAccuracy(locationAccuracy);
+            }
+            return latestLocationVO;
+        } else {
+            // 缓存没有数据，使用数据库数据
+            latestLocationVO = LatestLocationVO.builder()
+                    .longitude(locationTrackFromDB.getLongitude())
+                    .latitude(locationTrackFromDB.getLatitude())
+                    .locationAccuracy(locationAccuracy)
+                    .build();
+            return latestLocationVO;
+        }
+    }
+
+    private Point searchFromCache(String alarmNo) {
+        String geoKey = AlarmConstants.REDIS_KEYS_ALARM_GEO + alarmNo;
+        String trackTimeKey = AlarmConstants.REDIS_KEY_ALARM_TRACK_TIME + alarmNo;
+
+        // 获取ZSet中最新的pointId(score最大的）
+        Set<ZSetOperations.TypedTuple<Object>> latestPointSet = redisTemplate.opsForZSet()
+                .reverseRangeWithScores(trackTimeKey, 0, 0);
+
+        if (latestPointSet == null || latestPointSet.isEmpty()) {
+            logger.warn("缓存中未找到最新位置信息，alarmNo: {}", alarmNo);
+            return null;
+        }
+
+        String latestPointId = (String) latestPointSet.iterator().next().getValue();
+        Double latestScore = latestPointSet.iterator().next().getScore();
+
+        List<Point> pointList = redisTemplate.opsForGeo().position(geoKey, latestPointId);
+
+        if (pointList == null || pointList.isEmpty() || pointList.get(0) == null) {
+            logger.warn("缓存的GEO中位找到对应坐标，alarmNo:{}, pointId:{}", alarmNo, latestPointId);
+            return null;
+        }
+
+        Point latestPoint = pointList.get(0);
+        assert latestScore != null;
+        logger.info("从缓存中成功获取到最新为止：alarmNo:{}, pointId={}, time={}, lat={}, lon={}",
+                alarmNo, latestPointId, new Date(latestScore.longValue()),
+                latestPoint.getY(), latestPoint.getX());
+
+        return latestPoint;
+    }
 }

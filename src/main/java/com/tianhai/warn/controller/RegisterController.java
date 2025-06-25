@@ -97,7 +97,6 @@ public class RegisterController {
     }
 
 
-
     // 发送邮箱验证码
     @PostMapping("/send-email-code")
     @ResponseBody
@@ -119,46 +118,8 @@ public class RegisterController {
         return registerService.sendEmailCaptcha(email);
     }
 
-    // 注册接口 - 原来的实现（注释掉）
-    /*
-     * @PostMapping("/do-register")
-     * 
-     * @ResponseBody
-     * public Result<?> register(@Valid @ModelAttribute RegisterDTO registerDTO,
-     * HttpSession session) {
-     * // 1. 检查注册频率
-     * Result<Boolean> limitResult =
-     * verificationService.checkRegisterLimit(session.getId(),
-     * BusinessType.REGISTER);
-     * if (!limitResult.isSuccess()) {
-     * return limitResult;
-     * }
-     * 
-     * // 2. 验证邮箱验证码
-     * Result<Boolean> emailResult = verificationService.validateEmailCaptcha(
-     * registerDTO.getEmail(),
-     * registerDTO.getEmailCaptcha(),
-     * BusinessType.REGISTER);
-     * 
-     * if (!emailResult.isSuccess() || !emailResult.getData()) {
-     * return Result.error("邮箱验证码错误");
-     * }
-     * 
-     * // 3. 调用服务层处理注册
-     * Result<?> registerResult = registerService.register(registerDTO);
-     * 
-     * // 4. 如果注册成功，清理验证码和限制
-     * if (registerResult.isSuccess()) {
-     * verificationService.cleanupRegistrationCodes(session.getId(),
-     * registerDTO.getEmail(),
-     * BusinessType.REGISTER);
-     * }
-     * 
-     * return registerResult;
-     * }
-     */
 
-    // 注册接口 - 新的实现
+    // 注册接口
     @PostMapping("/do-register")
     @LogOperation("用户注册")
     public String register(@Valid @ModelAttribute RegisterDTO registerDTO,

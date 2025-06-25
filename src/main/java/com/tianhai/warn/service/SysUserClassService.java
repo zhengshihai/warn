@@ -44,4 +44,6 @@ public interface SysUserClassService {
      * @return              班级管理员列表
      */
     List<SysUserClass> getSysUserClassListByClassName(String className);
+
+
 }

@@ -29,5 +29,7 @@ public interface LocationTrackMapper {
                         @Param("startTime") Date startTime,
                         @Param("endTime") Date endTime);
 
-        List<LocationTrack> selectLatestByAlarmNo(String alarmNo, Integer limit);
+        List<LocationTrack> selectWithLimitByAlarmNo(String alarmNo, Integer limit);
+
+        LocationTrack selectLastByAlarmNo(@Param("alarmNo") String alarmNo);
 }

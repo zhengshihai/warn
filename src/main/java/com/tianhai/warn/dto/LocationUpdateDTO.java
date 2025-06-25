@@ -42,6 +42,11 @@ public class LocationUpdateDTO {
      */
     private Date locationTime;
 
+    /**
+     * 前端上报间隔（秒）
+     */
+    private Integer changeUnit;
+
     // 报警业务id
     private String alarmNo;
 }

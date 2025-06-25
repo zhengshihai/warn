@@ -119,17 +119,17 @@ public class LocationWebSocketHandler extends TextWebSocketHandler {
             LAST_MESSAGE_TIME.put(alarmNo, System.currentTimeMillis());
 
             // 解析位置更新消息
-            LocationUpdateDTO dto = JSON.parseObject(message.getPayload(), LocationUpdateDTO.class);
+            LocationUpdateDTO locationUpdateDTO = JSON.parseObject(message.getPayload(), LocationUpdateDTO.class);
 
             // 验证消息格式
-            if (!isValidLocationMessage(dto)) {
+            if (!isValidLocationMessage(locationUpdateDTO)) {
                 logger.warn("无效的位置消息格式: {}", message.getPayload());
                 session.sendMessage(new TextMessage("Invalid message format"));
                 return;
             }
 
             // 发送到RocketMQ
-            sendToRocketMQ(dto);
+            sendToRocketMQ(locationUpdateDTO);
 
             // 发送确认消息
             session.sendMessage(new TextMessage("Message received"));
@@ -213,11 +213,27 @@ public class LocationWebSocketHandler extends TextWebSocketHandler {
     }
 
     private boolean isValidLocationMessage(LocationUpdateDTO dto) {
-        return dto != null
-                && dto.getAlarmNo() != null
-                && dto.getLatitude() != null
-                && dto.getLongitude() != null
-                && dto.getLocationTime() != null;
+        if (dto == null) {
+            logger.warn("位置信息为空");
+            return false;
+        }
+        if (dto.getAlarmNo() == null) {
+            logger.warn("alarmNo 为空");
+            return false;
+        }
+        if (dto.getLatitude() == null || dto.getLongitude() == null) {
+            logger.warn("经纬度为空: lat={}, lon={}", dto.getLatitude(), dto.getLongitude());
+            return false;
+        }
+        if (dto.getLocationTime() == null) {
+            logger.warn("locationTime 为空");
+            return false;
+        }
+        if (dto.getChangeUnit() != null && dto.getChangeUnit() <= 0) {
+            logger.warn("changeUnit 非法: {}", dto.getChangeUnit());
+            return false;
+        }
+        return true;
     }
 
     private void sendHeartbeat(WebSocketSession session) {

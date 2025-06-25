@@ -1,13 +1,18 @@
 package com.tianhai.warn.service.impl;
 
+import com.github.pagehelper.Page;
+import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
 import com.tianhai.warn.enums.ResultCode;
 import com.tianhai.warn.exception.BusinessException;
 import com.tianhai.warn.exception.SystemException;
 import com.tianhai.warn.mapper.SysUserMapper;
+import com.tianhai.warn.model.Student;
 import com.tianhai.warn.model.SysUser;
 import com.tianhai.warn.query.SysUserQuery;
 import com.tianhai.warn.service.SysUserService;
 import com.tianhai.warn.utils.EmailValidator;
+import com.tianhai.warn.utils.PageResult;
 import com.tianhai.warn.utils.Result;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
@@ -188,5 +193,31 @@ public class SysUserServiceImpl implements SysUserService {
         List<SysUser> users = sysUserMapper.selectBySysUserNos(sysUserNos);
         logger.debug("Found {} users", users.size());
         return users;
+    }
+
+    @Override
+    public PageResult<SysUser> selectByPageQuery(SysUserQuery query) {
+        List<SysUser> sysUserList;
+        PageResult<SysUser> result;
+
+        try (Page<SysUser> page = PageHelper.startPage(query.getPageNum(), query.getPageSize())) {
+            sysUserList = sysUserMapper.selectAll();
+            result = buildPageResult(sysUserList);
+        }
+
+        return result;
+    }
+
+    // 构建分页结果
+    private PageResult<SysUser> buildPageResult(List<SysUser> sysUserList) {
+        PageInfo<SysUser> pageInfo = new PageInfo<>(sysUserList);
+
+        PageResult<SysUser> result = new PageResult<>();
+        result.setData(pageInfo.getList());
+        result.setTotal((int) pageInfo.getTotal());
+        result.setPageNum(pageInfo.getPageNum());
+        result.setPageSize(pageInfo.getPageSize());
+
+        return result;
     }
 }

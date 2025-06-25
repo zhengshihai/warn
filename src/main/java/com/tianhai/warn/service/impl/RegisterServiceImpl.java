@@ -93,9 +93,9 @@ public class RegisterServiceImpl implements RegisterService {
                 case SYS_USER:
                     // todo 这里增加职位角色的设置 (扩展方式一：读取Excel表格  扩展方式二：读取配置文件）
                     String jobRole = Constants.JOB_ROLE_CLASS_TEACHER.toLowerCase();
-                    if (registerDTO.getEmail().equals("zsh774538399@gmail.com")) {
-                        jobRole = Constants.JOB_ROLE_DEAN;
-                    }
+//                    if (registerDTO.getEmail().equals("zsh774538399@gmail.com")) {
+//                        jobRole = Constants.JOB_ROLE_DEAN;
+//                    }
                     SysUser sysUser = SysUser.builder()
                             .password(password)
                             .name(registerDTO.getName())
@@ -138,11 +138,13 @@ public class RegisterServiceImpl implements RegisterService {
 
                 case SUPER_ADMIN:
                     SuperAdmin superAdmin = SuperAdmin.builder()
-                            .email(registerDTO.getName())
+                            .name(registerDTO.getName())
+                            .email(registerDTO.getEmail())
                             .password(password)
                             .enabled(Constants.ENABLE_INT)
                             .createTime(now)
                             .updateTime(now)
+                            .lastLoginTime(now)
                             .version(0)
                             .build();
 

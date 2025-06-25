@@ -24,7 +24,7 @@ public class RoleObjectCaster {
 
         roleClassMap.put("systemuser", SysUser.class);
         roleClassMap.put("dormitorymanager", DormitoryManager.class);
-        roleClassMap.put("superadmin", SuperAdmin.class);
+        roleClassMap.put("superadmin", SuperAdmin.class); // 历史包袱
     }
 
     /**

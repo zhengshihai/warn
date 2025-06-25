@@ -1,12 +1,17 @@
 package com.tianhai.warn.service.impl;
 
+import com.github.pagehelper.Page;
+import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
 import com.tianhai.warn.enums.ResultCode;
 import com.tianhai.warn.exception.BusinessException;
 import com.tianhai.warn.exception.SystemException;
 import com.tianhai.warn.mapper.StudentMapper;
 import com.tianhai.warn.model.Student;
+import com.tianhai.warn.query.StudentQuery;
 import com.tianhai.warn.service.StudentService;
 import com.tianhai.warn.utils.EmailValidator;
+import com.tianhai.warn.utils.PageResult;
 import com.tianhai.warn.utils.Result;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
@@ -15,7 +20,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.annotation.Isolation;
 import org.springframework.util.DigestUtils;
 
 import java.util.Date;
@@ -174,5 +178,35 @@ public class StudentServiceImpl implements StudentService {
             throw new BusinessException(ResultCode.ERROR);
         }
 
+    }
+
+    @Override //todo
+    public List<Student> searchByStudentQuery(StudentQuery query) {
+        return studentMapper.searchByStudentQuery(query);
+    }
+
+    @Override
+    public PageResult<Student> selectByPageQuery(StudentQuery query) {
+        List<Student> studentList;
+        PageResult<Student> result;
+        try (Page<Student> page = PageHelper.startPage(query.getPageNum(), query.getPageSize())) {
+            studentList = studentMapper.selectAll();
+            result = buildPageResult(studentList);
+        }
+
+        return result;
+    }
+
+    // 构建分页结果
+    private PageResult<Student> buildPageResult(List<Student> studentList) {
+        PageInfo<Student> pageInfo = new PageInfo<>(studentList);
+
+        PageResult<Student> result = new PageResult<>();
+        result.setData(pageInfo.getList());
+        result.setTotal((int) pageInfo.getTotal());
+        result.setPageNum(pageInfo.getPageNum());
+        result.setPageSize(pageInfo.getPageSize());
+
+        return result;
     }
 }

@@ -1,6 +1,7 @@
 package com.tianhai.warn.mapper;
 
 import com.tianhai.warn.model.Student;
+import com.tianhai.warn.query.StudentQuery;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.Date;
@@ -90,14 +91,21 @@ public interface StudentMapper {
      */
     List<Student> selectByClassName(String className);
 
-    //根据班级名称列表更新学生班级信息 可能有多个班级名被统一改为新的班级名
+    // 根据班级名称列表更新学生班级信息 可能有多个班级名被统一改为新的班级名
     int updateStudentClassByClassNames(@Param("classNames") List<String> classNames,
-                                       @Param("newClassName") String newClassName);
+            @Param("newClassName") String newClassName);
 
-    //根据单个班级名称更新学生班级信息
+    // 根据单个班级名称更新学生班级信息
     int updateStudentClassByClassName(@Param("className") String className,
-                                      @Param("newClassName") String newClassName);
+            @Param("newClassName") String newClassName);
 
+    /**
+     * 根据查询条件搜索学生信息（支持批量查询）
+     * 
+     * @param studentQuery 查询条件
+     * @return 学生信息列表
+     */
+    List<Student> searchByStudentQuery(StudentQuery studentQuery);
 
     void updateLastLoginTime(Integer id);
 }

@@ -18,49 +18,14 @@ import java.util.List;
 public class GlobalExceptionHandler {
     private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
-    // @ExceptionHandler(BusinessException.class)
-    // @ResponseBody
-    // public Result<?> handleBusinessException(BusinessException e) {
-    // logger.warn("业务异常：{}", e.getMessage());
-    //// if (e.getResultCode() != null) {
-    //// return Result.error(e.getResultCode());
-    //// }
-    //
-    // return Result.error(e.getMessage());
-    // }
-    //
-    // @ExceptionHandler(SystemException.class)
-    // @ResponseBody
-    // public Result<?> handleSystemException(SystemException e) {
-    // logger.error("系统异常：" , e);
-    // return Result.error(ResultCode.ERROR);
-    // }
-    //
-    // @ExceptionHandler(MethodArgumentNotValidException.class)
-    // @ResponseBody
-    // public Result<?> handleValidException(MethodArgumentNotValidException e) {
-    // BindingResult bindingResult = e.getBindingResult();
-    // String message = null;
-    // if (bindingResult.hasErrors()) {
-    // FieldError fieldError = bindingResult.getFieldError();
-    // if (fieldError != null) {
-    // message = fieldError.getField() + fieldError.getDefaultMessage();
-    // }
-    // }
-    //
-    // return Result.error(ResultCode.VALIDATE_FAILED.getCode(), message);
-    // }
-    //
-    // @ExceptionHandler(Exception.class)
-    // @ResponseBody
-    // public Result<?> handleException(Exception e) {
-    // logger.error("未知异常：", e);
-    //
-    // return Result.error(ResultCode.ERROR);
-    // }
+   
 
     @ExceptionHandler(BusinessException.class)
     // @ResponseBody
+     /**
+     * 修改：加@ResponseBody，确保AJAX请求时返回JSON，防止返回视图名导致404
+     */
+    @ResponseBody
     public Object handleBusinessException(BusinessException e,
             HttpServletRequest request) {
         logger.warn("业务异常：{}", e.getMessage());
@@ -76,6 +41,10 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(SystemException.class)
     // @ResponseBody
+     /**
+     * 修改：加@ResponseBody，确保AJAX请求时返回JSON，防止返回视图名导致404
+     */
+    @ResponseBody
     public Object handleSystemException(SystemException e,
             HttpServletRequest request) {
         logger.error("系统异常：", e);
@@ -106,6 +75,10 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     // @ResponseBody
+     /**
+     * 修改：加@ResponseBody，确保AJAX请求时返回JSON，防止返回视图名导致404
+     */
+    @ResponseBody
     public Object handleException(Exception e,
             HttpServletRequest request) {
         logger.error("未知异常：", e);

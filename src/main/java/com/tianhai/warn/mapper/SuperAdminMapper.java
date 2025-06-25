@@ -25,5 +25,5 @@ public interface SuperAdminMapper {
 
     int countAll();
 
-    void updateLastLoginTime(Date date);
+
 }

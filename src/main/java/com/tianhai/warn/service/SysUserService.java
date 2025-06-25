@@ -2,6 +2,7 @@ package com.tianhai.warn.service;
 
 import com.tianhai.warn.model.SysUser;
 import com.tianhai.warn.query.SysUserQuery;
+import com.tianhai.warn.utils.PageResult;
 import com.tianhai.warn.utils.Result;
 
 import java.util.List;
@@ -82,4 +83,11 @@ public interface SysUserService {
      * @return   班级管理员
      */
     SysUser selectById(Integer id);
+
+    /**
+     * 分页查询班级管理员信息
+     * @param query     查询条件
+     * @return          分页查询结果
+     */
+    PageResult<SysUser> selectByPageQuery(SysUserQuery query);
 }

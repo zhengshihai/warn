@@ -2,6 +2,7 @@ package com.tianhai.warn.interceptor;
 
 import java.util.List;
 
+import com.tianhai.warn.utils.RoleObjectCaster;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -58,7 +59,7 @@ public class PermissionInterceptor implements HandlerInterceptor{
 
         // 登录校验
         HttpSession session = request.getSession();
-        // 此处获得的用户角色名分别是三大类角色，Student, SystemUser, DormitoryManager 
+        // 此处获得的用户角色名分别是四大类角色，Student, SystemUser, DormitoryManager, SuperAdmin
         //如果是SystemUser 则还有子角色，例如辅导员，班主任，院级领导等
         String userRoleName = (String) session.getAttribute("role"); 
         Object currentUserObject = session.getAttribute("user");
@@ -92,6 +93,7 @@ public class PermissionInterceptor implements HandlerInterceptor{
             switch (userRoleName.toLowerCase())  {
                 case STUDENT:
                     Student validateStudent = (Student) currentUserObject;
+//                    Student validateStudent = RoleObjectCaster.cast(userRoleName.toLowerCase(), currentUserObject);
                     Student student = studentService.selectByCondition(validateStudent).get(0);
                     if (student == null) {
                         throw new BusinessException(ResultCode.FORBIDDEN);
@@ -101,6 +103,7 @@ public class PermissionInterceptor implements HandlerInterceptor{
                 
                 case DORMITORY_MANAGER:
                     DormitoryManager validateManager = (DormitoryManager) currentUserObject;
+//                    DormitoryManager validateManager = RoleObjectCaster.cast(userRoleName.toLowerCase(), currentUserObject );
                     DormitoryManager dormitoryManager = dormitoryManagerService.selectByCondition(validateManager).get(0);
                     if (dormitoryManager == null) {
                         throw new BusinessException(ResultCode.FORBIDDEN);

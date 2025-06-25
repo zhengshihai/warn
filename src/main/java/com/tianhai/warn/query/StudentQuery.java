@@ -1,12 +1,14 @@
 package com.tianhai.warn.query;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.util.List;
 
-@Getter
-@Setter
+@Data
+@SuperBuilder
+@AllArgsConstructor
+@NoArgsConstructor
 public class StudentQuery extends BaseQuery{
     private Integer id; // 主键ID
     private String studentNo; // 学号
@@ -27,6 +29,5 @@ public class StudentQuery extends BaseQuery{
     private List<String> colleges; // 批量学院查询
     private List<String> classesNames; // 批量班级查询
     private List<String> dormitories; // 批量宿舍查询
-
 
 }

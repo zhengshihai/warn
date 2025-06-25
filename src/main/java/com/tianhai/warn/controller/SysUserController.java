@@ -1,12 +1,15 @@
 package com.tianhai.warn.controller;
 
 import com.tianhai.warn.annotation.LogOperation;
+import com.tianhai.warn.annotation.RequirePermission;
+import com.tianhai.warn.constants.Constants;
 import com.tianhai.warn.enums.ResultCode;
 import com.tianhai.warn.exception.BusinessException;
 import com.tianhai.warn.exception.SystemException;
 import com.tianhai.warn.model.SysUser;
 import com.tianhai.warn.query.SysUserQuery;
 import com.tianhai.warn.service.SysUserService;
+import com.tianhai.warn.utils.PageResult;
 import com.tianhai.warn.utils.Result;
 
 import com.tianhai.warn.utils.SessionUtils;
@@ -73,10 +76,36 @@ public class SysUserController {
     /**
      * 获取所有系统用户列表
      */
-    @GetMapping("/list")
+//    @GetMapping("/list")
+//    @ResponseBody
+//    public Result<List<SysUser>> getAllSysUsers() {
+//        return Result.success(sysUserService.getAllSysUsers());
+//    }
+    @GetMapping("/page-list")
     @ResponseBody
-    public Result<List<SysUser>> getAllSysUsers() {
-        return Result.success(sysUserService.getAllSysUsers());
+    @RequirePermission(roles = Constants.SUPER_ADMIN)
+    @LogOperation("超级管理员分页查询班级管理员信息")
+    public Result<PageResult<SysUser>> getSysUserListPage(SysUserQuery query) {
+        if (query == null) {
+            return Result.error(ResultCode.PARAMETER_ERROR);
+        }
+
+        // 分页参数校验
+        if (query.getPageNum() == null || query.getPageNum() < 1) {
+            query.setPageNum(Constants.DEFAULT_PAGE_NUM);
+        }
+        if (query.getPageSize() == null || query.getPageSize() < 1) {
+            query.setPageSize(Constants.DEFAULT_PAGE_SIZE);
+        }
+
+        PageResult<SysUser> sysUserList = sysUserService.selectByPageQuery(query);
+        // 没有数据时返回空列表
+        if (sysUserList == null || sysUserList.getData() == null
+             || sysUserList.getData().isEmpty()) {
+            return Result.success(new PageResult<>());
+        }
+
+        return Result.success(sysUserList);
     }
 
     /**
@@ -163,11 +192,11 @@ public class SysUserController {
         //创建错误信息列表
         List<String> errors =  new ArrayList<>();
 
-        //验证必填字段
+        //验证必填字段 TODO 前端补充工号
         //sysUserNo , name, phone, email, password,
-        if (StringUtils.isBlank(sysUser.getSysUserNo())) {
-            errors.add("工号不能为空");
-        }
+//        if (StringUtils.isBlank(sysUser.getSysUserNo())) {
+//            errors.add("工号不能为空");
+//        }
         if (StringUtils.isBlank(sysUser.getName())) {
             errors.add("姓名不能为空");
         }

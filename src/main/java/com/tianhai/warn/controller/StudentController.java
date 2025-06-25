@@ -6,8 +6,10 @@ import com.tianhai.warn.constants.Constants;
 import com.tianhai.warn.enums.ResultCode;
 import com.tianhai.warn.exception.BusinessException;
 import com.tianhai.warn.model.Student;
+import com.tianhai.warn.query.StudentQuery;
 import com.tianhai.warn.service.StudentService;
 import com.tianhai.warn.utils.EmailValidator;
+import com.tianhai.warn.utils.PageResult;
 import com.tianhai.warn.utils.Result;
 import com.tianhai.warn.utils.SessionUtils;
 import jakarta.servlet.http.HttpSession;
@@ -51,12 +53,41 @@ public class StudentController {
     /**
      * 跳转到学生列表页面
      */
-    @GetMapping("/list")
-    public String list(Model model) {
-        List<Student> students = studentService.selectAll();
-        model.addAttribute("students", students);
-        return "student/list";
+//    @GetMapping("/list")
+//    public String list(Model model) {
+//        List<Student> students = studentService.selectAll();
+//        model.addAttribute("students", students);
+//        return "student/list";
+//    }
+
+
+    @GetMapping("/page-list")
+    @ResponseBody
+    @RequirePermission(roles = Constants.SUPER_ADMIN)
+    @LogOperation("超级管理员分页查询学生信息")
+    public Result<PageResult<Student>> getStudentListPage(StudentQuery query) {
+        if (query == null) {
+            return Result.error(ResultCode.PARAMETER_ERROR);
+        }
+
+        // 分页参数校验
+        if (query.getPageNum() == null || query.getPageNum() < 1) {
+            query.setPageNum(Constants.DEFAULT_PAGE_NUM);
+        }
+        if (query.getPageSize() == null || query.getPageSize() < 1) {
+            query.setPageSize(Constants.DEFAULT_PAGE_SIZE);
+        }
+
+        PageResult<Student> studentList = studentService.selectByPageQuery(query);
+        // 没有数据时返回空列表
+        if (studentList == null || studentList.getData() == null
+            || studentList.getData().isEmpty()) {
+            return Result.success(new PageResult<>());
+        }
+
+        return Result.success(studentList);
     }
+
 
     /**
      * 跳转到添加学生页面

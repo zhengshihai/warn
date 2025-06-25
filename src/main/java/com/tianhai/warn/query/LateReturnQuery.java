@@ -2,12 +2,15 @@ package com.tianhai.warn.query;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.util.Date;
 import java.util.List;
 
-@Getter
-@Setter
+@Data
+@SuperBuilder
+@AllArgsConstructor
+@NoArgsConstructor
 public class LateReturnQuery extends BaseQuery {
     private Long id; // 晚归主键id
     private String lateReturnId; // 晚归记录id

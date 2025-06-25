@@ -60,4 +60,21 @@ public class LocationTrack {
      */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date createdAt;
+
+    /**
+     * 静止段起始时间
+     */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date firstLocationTime;
+
+    /**
+     * 静止段结束时间
+     */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date endLocationTime;
+
+    /**
+     * 前端上报间隔（秒）
+     */
+    private Integer changeUnit;
 }

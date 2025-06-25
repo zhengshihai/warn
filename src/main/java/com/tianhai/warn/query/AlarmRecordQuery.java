@@ -1,18 +1,18 @@
 package com.tianhai.warn.query;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.io.Serial;
 import java.util.Date;
 import java.util.List;
 
-@Getter
-@Setter
+@Data
+@SuperBuilder
+@AllArgsConstructor
+@NoArgsConstructor
 public class AlarmRecordQuery extends BaseQuery{
-    @Serial
-    private static final long serialVersionUID = 1L;
 
     private Long id;
     private String alarmNo;

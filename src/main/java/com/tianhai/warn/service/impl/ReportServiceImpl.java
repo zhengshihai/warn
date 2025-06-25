@@ -99,7 +99,7 @@ public class ReportServiceImpl implements ReportService {
     }
 
     /**
-     * 获取统计卡片数据（排除高危预警）
+     * 获取统计卡片数据（不包括高危预警）
      * 统计指定时间范围内的晚归总次数、晚归学生人数和完成率
      * 结果会被缓存2小时
      *

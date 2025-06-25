@@ -22,6 +22,7 @@ import org.springframework.util.DigestUtils;
 import org.springframework.util.StringUtils;
 
 import java.util.*;
+import java.nio.charset.StandardCharsets;
 
 import static com.tianhai.warn.constants.Constants.*;
 import static com.tianhai.warn.constants.Constants.SUPER_ADMIN;
@@ -48,16 +49,15 @@ public class AuthServiceImpl implements AuthService {
     @Autowired
     private SuperAdminService superAdminService;
 
-
-
     /**
      * 项目设定在学生 班级管理员 宿管三个角色将 每个用户的邮箱具有唯一性
-       但超级管理员的邮箱可出现在特定的班级管理员中
+     * 但超级管理员的邮箱可出现在特定的班级管理员中
+     * 
      * @param name     姓名
      * @param email    邮箱
      * @param password 密码
      * @param role     角色
-     * @return         用户信息
+     * @return 用户信息
      */
     @Override
     public Map<String, Object> login(String name, String email, String password, String role) {
@@ -67,7 +67,9 @@ public class AuthServiceImpl implements AuthService {
         }
 
         // 2. 根据角色验证用户
-        String encryptedPassword = DigestUtils.md5DigestAsHex(password.getBytes());
+//        System.out.println("登录明文密码: [" + password + "] 长度: " + password.length());
+        String encryptedPassword = DigestUtils.md5DigestAsHex(password.getBytes(StandardCharsets.UTF_8));
+//        System.out.println("登录加密密码: " + encryptedPassword);
         Map<String, Object> infoMap = new HashMap<>();
         Object userObject = null; // 用于存储具体的用户对象
         Long userId = null; // 用户存储用户的主键ID
@@ -103,8 +105,8 @@ public class AuthServiceImpl implements AuthService {
                     infoMap.put(Constants.SESSION_ATTRIBUTE_ROLE, UserRole.SYSTEM_USER.getCode());
                     infoMap.put(Constants.SESSION_ATTRIBUTE_JOB_ROLE, sysUser.getJobRole().toLowerCase());
 
-                    sysUserService.updateLastLoginTime(sysUser.getId());
-                    break;
+                sysUserService.updateLastLoginTime(sysUser.getId());
+                break;
 
                 // 宿管
                 case DORMITORY_MANAGER:
@@ -119,42 +121,44 @@ public class AuthServiceImpl implements AuthService {
 //                    infoMap.put(Constants.SESSION_ATTRIBUTE_USER, manager);
                     infoMap.put(Constants.SESSION_ATTRIBUTE_ROLE, UserRole.DORMITORY_MANAGER.getCode());
 
-                    dormitoryManagerService.updateLastLoginTime(manager.getId());
-                    break;
+                dormitoryManagerService.updateLastLoginTime(manager.getId());
+                break;
 
-                // 超级管理员
-                case SUPER_ADMIN:
-                    SuperAdmin superAdmin = superAdminService.getByEmail(email);
-                    if (superAdmin == null || !superAdmin.getPassword().equals(encryptedPassword)) {
-                        throw new BusinessException(ResultCode.USER_NAME_PWD_FALSE);
-                    }
-                    superAdmin.setPassword(null);
-                    userObject = superAdmin;
-                    userId = superAdmin.getId().longValue();
-                    userRoleCode = UserRole.SUPER_ADMIN.getCode();
-//                    infoMap.put(Constants.SESSION_ATTRIBUTE_USER, superAdmin);
-                    infoMap.put(Constants.SESSION_ATTRIBUTE_ROLE, UserRole.SUPER_ADMIN);
+            // 超级管理员
+            case SUPER_ADMIN: // 数据库原加密密码 1badb1de368b07ab6521149f4bdaac30
+                SuperAdmin superAdmin = superAdminService.getByEmail(email);
+                if (superAdmin == null || !superAdmin.getPassword().equals(encryptedPassword)) {
+                    throw new BusinessException(ResultCode.USER_NAME_PWD_FALSE);
+                }
+//                System.out.println("数据库密码: " +
+//                (superAdmin != null ? superAdmin.getPassword() : "null"));
+                superAdmin.setPassword(null);
+                userObject = superAdmin;
+                userId = superAdmin.getId().longValue();
+                userRoleCode = UserRole.SUPER_ADMIN.getCode();
+                // infoMap.put(Constants.SESSION_ATTRIBUTE_USER, superAdmin);
+                infoMap.put(Constants.SESSION_ATTRIBUTE_ROLE, UserRole.SUPER_ADMIN);
 
-                    superAdminService.updateLastLoginTime(superAdmin.getId());
-                    break;
+                superAdminService.updateLastLoginTime(superAdmin.getId());
+                break;
 
-                default:
-                    throw new BusinessException(ResultCode.USER_ROLE_DISABLE);
+            default:
+                throw new BusinessException(ResultCode.USER_ROLE_DISABLE);
 
-            }
+        }
 
-            if (userObject != null && userId != null && userRoleCode != null) {
-                infoMap.put(Constants.SESSION_ATTRIBUTE_USER, userObject);
-                infoMap.put("userId", userId); // 将用户ID放入map
-                infoMap.put(Constants.SESSION_ATTRIBUTE_ROLE, userRoleCode); // 将角色编码放入map
-            } else {
-                // 如果用户对象、ID或角色获取失败，记录错误并抛出异常
-                System.err.println("获取用户ID或角色失败: userObject is " + (userObject == null ? "null" : "not null") +
-                        ", userId is " + userId + ", userRoleCode is " + userRoleCode); // 更详细的错误日志
-                throw new BusinessException(ResultCode.USER_NAME_PWD_FALSE); // 抛出异常通知Controller
-            }
+        if (userObject != null && userId != null && userRoleCode != null) {
+            infoMap.put(Constants.SESSION_ATTRIBUTE_USER, userObject);
+            infoMap.put("userId", userId); // 将用户ID放入map
+            infoMap.put(Constants.SESSION_ATTRIBUTE_ROLE, userRoleCode); // 将角色编码放入map
+        } else {
+            // 如果用户对象、ID或角色获取失败，记录错误并抛出异常
+            System.err.println("获取用户ID或角色失败: userObject is " + (userObject == null ? "null" : "not null") +
+                    ", userId is " + userId + ", userRoleCode is " + userRoleCode); // 更详细的错误日志
+            throw new BusinessException(ResultCode.USER_NAME_PWD_FALSE); // 抛出异常通知Controller
+        }
 
-            return infoMap;
+        return infoMap;
     }
 
     @Override
@@ -248,12 +252,12 @@ public class AuthServiceImpl implements AuthService {
         }
     }
 
-
     /**
      * 从数据库中查询用户
-     * @param userRole      用户角色（非职位角色）
-     * @param userId        用户主键ID（非业务标识ID）
-     * @return              用户信息
+     * 
+     * @param userRole 用户角色（非职位角色）
+     * @param userId   用户主键ID（非业务标识ID）
+     * @return 用户信息
      */
     private Object searchUserFromDB(String userRole, Long userId) {
         // 注意：这里的selectById方法需要确保你的Mapper/Service能够根据Long类型的ID查找
@@ -279,13 +283,12 @@ public class AuthServiceImpl implements AuthService {
                 }
             }
 
-            case SUPER_ADMIN -> userObject = superAdminService.selectById(userId.intValue());
+            case SUPER_ADMIN -> userObject = superAdminService.selectByIdWithoutPassword(userId.intValue());
 
             default -> throw new BusinessException(ResultCode.USER_ROLE_DISABLE);
         }
 
         return userObject;
     }
-
 
 }

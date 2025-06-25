@@ -1,14 +1,16 @@
 package com.tianhai.warn.query;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.util.Date;
 import java.util.List;
 
-@Getter
-@Setter
+@Data
+@SuperBuilder
+@AllArgsConstructor
+@NoArgsConstructor
 public class ApplicationQuery extends BaseQuery {
     private Long id;
     private String applicationId; // 申请ID
