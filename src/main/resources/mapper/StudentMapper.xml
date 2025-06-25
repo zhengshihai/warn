@@ -250,18 +250,7 @@
                 </foreach>
             </if>
         </where>
-        <if test="orderBy != null and orderBy != ''">
-            ORDER BY ${orderBy}
-        </if>
-        <if test="orderBy == null or orderBy == ''">
-            ORDER BY id DESC
-        </if>
-        <if test="limit != null and limit > 0">
-            LIMIT #{limit}
-        </if>
-        <if test="offset != null and offset >= 0">
-            OFFSET #{offset}
-        </if>
+        ORDER BY student_no ASC
     </select>
 
 </mapper> 

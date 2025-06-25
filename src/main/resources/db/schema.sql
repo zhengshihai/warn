@@ -225,7 +225,7 @@ CREATE TABLE super_admin (
      `enabled` TINYINT(1) NOT NULL DEFAULT 1 COMMENT '是否启用（0：禁用，1：启用）',
      `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
      `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-     `last_login_time` DATETIME COMMENT '最后登录时间', -- todo
+     `last_login_time` DATETIME COMMENT '最后登录时间',
      `version` INT DEFAULT 0 COMMENT '乐观锁版本号',
     UNIQUE KEY `uk_email` (`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4  COMMENT='超级管理员表';

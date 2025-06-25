@@ -30,16 +30,40 @@
         VALUES (#{name}, #{password}, #{email}, #{enabled}, NOW(), NOW(), 0, NOW())
     </insert>
 
+<!--    <update id="update" parameterType="com.tianhai.warn.model.SuperAdmin">-->
+<!--        UPDATE super_admin-->
+<!--        SET name = #{name},-->
+<!--            password = #{password},-->
+<!--            email = #{email},-->
+<!--            enabled = #{enabled},-->
+<!--            update_time = NOW(),-->
+<!--            version = version + 1-->
+<!--        WHERE id = #{id} AND version = #{version}-->
+<!--    </update>-->
     <update id="update" parameterType="com.tianhai.warn.model.SuperAdmin">
         UPDATE super_admin
-        SET name = #{name},
-            password = #{password},
-            email = #{email},
-            enabled = #{enabled},
+        <set>
+            <if test="name != null and name != ''">
+                name = #{name},
+            </if>
+            <if test="password != null and password != ''">
+                password = #{password},
+            </if>
+            <if test="email != null and email != ''">
+                email = #{email},
+            </if>
+            <if test="enabled != null">
+                enabled = #{enabled},
+            </if>
+            <if test ="lastLoginTime != null">
+                last_login_time = #{lastLoginTime},
+            </if>
             update_time = NOW(),
             version = version + 1
+        </set>
         WHERE id = #{id} AND version = #{version}
     </update>
+
 
     <delete id="deleteById">
         DELETE FROM super_admin WHERE id = #{id}
