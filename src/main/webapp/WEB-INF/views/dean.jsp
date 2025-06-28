@@ -195,6 +195,15 @@
     <script src="${pageContext.request.contextPath}/static/js/sysuser-validation.js"></script>
 
     <script>
+        $.ajaxSetup({
+            beforeSend: function(xhr) {
+                var loginUUID = localStorage.getItem('loginUUID');
+                if (loginUUID) {
+                    xhr.setRequestHeader('X-Login-UUID', loginUUID);
+                }
+            }
+        });
+
         // 初始化图表
         var chartDom = document.getElementById('collegeChart');
         var myChart = echarts.init(chartDom);
@@ -295,6 +304,7 @@
 
         function handleLogout() {
             if (confirm('确定要退出登录吗？')) {
+                localStorage.removeItem('loginUUID');
                 window.location.href = '${pageContext.request.contextPath}/logout';
             }
         }

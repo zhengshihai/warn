@@ -213,9 +213,19 @@
     </div>
 
     <script>
+        $.ajaxSetup({
+            beforeSend: function(xhr) {
+                var loginUUID = localStorage.getItem('loginUUID');
+                if (loginUUID) {
+                    xhr.setRequestHeader('X-Login-UUID', loginUUID);
+                }
+            }
+        });
+
         // 退出登录
         function handleLogout() {
             if (confirm('确定要退出登录吗？')) {
+                localStorage.removeItem('loginUUID');
                 window.location.href = '${pageContext.request.contextPath}/logout';
             }
         }

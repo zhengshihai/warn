@@ -372,6 +372,15 @@
     </c:if>
 
     <script>
+        $.ajaxSetup({
+            beforeSend: function(xhr) {
+                var loginUUID = localStorage.getItem('loginUUID');
+                if (loginUUID) {
+                    xhr.setRequestHeader('X-Login-UUID', loginUUID);
+                }
+            }
+        });
+
         // 添加调试信息
         console.log('Context Path:', '${pageContext.request.contextPath}');
         

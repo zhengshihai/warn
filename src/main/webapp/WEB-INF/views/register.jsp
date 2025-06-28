@@ -319,6 +319,15 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
+        $.ajaxSetup({
+            beforeSend: function(xhr) {
+                var loginUUID = localStorage.getItem('loginUUID');
+                if (loginUUID) {
+                    xhr.setRequestHeader('X-Login-UUID', loginUUID);
+                }
+            }
+        });
+
         $(document).ready(function () {
             // 刷新验证码
             function refreshCaptcha() {

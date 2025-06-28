@@ -551,6 +551,15 @@
 
 
     <script>
+        $.ajaxSetup({
+            beforeSend: function(xhr) {
+                var loginUUID = localStorage.getItem('loginUUID');
+                if (loginUUID) {
+                    xhr.setRequestHeader('X-Login-UUID', loginUUID);
+                }
+            }
+        });
+
         // 数据验证
         <c:if test="${empty sessionScope.user}">
             window.location.href = "${pageContext.request.contextPath}/register";
@@ -915,6 +924,7 @@
 
         function handleLogout() {
             if (confirm('确定要退出登录吗？')) {
+                localStorage.removeItem('loginUUID');
                 window.location.href = '${pageContext.request.contextPath}/logout';
             }
         }

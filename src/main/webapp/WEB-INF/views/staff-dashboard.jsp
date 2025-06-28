@@ -365,6 +365,15 @@
 <script src="https://webapi.amap.com/maps?v=2.0&key=c34c1fdbcbe4d043906c95993710fbcc"></script>
 
 <script>
+  $.ajaxSetup({
+    beforeSend: function(xhr) {
+      var loginUUID = localStorage.getItem('loginUUID');
+      if (loginUUID) {
+        xhr.setRequestHeader('X-Login-UUID', loginUUID);
+      }
+    }
+  });
+
   // 数据验证
   <c:if test="${empty sessionScope.user}">
   window.location.href = "${pageContext.request.contextPath}/register";
@@ -479,6 +488,7 @@
 
   function handleLogout() {
     if (confirm('确定要退出登录吗？')) {
+      localStorage.removeItem('loginUUID');
       window.location.href = '${pageContext.request.contextPath}/logout';
     }
   }

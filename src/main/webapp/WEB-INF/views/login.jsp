@@ -86,6 +86,15 @@
 
     <script>
         $(document).ready(function() {
+            $.ajaxSetup({
+                beforeSend: function(xhr) {
+                    var loginUUID = localStorage.getItem('loginUUID');
+                    if (loginUUID) {
+                        xhr.setRequestHeader('X-Login-UUID', loginUUID);
+                    }
+                }
+            });
+
             $('#loginForm').on('submit', function(e) {
                 e.preventDefault();
                 
@@ -116,6 +125,9 @@
                             console.log('用户角色:', response.data.role);
                             console.log('职业角色:', response.data.job_role);
                             console.log('用户数据:', response.data);
+
+                            // 保存loginUUID 到localStorage
+                            localStorage.setItem('loginUUID', response.data.loginUUID);
 
 
                             // 登录成功，根据角色跳转到不同页面

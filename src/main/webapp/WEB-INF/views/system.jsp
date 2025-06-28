@@ -198,6 +198,15 @@
     </div>
 
     <script>
+        $.ajaxSetup({
+            beforeSend: function(xhr) {
+                var loginUUID = localStorage.getItem('loginUUID');
+                if (loginUUID) {
+                    xhr.setRequestHeader('X-Login-UUID', loginUUID);
+                }
+            }
+        });
+
         // 选项卡切换
         document.querySelectorAll('nav a').forEach(link => {
             link.addEventListener('click', (e) => {
