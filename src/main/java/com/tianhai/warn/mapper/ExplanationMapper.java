@@ -52,4 +52,12 @@ public interface ExplanationMapper {
      * @return 晚归说明
      */
     Explanation selectByExplanationId(String explanationId);
+
+    /**
+     * 批量更新晚归说明
+     * 
+     * @param explanationList 晚归说明列表
+     * @return 影响行数
+     */
+    int updateBatch(@Param("explanationList") List<Explanation> explanationList);
 }

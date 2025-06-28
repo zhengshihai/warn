@@ -205,9 +205,6 @@ public class AuthServiceImpl implements AuthService {
 
         try {
             // 1. 解析并验证JWT
-//            Jws<Claims> claimsJws = Jwts.parser()
-//                    .setSigningKey(jwtSecret)
-//                    .parseClaimsJws(token);
             Jws<Claims> claimsJws = Jwts.parserBuilder()
                     .setSigningKey(Keys.hmacShaKeyFor(Base64.getDecoder().decode(jwtSecret)))
                     .build()

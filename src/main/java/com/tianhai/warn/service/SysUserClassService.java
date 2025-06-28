@@ -1,7 +1,10 @@
 package com.tianhai.warn.service;
 
+import com.tianhai.warn.model.SysUser;
 import com.tianhai.warn.model.SysUserClass;
+import org.apache.ibatis.annotations.Param;
 
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -46,4 +49,19 @@ public interface SysUserClassService {
     List<SysUserClass> getSysUserClassListByClassName(String className);
 
 
+    /**
+     * 根据班级管理员班级实体的sys_user_no批量更新
+     * @param sysUserClassList   班级管理员信息列表
+     * @return              更新行数
+     */
+    int updateBatchBySysUserNo(@Param("sysUserClassList") List<SysUserClass> sysUserClassList);
+
+    /**
+     * 更新班级管理员的工号
+     * @param oldSysUserNo     旧工号
+     * @param newSysUserNo     新工号
+     * @param updateTime       更新时间
+     * @return                 更新行数
+     */
+    int updateSysUserNo(String oldSysUserNo, String newSysUserNo, Date updateTime);
 }

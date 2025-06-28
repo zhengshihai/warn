@@ -37,4 +37,5 @@ public interface SuperAdminService {
      * @return
      */
     PageResult<SuperAdmin> selectByPageQuery(SuperAdminQuery query);
+
 }

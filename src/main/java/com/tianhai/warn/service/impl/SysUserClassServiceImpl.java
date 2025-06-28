@@ -1,9 +1,12 @@
 package com.tianhai.warn.service.impl;
 
+import com.tianhai.warn.constants.Constants;
 import com.tianhai.warn.enums.ResultCode;
 import com.tianhai.warn.exception.BusinessException;
+import com.tianhai.warn.exception.SystemException;
 import com.tianhai.warn.mapper.StudentMapper;
 import com.tianhai.warn.mapper.SysUserClassMapper;
+import com.tianhai.warn.model.SysUser;
 import com.tianhai.warn.model.SysUserClass;
 import com.tianhai.warn.service.SysUserClassService;
 import org.apache.commons.lang3.StringUtils;
@@ -13,9 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -106,5 +107,48 @@ public class SysUserClassServiceImpl implements SysUserClassService {
         return sysUserClassMapper.selectByClassName(className);
     }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int updateBatchBySysUserNo(List<SysUserClass> sysUserClassList) {
+        // 校验 jobRole 是否符合限定的职业角色jobRole范围
+        List<String> validJobRoleList = List.of(Constants.JOB_ROLE_COUNSELOR,
+                Constants.JOB_ROLE_DEAN,
+                Constants.JOB_ROLE_CLASS_TEACHER,
+                Constants.JOB_ROLE_OTHER);
 
+        List<SysUserClass> illegalJobRoleList = sysUserClassList.stream()
+                .filter(sysUserClass -> !validJobRoleList.contains(sysUserClass.getJobRole()))
+                .toList();
+
+        if (!illegalJobRoleList.isEmpty()) {
+            illegalJobRoleList.forEach(sysUserClass ->
+                    logger.error("存在非法 jobRole, sysUserClass: {}", sysUserClass));
+            throw new BusinessException(ResultCode.PARAMETER_ERROR);
+        }
+
+        // 校验 sysUserNo 是否唯一
+        Set<String> sysUserNoSet = new HashSet<>();
+        List<String> duplicateSysUserNoList = new ArrayList<>();
+
+        for (SysUserClass sysUserClass : sysUserClassList) {
+            if (!sysUserNoSet.add(sysUserClass.getSysUserNo())) {
+                duplicateSysUserNoList.add(sysUserClass.getSysUserNo());
+            }
+            sysUserClass.setUpdateTime(new Date());
+        }
+
+        if (!duplicateSysUserNoList.isEmpty()) {
+            logger.error("存在重复 sysUserNo, duplicateSysUserNoList: {} ", duplicateSysUserNoList);
+            throw new BusinessException(ResultCode.PARAMETER_ERROR);
+        }
+
+        // 更新班级管理员信息
+        return  sysUserClassMapper.updateBatchBySysUserNo(sysUserClassList);
+
+    }
+
+    @Override
+    public int updateSysUserNo(String oldSysUserNo, String newSysUserNo, Date updateTime) {
+        return sysUserClassMapper.updateSysUserNo(oldSysUserNo, newSysUserNo, updateTime);
+    }
 }

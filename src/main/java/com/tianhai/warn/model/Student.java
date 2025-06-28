@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 import java.io.Serial;
 import java.io.Serializable;
@@ -14,9 +15,10 @@ import java.util.Date;
  * 学生实体类
  */
 @Data
-@Builder
+//@SuperBuilder   // 这里用@SuperBuilder代替@Builder是因为该类含有子类
 @NoArgsConstructor
 @AllArgsConstructor
+
 public class Student implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;

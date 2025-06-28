@@ -26,8 +26,7 @@ public class GlobalExceptionHandler {
      * 修改：加@ResponseBody，确保AJAX请求时返回JSON，防止返回视图名导致404
      */
     @ResponseBody
-    public Object handleBusinessException(BusinessException e,
-            HttpServletRequest request) {
+    public Object handleBusinessException(BusinessException e, HttpServletRequest request) {
         logger.warn("业务异常：{}", e.getMessage());
 
         request.setAttribute("errorMsg", e.getMessage());

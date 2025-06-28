@@ -6,12 +6,15 @@ import com.tianhai.warn.constants.Constants;
 import com.tianhai.warn.enums.ResultCode;
 import com.tianhai.warn.exception.BusinessException;
 import com.tianhai.warn.exception.SystemException;
+import com.tianhai.warn.model.SuperAdmin;
 import com.tianhai.warn.model.SysUser;
 import com.tianhai.warn.query.SysUserQuery;
+import com.tianhai.warn.service.SuperAdminService;
 import com.tianhai.warn.service.SysUserService;
 import com.tianhai.warn.utils.PageResult;
 import com.tianhai.warn.utils.Result;
 
+import com.tianhai.warn.utils.RoleObjectCaster;
 import com.tianhai.warn.utils.SessionUtils;
 import jakarta.servlet.http.HttpSession;
 
@@ -25,6 +28,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * 系统用户管理控制器
@@ -37,6 +41,9 @@ public class SysUserController {
 
     @Autowired
     private SysUserService sysUserService;
+
+    @Autowired
+    private SuperAdminService superAdminService;
 
 //    @Autowired
 //    private HttpSession session;
@@ -76,11 +83,6 @@ public class SysUserController {
     /**
      * 获取所有系统用户列表
      */
-//    @GetMapping("/list")
-//    @ResponseBody
-//    public Result<List<SysUser>> getAllSysUsers() {
-//        return Result.success(sysUserService.getAllSysUsers());
-//    }
     @GetMapping("/page-list")
     @ResponseBody
     @RequirePermission(roles = Constants.SUPER_ADMIN)
@@ -131,32 +133,74 @@ public class SysUserController {
      */
     @PostMapping("/update/per-info")
     @ResponseBody
-    @LogOperation("更新班级管理员信息")
+    @RequirePermission(roles = Constants.SYSTEM_USER)
+    @LogOperation("班级管理员修改班级管理员信息")
     public Result<?> updateSysUser(@RequestBody SysUser sysUser) {
-        //获取当前登录的系统管理员信息
+        //获取当前登录的班级管理员的信息
         HttpSession session = SessionUtils.getSession(false);
         if (session == null) {
             throw new BusinessException(ResultCode.UNAUTHORIZED);
         }
-        Object user = session.getAttribute("user");
-        if (!(user instanceof SysUser)) {
+        Object sessionUser = session.getAttribute(Constants.SESSION_ATTRIBUTE_USER);
+        if (!(sessionUser instanceof SysUser)) {
             throw new BusinessException(ResultCode.UNAUTHORIZED);
         }
 
         validateUpdateInfo(sysUser);
 
-        SysUser currentSysUser = (SysUser) user;
+        SysUser currentSysUser = RoleObjectCaster.cast(Constants.SYSTEM_USER, sessionUser);
         sysUser.setId(currentSysUser.getId());
 
         //调用 Service 层处理更新
-        sysUserService.updatePersonalInfo(
-                sysUser, currentSysUser.getEmail());
+        sysUserService.updatePersonalInfo(sysUser, currentSysUser.getEmail());
 
 
         sysUser.setPassword(null); // 清除密码
-        session.setAttribute("user", sysUser); // 更新 session 中的用户信息
+        session.setAttribute(Constants.SESSION_ATTRIBUTE_USER, sysUser); // 更新 session 中的用户信息
 
         return Result.success(ResultCode.SUCCESS);
+    }
+
+    @PostMapping("/super-admin/update/per-info")
+    @ResponseBody
+    @RequirePermission(roles = Constants.SUPER_ADMIN)
+    @LogOperation("超级管理员修改班级管理员信息")
+    public Result<?> updateSysUserBySuperAdmin(@RequestBody SysUser newSysUserInfo) {
+        //校验超级管理员状态
+        checkSuperAdminStatus();
+
+        if (newSysUserInfo.getId() == null || newSysUserInfo.getId() <= 0) {
+            // 密码脱敏
+            newSysUserInfo.setPassword(null);
+            logger.error("提交的班级管理员信息缺少id或者id不合法，newSysUserInfo:{}", newSysUserInfo);
+            throw new BusinessException(ResultCode.PARAMETER_ERROR);
+        }
+
+        //处理更新
+        sysUserService.updatePersonalInfoBySuperAdmin(newSysUserInfo);
+
+        return Result.success(ResultCode.SUCCESS);
+    }
+
+    private void checkSuperAdminStatus() {
+        // 获取当前登录的超级管理员信息
+        HttpSession session = SessionUtils.getSession(false);
+        if (session == null) {
+            throw new BusinessException(ResultCode.UNAUTHORIZED);
+        }
+        Object superAdminObject = session.getAttribute(Constants.SESSION_ATTRIBUTE_USER);
+        if (!(superAdminObject instanceof SuperAdmin)) {
+            throw new BusinessException(ResultCode.UNAUTHORIZED);
+        }
+
+        SuperAdmin superAdmin = RoleObjectCaster.cast(Constants.SUPER_ADMIN, superAdminObject);
+
+        // 检查当前超级管理员是否被禁用
+        SuperAdmin superAdminDB = superAdminService.selectByIdWithoutPassword(superAdmin.getId());
+        if (Objects.equals(superAdminDB.getEnabled(), Constants.DISABLE_INT)) {
+            logger.error("该超级管理员已被禁用");
+            throw new BusinessException(ResultCode.SUPER_ADMIN_DISABLE);
+        }
     }
 
     /**

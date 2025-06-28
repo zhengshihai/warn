@@ -85,8 +85,8 @@ public interface NotificationMapper {
     /**
      * 更新通知状态
      * 
-     * @param noticeId  通知记录id
-     * @param status 状态
+     * @param noticeId 通知记录id
+     * @param status   状态
      * @return 影响行数
      */
     int updateStatus(@Param("noticeId") String noticeId, @Param("status") String status);
@@ -107,4 +107,12 @@ public interface NotificationMapper {
      * @return 通知信息
      */
     Notification selectByNoticeId(String noticeId);
+
+    /**
+     * 批量更新通知信息
+     * 
+     * @param notificationList 通知信息列表
+     * @return 影响行数
+     */
+    int updateBatch(@Param("notificationList") List<Notification> notificationList);
 }

@@ -4,6 +4,7 @@ import com.tianhai.warn.dto.OneClickAlarmDTO;
 import com.tianhai.warn.model.AlarmConfig;
 import com.tianhai.warn.model.AlarmRecord;
 import com.tianhai.warn.query.AlarmRecordQuery;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
@@ -20,6 +21,9 @@ public interface AlarmRecordService {
     // 更新报警记录
     int update(AlarmRecord record);
 
+    // 批量更新报警记录
+    int updateBatch(@Param("alarmRecordList") List<AlarmRecord> alarmRecordList);
+
     // 删除报警记录
     int deleteById(Long id);
 
@@ -33,4 +37,6 @@ public interface AlarmRecordService {
     List<AlarmRecord> selectPage(AlarmRecordQuery query);
 
     AlarmConfig selectByKey(String key);
+
+
 }

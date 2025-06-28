@@ -60,4 +60,11 @@ public interface ApplicationMapper {
      * 根据applicationId查询晚归申请
      */
     Application selectByApplicationId(String applicationId);
+
+    /**
+     * 批量更新晚归申请
+     * @param applicationList    晚归申请
+     * @return                   更新行数
+     */
+    int updateBatch(List<Application> applicationList);
 }

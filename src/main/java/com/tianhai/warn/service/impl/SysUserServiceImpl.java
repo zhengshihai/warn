@@ -1,5 +1,6 @@
 package com.tianhai.warn.service.impl;
 
+import cn.hutool.core.bean.BeanUtil;
 import com.github.pagehelper.Page;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
@@ -10,10 +11,13 @@ import com.tianhai.warn.mapper.SysUserMapper;
 import com.tianhai.warn.model.Student;
 import com.tianhai.warn.model.SysUser;
 import com.tianhai.warn.query.SysUserQuery;
+import com.tianhai.warn.service.SysUserClassService;
 import com.tianhai.warn.service.SysUserService;
 import com.tianhai.warn.utils.EmailValidator;
 import com.tianhai.warn.utils.PageResult;
 import com.tianhai.warn.utils.Result;
+import org.apache.commons.lang3.StringUtils;
+import org.eclipse.tags.shaded.org.apache.bcel.generic.IF_ACMPEQ;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.slf4j.Logger;
@@ -43,6 +47,9 @@ public class SysUserServiceImpl implements SysUserService {
 
     @Autowired
     private RedissonClient redissonClient;
+
+    @Autowired
+    private SysUserClassService sysUserClassService;
 
     @Override
     public SysUser getSysUserById(Integer id) {
@@ -119,6 +126,7 @@ public class SysUserServiceImpl implements SysUserService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void updatePersonalInfo(SysUser sysUser, String currentEmail) {
         // 检查数据是否被修改
         SysUser currentSysUser = getSysUserByEmail(currentEmail);
@@ -185,6 +193,110 @@ public class SysUserServiceImpl implements SysUserService {
         } else {
             throw new BusinessException(ResultCode.USER_UPDATE_FAILED);
         }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void updatePersonalInfoBySuperAdmin(SysUser newSysUserInfo) {
+        Integer id = newSysUserInfo.getId();
+        SysUser sysUserExisting = sysUserMapper.selectById(id);
+        if (sysUserExisting == null) {
+            logger.info("找不到 id 为 {} 的该班级管理员", id);
+            throw new BusinessException(ResultCode.USER_NOT_EXISTS);
+        }
+
+        // 检查新邮箱是否已被其他用户（班级管理员 学生 宿管）占用
+        if (!emailValidator.isEmailAvailable(newSysUserInfo.getEmail(), sysUserExisting.getEmail())) {
+            throw new BusinessException(ResultCode.EMAIL_USED);
+        }
+
+        // 本项目设定不同用户是使用唯一的邮箱，考虑到可能的并发修改问题，使用redisson加锁
+        String newEmailLockKey = "lock:email:" + newSysUserInfo.getEmail();
+        RLock newEmailLock = null;
+        boolean newEmailIsLocked = false;
+        int waitTime = 5;
+        int lockTime = 3;
+
+        // 保证sys_user表和sys_user_class表并发更新安全
+        String oldSysUserNo = sysUserExisting.getSysUserNo();
+        String newSysUserNo = newSysUserInfo.getSysUserNo();
+
+        String oldSysUserLockKey = "lock:sysUserNo:" + oldSysUserNo;
+        String newSysUserLockKey = "lock:sysUserNo:" + newSysUserNo;
+        RLock oldSysUserLock = null,  newSysUserLock = null;
+        boolean oldSysUserIsLocked = false, newSysUserIsLocked = false;
+
+        try {
+            // 只有当邮箱发生变化时，才对新邮箱加分布式锁，防止并发下多个用户同时把邮箱改成同一个
+            if (!sysUserExisting.getEmail().equals(newSysUserInfo.getEmail())) {
+                newEmailLock = redissonClient.getLock(newEmailLockKey);
+                newEmailIsLocked = newEmailLock.tryLock(waitTime, lockTime, TimeUnit.SECONDS);
+                if (!newEmailIsLocked) {
+                    logger.error("获取并发修改email的RLock锁失败, lockKey: {}", newEmailLockKey);
+                    throw new SystemException(ResultCode.EMAIL_LOCKED_FAIL);
+                }
+            }
+
+            // 如果前端传了新密码，则加密后存储，否则保持原密码不变
+            boolean passwordNotEmpty = StringUtils.isNotBlank(newSysUserInfo.getPassword());
+            if (passwordNotEmpty) {
+                newSysUserInfo.setPassword(DigestUtils.md5DigestAsHex(newSysUserInfo.getPassword().getBytes()));
+            } else {
+                newSysUserInfo.setPassword(sysUserExisting.getPassword());
+            }
+
+            // 设置更新时间
+            newSysUserInfo.setUpdateTime(new Date());
+
+            // 如果 sysUserNo 发生变化，需要同时锁定旧的和新的 sysUserNo
+            if (!oldSysUserNo.equals(newSysUserNo)) {
+                oldSysUserLock = redissonClient.getLock(oldSysUserLockKey);
+                newSysUserLock = redissonClient.getLock(newSysUserLockKey);
+                oldSysUserIsLocked = oldSysUserLock.tryLock(waitTime, lockTime, TimeUnit.SECONDS);
+                newSysUserIsLocked = newSysUserLock.tryLock(waitTime, lockTime, TimeUnit.SECONDS);
+
+                if (!oldSysUserIsLocked || !newSysUserIsLocked) {
+                    logger.error("获取并发修改sysUserNo的RLock锁失败, oldLockKey: {}, newLockKey: {}",
+                            oldSysUserLockKey, newSysUserLockKey);
+                    throw new SystemException(ResultCode.SYS_USER_NO_LOCKED_FAIL);
+                }
+            }
+
+            // 更新信息
+            int sysUserUpdateRow, sysUserClassUpdateRow;
+            sysUserUpdateRow = sysUserMapper.update(newSysUserInfo);
+            if (sysUserUpdateRow == 0) {
+                logger.warn("未找到 sys_user_no 为 {} 的班级管理员，无法更新信息", newSysUserInfo.getSysUserNo());
+            }
+
+            if (!oldSysUserNo.equals(newSysUserNo)) {
+                sysUserClassUpdateRow = sysUserClassService.updateSysUserNo(oldSysUserNo, newSysUserNo, new Date());
+                if (sysUserClassUpdateRow == 0) {
+                    logger.warn("未找到 sys_user_no 为 {} 的班级管理员，无法更新班级管理员信息", oldSysUserNo);
+                }
+            }
+
+        } catch (InterruptedException e) {
+            logger.error("获取邮箱锁或者班级管理员锁失败", e);
+            throw new SystemException(ResultCode.ERROR);
+        } catch (Exception e) {
+            logger.error("更新班级管理员信息失败，可能是部分信息不符合要求， newSysUser: {}", newSysUserInfo);
+            throw new BusinessException(ResultCode.PARAMETER_ERROR);
+        } finally {
+            // 释放email锁
+            if (newEmailIsLocked) {
+                try {
+                    newEmailLock.unlock();
+                } catch (IllegalMonitorStateException e) {
+                    logger.warn("Redisson锁释放失败", e);
+                }
+            }
+
+            // 释放sysUserNo锁
+            if (oldSysUserIsLocked) oldSysUserLock.unlock();
+            if (newSysUserIsLocked) newSysUserLock.unlock();
+        }
+
     }
 
     @Override

@@ -6,7 +6,7 @@ public enum ResultCode implements IResultCode {
     VALIDATE_FAILED(404, "参数校验失败"),
     UNAUTHORIZED(401, "暂未登录或session已过期"),
     FORBIDDEN(403, "没有相关权限"),
-    PARAMETER_ERROR(999, "参数错误或者不完整"),
+    PARAMETER_ERROR(999, "参数错误或者重复或者不完整"),
 
     LOGIN_FAILED(100, "登录失败，请检查邮箱或密码是否正确"),
 
@@ -64,7 +64,9 @@ public enum ResultCode implements IResultCode {
     ALARM_CONFIG_NOT_FOUNT(11001, "该报警配置不存在"),
     ALARM_CONFIG_VERSION_MISMATCH(10010, "配置版本不匹配，请刷新后重试"),
     ALARM_AMAP_API_ERROR(10011, "调用高低地图API失败"),
-    ALARM_CONFIG_STATUS_INVALID(10012, "该报警配置状态无效" );
+    ALARM_CONFIG_STATUS_INVALID(10012, "该报警配置状态无效" ),
+
+    SYS_USER_NO_LOCKED_FAIL(12000, "获取SysUserNo锁失败");
 
     private final Integer code;
     private final String message;

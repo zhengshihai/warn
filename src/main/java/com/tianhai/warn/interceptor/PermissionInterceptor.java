@@ -2,6 +2,7 @@ package com.tianhai.warn.interceptor;
 
 import java.util.List;
 
+import com.tianhai.warn.constants.Constants;
 import com.tianhai.warn.utils.RoleObjectCaster;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -61,8 +62,8 @@ public class PermissionInterceptor implements HandlerInterceptor{
         HttpSession session = request.getSession();
         // 此处获得的用户角色名分别是四大类角色，Student, SystemUser, DormitoryManager, SuperAdmin
         //如果是SystemUser 则还有子角色，例如辅导员，班主任，院级领导等
-        String userRoleName = (String) session.getAttribute("role"); 
-        Object currentUserObject = session.getAttribute("user");
+        String userRoleName = (String) session.getAttribute(Constants.SESSION_ATTRIBUTE_ROLE);
+        Object currentUserObject = session.getAttribute(Constants.SESSION_ATTRIBUTE_USER);
 
         if (currentUserObject == null) {
             throw new BusinessException(ResultCode.UNAUTHORIZED);

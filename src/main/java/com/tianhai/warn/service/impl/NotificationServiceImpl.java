@@ -36,7 +36,7 @@ import java.util.concurrent.TimeUnit;
  * 通知信息服务实现类
  */
 @Service
-//todo 插入通知时，需要更新到redis
+// todo 插入通知时，需要更新到redis
 public class NotificationServiceImpl implements NotificationService {
 
     private static final String NOTIFICATION_CACHE_KEY = "notifications:";
@@ -53,15 +53,15 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     public PageResult<Notification> selectByPageQuery(String userRoleStr,
-                                                      Object currentUser,
-                                                      NotificationQuery query) {
+            Object currentUser,
+            NotificationQuery query) {
 
         String cacheKey = null;
         if (userRoleStr.equalsIgnoreCase(Constants.STUDENT)) {
-             Student student = RoleObjectCaster.cast(userRoleStr, currentUser);
-             cacheKey = NOTIFICATION_CACHE_KEY + Constants.STUDENT + ":" + student.getStudentNo();
+            Student student = RoleObjectCaster.cast(userRoleStr, currentUser);
+            cacheKey = NOTIFICATION_CACHE_KEY + Constants.STUDENT + ":" + student.getStudentNo();
 
-             query.setTargetId(student.getStudentNo());
+            query.setTargetId(student.getStudentNo());
         }
 
         if (userRoleStr.equalsIgnoreCase(Constants.DORMITORY_MANAGER)) {
@@ -83,16 +83,18 @@ public class NotificationServiceImpl implements NotificationService {
         }
 
         // 尝试从缓存中获取通知列表
-//        @SuppressWarnings("unchecked")
-//        List<Notification> cachedNotifications =
-//                (List<Notification>) redisTemplate.opsForValue().get(cacheKey);
-//        if (cachedNotifications != null) {
-//            int fromIndex = (query.getPageNum() - 1) * query.getPageSize();
-//            int toIndex = Math.min(fromIndex + query.getPageSize(), cachedNotifications.size());
-//            List<Notification> pageCachedNotifications = cachedNotifications.subList(fromIndex, toIndex);
-//
-//            return buildPageResult(pageCachedNotifications);
-//        }
+        // @SuppressWarnings("unchecked")
+        // List<Notification> cachedNotifications =
+        // (List<Notification>) redisTemplate.opsForValue().get(cacheKey);
+        // if (cachedNotifications != null) {
+        // int fromIndex = (query.getPageNum() - 1) * query.getPageSize();
+        // int toIndex = Math.min(fromIndex + query.getPageSize(),
+        // cachedNotifications.size());
+        // List<Notification> pageCachedNotifications =
+        // cachedNotifications.subList(fromIndex, toIndex);
+        //
+        // return buildPageResult(pageCachedNotifications);
+        // }
 
         // 如果缓存中没有，则从数据库中查询
         List<Notification> notifications;
@@ -102,7 +104,7 @@ public class NotificationServiceImpl implements NotificationService {
             result = buildPageResult(notifications);
         }
 
-        //存入缓存 10分钟有效期
+        // 存入缓存 10分钟有效期
         redisTemplate.opsForValue().set(cacheKey, notifications, CACHE_EXPIRE_TIME, TimeUnit.SECONDS);
 
         return result;
@@ -110,6 +112,7 @@ public class NotificationServiceImpl implements NotificationService {
 
     /**
      * 构建分页结果
+     * 
      * @param notifications
      * @return
      */
@@ -126,6 +129,7 @@ public class NotificationServiceImpl implements NotificationService {
 
     /**
      * 检查用户是否有权限读取该通知
+     * 
      * @param userRoleStr
      * @param currentUser
      * @param noticeId
@@ -162,6 +166,7 @@ public class NotificationServiceImpl implements NotificationService {
 
     /**
      * 批量检查用户是否有权限读取通知
+     * 
      * @param userRoleStr
      * @param currentUser
      * @param noticeIds
@@ -177,22 +182,22 @@ public class NotificationServiceImpl implements NotificationService {
         query.setNoticeIds(noticeIds);
         List<Notification> notifications = notificationMapper.selectByCondition(query);
 
-        //检查所有通知是否都针对该用户
+        // 检查所有通知是否都针对该用户
         return notifications.stream()
                 .allMatch(notification -> isNotificationForUser(userRoleStr, currentUser, notification));
     }
 
-    //todo
+    // todo
     @Override
     public Integer sendOneClickAlarmNotification(String studentNo, AlarmLevel alarmLevel) {
         logger.info("正在发送一键报警通知，学号：{}，报警等级：{}", studentNo, alarmLevel);
-
 
         return 1;
     }
 
     /**
      * 检查通知是否属于当前用户
+     * 
      * @param userRoleStr
      * @param currentUser
      * @param notification
@@ -221,9 +226,9 @@ public class NotificationServiceImpl implements NotificationService {
     public Map<String, Object> getNotificationStats(Object currentUser) {
         Map<String, Object> statsMap = new HashMap<>();
 
-        //todo 获取未读通知的数量
+        // todo 获取未读通知的数量
 
-        //todo 获取各类型通知的数量
+        // todo 获取各类型通知的数量
 
         return statsMap;
     }
@@ -286,5 +291,10 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     public Notification selectByNoticeId(String noticeId) {
         return notificationMapper.selectByNoticeId(noticeId);
+    }
+
+    @Override
+    public int updateBatch(List<Notification> notificationList) {
+        return notificationMapper.updateBatch(notificationList);
     }
 }

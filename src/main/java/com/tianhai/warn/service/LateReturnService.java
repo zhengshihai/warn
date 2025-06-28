@@ -5,6 +5,7 @@ import com.tianhai.warn.dto.StudentLateResultDTO;
 import com.tianhai.warn.model.LateReturn;
 import com.tianhai.warn.query.LateReturnQuery;
 import com.tianhai.warn.utils.PageResult;
+import reactor.util.annotation.Nullable;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -73,13 +74,14 @@ public interface LateReturnService {
     List<LateReturn> selectByProcessResult(String processResult);
 
     /**
-     * 根据时间范围查询晚归记录
+     * 根据时间范围和学生学号查询晚归记录
      * 
      * @param startTime 开始时间
      * @param endTime   结束时间
+     * @param studentNo 学生学号
      * @return 晚归记录列表
      */
-    List<LateReturn> selectByTimeRange(Date startTime, Date endTime);
+    List<LateReturn> selectByTimeRange(Date startTime, Date endTime, @Nullable String studentNo);
 
     /**
      * 插入晚归记录
@@ -144,13 +146,13 @@ public interface LateReturnService {
      */
     PageResult<LateReturn> selectByPageQuery(LateReturnQuery query);
 
-     /**
+    /**
      * 统计指定时间范围内的（没正当理由）的晚归次数
      *
      * @param query 查询条件，包含时间范围
      * @return 晚归人数
      */
-     Integer countPeriodLateReturns(LateReturnQuery query);
+    Integer countPeriodLateReturns(LateReturnQuery query);
 
     /**
      * 统计指定时间段内晚归的学生人数（去重）
@@ -158,7 +160,7 @@ public interface LateReturnService {
      * @param query 查询条件
      * @return 晚归学生人数
      */
-     Integer countPeriodLateReturnStudents(LateReturnQuery query);
+    Integer countPeriodLateReturnStudents(LateReturnQuery query);
 
     // /**
     // * 统计待处理晚归数量
@@ -198,27 +200,36 @@ public interface LateReturnService {
     /**
      * 在对应周期内统计学生晚归情况
      *
-     * @param studentLateQueryDTO   统计条件
-     * @return                      统计结果
+     * @param studentLateQueryDTO 统计条件
+     * @return 统计结果
      */
     List<StudentLateResultDTO> selectByStuLateQueryInPeriod(StudentLateQueryDTO studentLateQueryDTO);
 
-
     /**
      * 统计某个学生某段时间晚归的次数
-     * @param studentNo      学号
-     * @param startTime      起始时间
-     * @param endTime        截止时间
-     * @return               晚归次数
+     * 
+     * @param studentNo 学号
+     * @param startTime 起始时间
+     * @param endTime   截止时间
+     * @return 晚归次数
      */
     Integer countLateReturnsInPeriod(String studentNo,
-                                     Date startTime,
-                                     Date endTime);
+            Date startTime,
+            Date endTime);
 
     /**
-     *  统计指定时间段内的违规晚归记录
+     * 统计指定时间段内的违规晚归记录
+     * 
      * @param query 查询条件
-     * @return      晚归记录集合
+     * @return 晚归记录集合
      */
     List<LateReturn> listPeriodLateReturns(LateReturnQuery query);
+
+    /**
+     * 批量更新晚归记录
+     * 
+     * @param lateReturnList 晚归记录列表
+     * @return 影响行数
+     */
+    int updateBatch(List<LateReturn> lateReturnList);
 }

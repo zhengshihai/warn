@@ -32,6 +32,9 @@ import java.util.concurrent.ThreadPoolExecutor;
 @EnableAsync
 public class WebMvcConfig implements WebMvcConfigurer {
 
+        @Autowired
+        private LoginInterceptor loginInterceptor;
+
         // 暂时写死配置值
         private final String basePath = "E:/Warning/Warn/uploads";
         private final String baseUrl = "/uploads";
@@ -41,7 +44,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
         @Override
         public void addInterceptors(InterceptorRegistry registry) {
-                registry.addInterceptor(new LoginInterceptor())
+                registry.addInterceptor(loginInterceptor)
                                 .addPathPatterns("/**") // 拦截所有请求
                                 .excludePathPatterns( // 排除不需要拦截的路径
                                                 "/login",

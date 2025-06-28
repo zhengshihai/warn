@@ -78,7 +78,9 @@ public interface LateReturnMapper {
      * @param endTime   结束时间
      * @return 晚归记录列表
      */
-    List<LateReturn> selectByTimeRange(@Param("startTime") Date startTime, @Param("endTime") Date endTime);
+    List<LateReturn> selectByTimeRange(@Param("startTime") Date startTime,
+            @Param("endTime") Date endTime,
+            @Param("studentNo") String studentNo);
 
     /**
      * 插入晚归记录
@@ -121,42 +123,45 @@ public interface LateReturnMapper {
     /**
      * 统计所有晚归记录的处理状态
      * 
-     * @param lateReturnQuery     查询参数
-     * @return                    处理状态
+     * @param lateReturnQuery 查询参数
+     * @return 处理状态
      */
     Map<String, Object> countAllProcessStatus(LateReturnQuery lateReturnQuery);
 
     /**
      * 周期性统计学生晚归次数
-     * @param startDate     开始时间
-     * @param endDate       结束时间
-     * @param college       学院
-     * @param className     班级
-     * @return              统计结果
+     * 
+     * @param startDate 开始时间
+     * @param endDate   结束时间
+     * @param college   学院
+     * @param className 班级
+     * @return 统计结果
      */
 
-    List<StudentLateResultDTO> selectByStuLateQueryInPeriod(@Param("startDate")Date startDate,
-                                                            @Param("endDate") Date endDate,
-                                                            @Param("college") String college,
-                                                            @Param("className") String className);
+    List<StudentLateResultDTO> selectByStuLateQueryInPeriod(@Param("startDate") Date startDate,
+            @Param("endDate") Date endDate,
+            @Param("college") String college,
+            @Param("className") String className);
 
     /**
      * 统计某个学生某个时间段内晚归的次数
-     * @param studentNo         学号
-     * @param startLateTime     起始时间
-     * @param endLateTime       结束时间
-     * @return                  晚归次数
+     * 
+     * @param studentNo     学号
+     * @param startLateTime 起始时间
+     * @param endLateTime   结束时间
+     * @return 晚归次数
      */
     Integer countStudentLateReturnsInPeriod(@Param("studentNo") String studentNo,
-                                            @Param("startLateTime") Date startLateTime,
-                                            @Param("endLateTime") Date endLateTime);
+            @Param("startLateTime") Date startLateTime,
+            @Param("endLateTime") Date endLateTime);
 
     /**
      * 计算特定时间范围内不合规的晚归次数（晚归记录数）
-     * @param query   查询条件
-     * @return        晚归次数
+     * 
+     * @param query 查询条件
+     * @return 晚归次数
      */
-    Integer countPeriodLateReturns (LateReturnQuery query);
+    Integer countPeriodLateReturns(LateReturnQuery query);
 
     /**
      * 统计指定时间段内晚归的学生人数（去重）
@@ -167,9 +172,18 @@ public interface LateReturnMapper {
     Integer countPeriodLateReturnStudents(LateReturnQuery query);
 
     /**
-     *  统计指定时间段内的违规晚归记录
+     * 统计指定时间段内的违规晚归记录
+     * 
      * @param query 查询条件
-     * @return      晚归记录集合
+     * @return 晚归记录集合
      */
-    List<LateReturn> listPeriodLateReturns (LateReturnQuery query);
+    List<LateReturn> listPeriodLateReturns(LateReturnQuery query);
+
+    /**
+     * 批量更新晚归记录
+     * 
+     * @param lateReturnList 晚归记录列表
+     * @return 影响行数
+     */
+    int updateBatch(@Param("lateReturnList") List<LateReturn> lateReturnList);
 }

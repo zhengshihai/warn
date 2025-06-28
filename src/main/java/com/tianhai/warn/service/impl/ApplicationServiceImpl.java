@@ -172,6 +172,12 @@ public class ApplicationServiceImpl implements ApplicationService {
         return result;
     }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int updateBatch(List<Application> applicationList) {
+        return applicationMapper.updateBatch(applicationList);
+    }
+
     /**
      * 安全地获取单条记录
      * 

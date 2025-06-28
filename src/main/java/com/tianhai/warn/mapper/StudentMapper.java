@@ -108,4 +108,11 @@ public interface StudentMapper {
     List<Student> searchByStudentQuery(StudentQuery studentQuery);
 
     void updateLastLoginTime(Integer id);
+
+    /**
+     * 删除学生信息
+     * @param distinctIds   去重的学生id列表
+     * @return              删除行数
+     */
+    int deleteByIds(@Param("distinctIds")List<Integer> distinctIds);
 }

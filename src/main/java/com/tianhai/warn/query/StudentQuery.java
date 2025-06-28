@@ -25,9 +25,13 @@ public class StudentQuery extends BaseQuery{
 
     private String nameLike; // 姓名模糊查询
 
-    private List<String> studentNos; // 批量学号查询
-    private List<String> colleges; // 批量学院查询
-    private List<String> classesNames; // 批量班级查询
-    private List<String> dormitories; // 批量宿舍查询
+    private List<String> studentNos; // 批量学号查询（删除）
+    private List<String> colleges; // 批量学院查询（删除）
+    private List<String> classesNames; // 批量班级查询（删除）
+    private List<String> dormitories; // 批量宿舍查询（删除）
+
+    private List<Integer> ids; // 批量ID查询（删除）
+    private List<String> names; // 批量姓名查询（删除）
+
 
 }

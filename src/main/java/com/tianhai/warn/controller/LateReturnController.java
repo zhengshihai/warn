@@ -19,6 +19,7 @@ import com.tianhai.warn.utils.PageResult;
 import com.tianhai.warn.utils.Result;
 
 import com.tianhai.warn.utils.RoleObjectCaster;
+import com.tianhai.warn.utils.SessionUtils;
 import jakarta.servlet.http.HttpSession;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -119,7 +120,8 @@ public class LateReturnController {
             endTime = new Date();
         }
 
-        List<LateReturn> lateReturnList = lateReturnService.selectByTimeRange(startTime, endTime);
+        String studentNo = lateReturnQuery.getStudentNo();
+        List<LateReturn> lateReturnList = lateReturnService.selectByTimeRange(startTime, endTime, studentNo);
 
         return Result.success(lateReturnList);
     }
@@ -184,14 +186,6 @@ public class LateReturnController {
         return lateReturnService.selectByProcessResult(processResult);
     }
 
-    /**
-     * 根据时间范围查询晚归记录
-     */
-    @GetMapping("/time-range")
-    @ResponseBody
-    public List<LateReturn> getByTimeRange(@RequestParam Date startTime, @RequestParam Date endTime) {
-        return lateReturnService.selectByTimeRange(startTime, endTime);
-    }
 
     /**
      * 更新晚归记录处理状态

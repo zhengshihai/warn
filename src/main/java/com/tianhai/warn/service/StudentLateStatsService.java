@@ -97,9 +97,16 @@ public interface StudentLateStatsService {
 
     /**
      * 统计指定时间范围内的晚归次数
-     * @param studentNo
-     * @param timeRangeDaysList
-     * @return
+     * @param studentNo             学生学号
+     * @param timeRangeDaysList     时间范围
+     * @return                      统计结果
      */
     Map<Integer, Integer> getLateReturnCountsInDaysRange(String studentNo, List<Integer> timeRangeDaysList);
+
+    /**
+     * 批量更新学生晚归统计记录信息
+     * @param statsList             学生晚归统计记录列表
+     * @return                      更新行数
+     */
+    int updateBatch(List<StudentLateStats> statsList);
 }

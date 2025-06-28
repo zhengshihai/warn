@@ -3,6 +3,8 @@ package com.tianhai.warn.mapper;
 import com.tianhai.warn.model.SysUserClass;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
+
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -59,4 +61,21 @@ public interface SysUserClassMapper {
     List<SysUserClass> selectByClassName(String className);
 
 
+    /**
+     * 根据sysUserNo更新SysUserClass表
+     * @param sysUserClassList    更新信息
+     * @return                    更新行数
+     */
+    int updateBatchBySysUserNo(@Param("sysUserClassList") List<SysUserClass> sysUserClassList);
+
+    /**
+     * 更新班级管理员的工号
+     * @param oldSysUserNo     旧工号
+     * @param newSysUserNo     新工号
+     * @param updateTime       更新时间
+     * @return                 更新行数
+     */
+    int updateSysUserNo(@Param("oldSysUserNo") String oldSysUserNo,
+                        @Param("newSysUserNo") String newSysUserNo,
+                        @Param("updateTime") Date updateTime);
 }

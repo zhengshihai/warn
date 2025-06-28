@@ -6,6 +6,7 @@ import java.util.List;
 
 import com.tianhai.warn.query.ApplicationQuery;
 import com.tianhai.warn.utils.PageResult;
+import org.apache.ibatis.annotations.Param;
 import org.springframework.web.multipart.MultipartFile;
 
 public interface ApplicationService {
@@ -114,5 +115,10 @@ public interface ApplicationService {
      */
     List<Application> getByAuditStatus(Integer auditStatus);
 
-  
+    /**
+     * 批量更新晚归申请
+     * @param applicationList   新的晚归申请
+     * @return                  更新行数
+     */
+    int updateBatch(@Param("applicationList") List<Application> applicationList);
 }

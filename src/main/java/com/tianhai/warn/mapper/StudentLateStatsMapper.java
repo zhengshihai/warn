@@ -98,4 +98,11 @@ public interface StudentLateStatsMapper {
      */
     int deleteByQuery(StudentLateStatsQuery query);
 
+    /**
+     * 批量更新学生晚归统计记录信息
+     * @param statsList          学生晚归统计信息
+     * @return                   更新行数
+     */
+    int updateBatch(@Param("statsList") List<StudentLateStats> statsList);
+
 }

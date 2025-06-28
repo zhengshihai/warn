@@ -27,6 +27,7 @@ import jakarta.servlet.http.HttpSession;
 
 import java.util.Date;
 import java.util.Map;
+import java.util.UUID;
 
 @Controller
 public class AuthController {
@@ -76,6 +77,11 @@ public class AuthController {
         session.setAttribute(Constants.SESSION_ATTRIBUTE_USER, infoMap.get("user"));
         session.setAttribute(Constants.SESSION_ATTRIBUTE_ROLE, infoMap.get("role"));
         session.setAttribute(Constants.SESSION_ATTRIBUTE_JOB_ROLE, infoMap.get("jobRole"));
+
+        // 生成并存储loginUUID
+        String loginUUID = UUID.randomUUID().toString();
+        session.setAttribute(Constants.SESSION_ATTRIBUTE_LOGIN_UUID, loginUUID);
+        infoMap.put(Constants.SESSION_ATTRIBUTE_LOGIN_UUID, loginUUID);
 
         // 使用JWT 实现 “记住我”逻辑
         Cookie rememberMeCookie = authService.handleRememberMe(infoMap, remember);

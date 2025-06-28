@@ -18,7 +18,6 @@ public interface ExplanationService {
      */
     Explanation selectById(Long id);
 
-
     /**
      * 根据学号查询晚归说明
      */
@@ -56,11 +55,17 @@ public interface ExplanationService {
      */
     List<Explanation> selectByAuditStatus(Integer auditStatus);
 
-
-
     // 提交晚归记录说明
     Integer submitExplanation(LateReturnQuery lateReturnQuery, String studentNo, String reason, String description,
             MultipartFile file);
 
     Integer auditExplanation(AuditActionDTO auditActionDTO);
+
+    /**
+     * 批量更新晚归说明
+     * 
+     * @param explanationList 晚归说明列表
+     * @return 影响行数
+     */
+    int updateBatch(List<Explanation> explanationList);
 }

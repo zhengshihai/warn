@@ -48,6 +48,11 @@ public class AlarmRecordServiceImpl implements AlarmRecordService {
     }
 
     @Override
+    public int updateBatch(List<AlarmRecord> alarmRecordList) {
+        return alarmRecordMapper.updateBatch(alarmRecordList);
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public int deleteById(Long id) {
         return alarmRecordMapper.deleteById(id);

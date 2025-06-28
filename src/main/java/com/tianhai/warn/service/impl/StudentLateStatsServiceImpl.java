@@ -633,4 +633,10 @@ public class StudentLateStatsServiceImpl implements StudentLateStatsService {
         return 0;
     }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int updateBatch(List<StudentLateStats> statsList) {
+        return studentLateStatsMapper.updateBatch(statsList);
+    }
+
 }

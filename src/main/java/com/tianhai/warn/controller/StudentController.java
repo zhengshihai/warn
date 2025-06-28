@@ -1,31 +1,33 @@
 package com.tianhai.warn.controller;
 
+import cn.hutool.json.JSONUtil;
 import com.tianhai.warn.annotation.LogOperation;
 import com.tianhai.warn.annotation.RequirePermission;
 import com.tianhai.warn.constants.Constants;
 import com.tianhai.warn.enums.ResultCode;
 import com.tianhai.warn.exception.BusinessException;
+import com.tianhai.warn.exception.SystemException;
 import com.tianhai.warn.model.Student;
+import com.tianhai.warn.model.SuperAdmin;
 import com.tianhai.warn.query.StudentQuery;
 import com.tianhai.warn.service.StudentService;
-import com.tianhai.warn.utils.EmailValidator;
+import com.tianhai.warn.service.SuperAdminService;
 import com.tianhai.warn.utils.PageResult;
 import com.tianhai.warn.utils.Result;
+import com.tianhai.warn.utils.RoleObjectCaster;
 import com.tianhai.warn.utils.SessionUtils;
 import jakarta.servlet.http.HttpSession;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.session.Session;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.util.DigestUtils;
 import org.springframework.web.bind.annotation.*;
 
-import javax.swing.plaf.basic.BasicButtonUI;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * 学生信息控制器
@@ -37,6 +39,9 @@ public class StudentController {
 
     @Autowired
     private StudentService studentService;
+
+    @Autowired
+    private SuperAdminService superAdminService;
 
     @GetMapping
     public String student(HttpSession session, Model model) {
@@ -50,17 +55,6 @@ public class StudentController {
         return "student";
     }
 
-    /**
-     * 跳转到学生列表页面
-     */
-//    @GetMapping("/list")
-//    public String list(Model model) {
-//        List<Student> students = studentService.selectAll();
-//        model.addAttribute("students", students);
-//        return "student/list";
-//    }
-
-
     @GetMapping("/page-list")
     @ResponseBody
     @RequirePermission(roles = Constants.SUPER_ADMIN)
@@ -69,6 +63,8 @@ public class StudentController {
         if (query == null) {
             return Result.error(ResultCode.PARAMETER_ERROR);
         }
+
+        checkSuperAdminStatus();
 
         // 分页参数校验
         if (query.getPageNum() == null || query.getPageNum() < 1) {
@@ -122,13 +118,13 @@ public class StudentController {
     }
 
     /**
-     * 更新学生信息
+     * 学生更新学生信息
      */
     @PostMapping("/update/per-info")
     @ResponseBody
-    @RequirePermission
-    @LogOperation("更新学生信息")
-    public Result<?> update(@RequestBody Student student) {
+    @RequirePermission(roles = Constants.STUDENT)
+    @LogOperation("学生更新学生信息")
+    public Result<?> updateByStudent(@RequestBody Student newStudentInfo) {
         try {
             // 获取当前登录的学生信息
             HttpSession session = SessionUtils.getSession(false);
@@ -140,18 +136,18 @@ public class StudentController {
                 throw new BusinessException(ResultCode.UNAUTHORIZED);
             }
 
-            validateUpdateInfo(student);
+            validateUpdateInfo(newStudentInfo);
 
-            Student currentStudent = (Student) user;
-            student.setId(currentStudent.getId());
+            Student sessionStudent = RoleObjectCaster.cast(Constants.STUDENT, user);
+            newStudentInfo.setId(sessionStudent.getId());
 
             // 调用 Service 层处理更新
-            Result<?> result = studentService.updatePersonalInfo(student, currentStudent.getEmail());
+            Result<?> result = studentService.updatePersonalInfoByStudent(newStudentInfo, sessionStudent.getEmail());
 
             // 如果更新成功，更新 session 中的用户信息
             if (result.isSuccess()) {
-                student.setPassword(null); // 清除密码
-                session.setAttribute(Constants.SESSION_ATTRIBUTE_USER, student);
+                newStudentInfo.setPassword(null); // 清除密码
+                session.setAttribute(Constants.SESSION_ATTRIBUTE_USER, newStudentInfo);
             }
 
             return result;
@@ -164,19 +160,90 @@ public class StudentController {
         }
     }
 
+    @PostMapping("/super-admin/update/per-info")
+    @ResponseBody
+    @RequirePermission(roles = Constants.SUPER_ADMIN)
+    @LogOperation("超级管理员更新学生信息")
+    public Result<?> updateBySuperAdmin(@RequestBody Student newStudentInfo) {
+        // 检查超级管理员的状态
+        checkSuperAdminStatus();
+
+        if (newStudentInfo.getId() == null) {
+            // 密码脱敏
+            newStudentInfo.setPassword(null);
+            logger.error("提交的学生信息缺少id，newStudentInfo: {}", newStudentInfo);
+            throw new BusinessException(ResultCode.PARAMETER_ERROR);
+        }
+        if (newStudentInfo.getId() < 0) {
+            // 密码脱敏
+            newStudentInfo.setPassword(null);
+            logger.error("提交的学生的id不合法， newStudentInfo: {}",newStudentInfo);
+            throw new BusinessException(ResultCode.PARAMETER_ERROR);
+        }
+
+        int affectedRow = studentService.updatePersonalInfoBySuperAdmin(newStudentInfo);
+        if (affectedRow <= 0) {
+            logger.error("超级管理员更新学生信息失败， newStudentInfo: {}",newStudentInfo);
+            throw new SystemException(ResultCode.ERROR);
+        }
+
+        return Result.success();
+    }
+
+
+    private void checkSuperAdminStatus() {
+        // 获取当前登录的超级管理员信息
+        HttpSession session = SessionUtils.getSession(false);
+        if (session == null) {
+            throw new BusinessException(ResultCode.UNAUTHORIZED);
+        }
+        Object superAdminObject = session.getAttribute(Constants.SESSION_ATTRIBUTE_USER);
+        if (!(superAdminObject instanceof SuperAdmin)) {
+            throw new BusinessException(ResultCode.UNAUTHORIZED);
+        }
+
+        SuperAdmin superAdmin = RoleObjectCaster.cast(Constants.SUPER_ADMIN, superAdminObject);
+
+        // 检查当前超级管理员是否被禁用
+        SuperAdmin superAdminDB = superAdminService.selectByIdWithoutPassword(superAdmin.getId());
+        if (Objects.equals(superAdminDB.getEnabled(), Constants.DISABLE_INT)) {
+            logger.error("该超级管理员已被禁用");
+            throw new BusinessException(ResultCode.SUPER_ADMIN_DISABLE);
+        }
+    }
+
     /**
      * 删除学生
      */
-    @PostMapping("/delete/{id}")
+    @DeleteMapping("/super-admin/delete")
     @ResponseBody
-    public String delete(@PathVariable Integer id) {
-        try {
-            studentService.deleteById(id);
-            return "success";
-        } catch (Exception e) {
-            return "error";
+    @RequirePermission(roles = Constants.SUPER_ADMIN)
+    @LogOperation("超级管理员删除学生信息")
+    public Result<?> deleteBySuperAdmin(@RequestBody StudentQuery query) {
+        if (query == null || query.getIds() == null || query.getIds().isEmpty()) {
+            logger.error("没提供要删除学生的学号列表");
+            throw new BusinessException(ResultCode.PARAMETER_ERROR);
         }
+
+        List<Integer> ids = query.getIds();
+        if (ids.stream().anyMatch(id -> id == null || id < 0)) {
+            logger.error("提供的学生ID列表中包含无效的ID");
+            throw new BusinessException(ResultCode.PARAMETER_ERROR);
+        }
+
+        checkSuperAdminStatus();
+
+        List<Integer> distinctIds = ids.stream().distinct().toList();
+
+        int deletedRows = studentService.deleteByIds(distinctIds);
+        if (deletedRows < distinctIds.size()) {
+            logger.error("删除学生信息出错");
+            throw new SystemException(ResultCode.ERROR);
+        }
+
+        return Result.success();
     }
+
 
     /**
      * 根据条件查询学生

@@ -66,22 +66,38 @@ public class RegisterServiceImpl implements RegisterService {
 
             switch (role) {
                 case STUDENT:
-                    Student student = Student.builder()
-                            .name(registerDTO.getName())
-                            .email(registerDTO.getEmail())
-                            .password(password)
-                            .studentNo(registerDTO.getEmail())  // 默认用 email 作为学号
-                            .college(DEFAULT_PLACEHOLDER)
-                            .className(DEFAULT_PLACEHOLDER)
-                            .dormitory(DEFAULT_PLACEHOLDER)
-                            .phone(DEFAULT_PLACEHOLDER)
-                            .fatherName(DEFAULT_PLACEHOLDER)
-                            .fatherPhone(DEFAULT_PLACEHOLDER)
-                            .motherName(DEFAULT_PLACEHOLDER)
-                            .motherPhone(DEFAULT_PLACEHOLDER)
-                            .createTime(now)
-                            .updateTime(now)
-                            .build();
+//                    Student student = Student.builder()
+//                            .name(registerDTO.getName())
+//                            .email(registerDTO.getEmail())
+//                            .password(password)
+//                            .studentNo(registerDTO.getEmail())  // 默认用 email 作为学号
+//                            .college(DEFAULT_PLACEHOLDER)
+//                            .className(DEFAULT_PLACEHOLDER)
+//                            .dormitory(DEFAULT_PLACEHOLDER)
+//                            .phone(DEFAULT_PLACEHOLDER)
+//                            .fatherName(DEFAULT_PLACEHOLDER)
+//                            .fatherPhone(DEFAULT_PLACEHOLDER)
+//                            .motherName(DEFAULT_PLACEHOLDER)
+//                            .motherPhone(DEFAULT_PLACEHOLDER)
+//                            .createTime(now)
+//                            .updateTime(now)
+//                            .build();
+                    Student student = new Student();
+                    student.setName(registerDTO.getName());
+                    student.setEmail(registerDTO.getEmail());
+                    student.setPassword(password);
+                    student.setStudentNo(registerDTO.getEmail());  // 默认用 email 作为学号
+                    student.setCollege(DEFAULT_PLACEHOLDER);
+                    student.setClassName(DEFAULT_PLACEHOLDER);
+                    student.setDormitory(DEFAULT_PLACEHOLDER);
+                    student.setPhone(DEFAULT_PLACEHOLDER);
+                    student.setFatherName(DEFAULT_PLACEHOLDER);
+                    student.setFatherPhone(DEFAULT_PLACEHOLDER);
+                    student.setMotherName(DEFAULT_PLACEHOLDER);
+                    student.setMotherPhone(DEFAULT_PLACEHOLDER);
+                    student.setCreateTime(now);
+                    student.setUpdateTime(now);
+
 
                     infoMap.put("userRole", UserRole.STUDENT.getCode());
 

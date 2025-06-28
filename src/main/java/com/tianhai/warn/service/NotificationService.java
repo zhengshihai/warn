@@ -90,10 +90,10 @@ public interface NotificationService {
      * 更新通知状态
      * 
      * @param notificationId 通知记录Id
-     * @param status 状态
+     * @param status         状态
      * @return 影响行数
      */
-    int updateStatus(String  notificationId, String status);
+    int updateStatus(String notificationId, String status);
 
     /**
      * 批量更新通知状态
@@ -113,15 +113,14 @@ public interface NotificationService {
     Notification selectByNoticeId(String noticeId);
 
     /**
-     *  根据用户角色和当前用户获取通知
+     * 根据用户角色和当前用户获取通知
+     * 
      * @param userRoleStr
      * @param user
      * @param query
      * @return
      */
     PageResult<Notification> selectByPageQuery(String userRoleStr, Object user, NotificationQuery query);
-
-
 
     /**
      * 获取通知统计信息
@@ -133,6 +132,7 @@ public interface NotificationService {
 
     /**
      * 检查当前用户是否有权限查看通知
+     * 
      * @param userRoleStr
      * @param currentUser
      * @param noticeId
@@ -142,6 +142,7 @@ public interface NotificationService {
 
     /**
      * 批量检查当前用户是否有权限查看通知
+     * 
      * @param userRoleStr
      * @param currentUser
      * @param noticeIds
@@ -150,9 +151,17 @@ public interface NotificationService {
     boolean hasPermissionToReadBatch(String userRoleStr, Object currentUser, List<String> noticeIds);
 
     /**
-     * 发送报警通知  todo
-
+     * 发送报警通知 todo
+     * 
      * @return
      */
     Integer sendOneClickAlarmNotification(String studentNo, AlarmLevel alarmLevel);
+
+    /**
+     * 批量更新通知信息
+     * 
+     * @param notificationList 通知信息列表
+     * @return 影响行数
+     */
+    int updateBatch(List<Notification> notificationList);
 }

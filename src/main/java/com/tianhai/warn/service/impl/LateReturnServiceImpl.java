@@ -32,6 +32,8 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
+import reactor.util.annotation.Nullable;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
@@ -82,7 +84,6 @@ public class LateReturnServiceImpl implements LateReturnService {
     @Autowired
     private StringRedisTemplate stringRedisTemplate;
 
-
     @Override
     public LateReturn getByLateReturnId(String lateReturnId) {
         return lateReturnMapper.selectByLateReturnId(lateReturnId);
@@ -114,8 +115,8 @@ public class LateReturnServiceImpl implements LateReturnService {
     }
 
     @Override
-    public List<LateReturn> selectByTimeRange(Date startTime, Date endTime) {
-        return lateReturnMapper.selectByTimeRange(startTime, endTime);
+    public List<LateReturn> selectByTimeRange(Date startTime, Date endTime, @Nullable String studentNo) {
+        return lateReturnMapper.selectByTimeRange(startTime, endTime, studentNo);
     }
 
     @Override
@@ -189,18 +190,19 @@ public class LateReturnServiceImpl implements LateReturnService {
 
     /**
      * 判断是否触发违规
-     * @param processStatus      处理状态：PENDING-待处理/PROCESSING-处理中/FINISHED-已完成
-     * @param processResult      处理结果：APPROVED-已通过/REJECTED-已驳回
-     * @return                   判断结果
+     * 
+     * @param processStatus 处理状态：PENDING-待处理/PROCESSING-处理中/FINISHED-已完成
+     * @param processResult 处理结果：APPROVED-已通过/REJECTED-已驳回
+     * @return 判断结果
      */
     private boolean isViolationTriggered(String processStatus, String processResult) {
         if (Constants.LATE_RETURN_PROCESS_STATUS_FINISHED.equalsIgnoreCase(processStatus)
-                 && Constants.AUDIT_ACTION_REJECT.equalsIgnoreCase(processResult)) {
+                && Constants.AUDIT_ACTION_REJECT.equalsIgnoreCase(processResult)) {
             return true;
         }
 
         if (Constants.LATE_RETURN_PROCESS_STATUS_FINISHED.equalsIgnoreCase(processStatus)
-                 && StringUtils.isBlank(processResult)) {
+                && StringUtils.isBlank(processResult)) {
             return true;
         }
 
@@ -446,7 +448,6 @@ public class LateReturnServiceImpl implements LateReturnService {
         return lateReturnMapper.countPeriodLateReturnStudents(query);
     }
 
-
     /**
      * 将未正当理由的晚归记录添加到Redis
      */
@@ -475,18 +476,25 @@ public class LateReturnServiceImpl implements LateReturnService {
     }
 
     /**
-     *  统计指定时间段内的违规晚归记录
+     * 统计指定时间段内的违规晚归记录
+     * 
      * @param query 查询条件
-     * @return      晚归记录集合
+     * @return 晚归记录集合
      */
     @Override
     public List<LateReturn> listPeriodLateReturns(LateReturnQuery query) {
         if (query == null || query.getStartLateTime() == null || query.getEndLateTime() == null
-                     || query.getStartLateTime().after(query.getEndLateTime())) {
+                || query.getStartLateTime().after(query.getEndLateTime())) {
             logger.error("晚归时间段参数不合法");
             throw new BusinessException(ResultCode.VALIDATE_FAILED);
         }
 
         return lateReturnMapper.listPeriodLateReturns(query);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int updateBatch(List<LateReturn> lateReturnList) {
+        return lateReturnMapper.updateBatch(lateReturnList);
     }
 }

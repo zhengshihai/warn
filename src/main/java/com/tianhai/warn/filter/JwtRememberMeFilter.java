@@ -27,7 +27,7 @@ import java.util.Map;
 
 import static com.tianhai.warn.constants.Constants.*;
 
-@Component
+@Component //todo 无法生效
 public class JwtRememberMeFilter implements Filter {
 
     private static final Logger logger = LoggerFactory.getLogger(JwtRememberMeFilter.class);

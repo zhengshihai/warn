@@ -185,8 +185,8 @@ public class ExplanationServiceImpl implements ExplanationService {
             throw new SystemException(ResultCode.ERROR);
         }
 
-        //异步处理
-        //发布事件： 如果当前审核人未能确定晚归说明，则触发事件：转发给下一审核人
+        // 异步处理
+        // 发布事件： 如果当前审核人未能确定晚归说明，则触发事件：转发给下一审核人
         boolean needToForward = Constants.AUDIT_ACTION_FORWARD.equalsIgnoreCase(
                 auditActionDTO.getProcessStatus());
         if (needToForward) {
@@ -194,5 +194,11 @@ public class ExplanationServiceImpl implements ExplanationService {
         }
 
         return explanationUpdate + lateReturnUpdate;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int updateBatch(List<Explanation> explanationList) {
+        return explanationMapper.updateBatch(explanationList);
     }
 }

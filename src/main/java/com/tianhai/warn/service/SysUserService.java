@@ -90,4 +90,11 @@ public interface SysUserService {
      * @return          分页查询结果
      */
     PageResult<SysUser> selectByPageQuery(SysUserQuery query);
+
+    /**
+     * 超级管理员更新班级管理员信息
+     * @param newSysUserInfo    班级管理员信息
+     * @return                  更新行数
+     */
+    void updatePersonalInfoBySuperAdmin(SysUser newSysUserInfo);
 }

@@ -6,6 +6,7 @@ public class Constants {
     public static final String SESSION_ATTRIBUTE_JOB_ROLE = "job_role"; // 班级管理员的职位角色 辅导员 班主任 院系领导等
     public static final String SESSION_ATTRIBUTE_LATE_RETURN = "lateReturn";
     public static final String SESSION_ATTRIBUTE_AUDIT_PERSON = "auditPerson";
+    public static final String SESSION_ATTRIBUTE_LOGIN_UUID = "loginUUID";
 
     public static final String STUDENT = "student";
     public static final String DORMITORY_MANAGER = "dormitorymanager";
@@ -19,6 +20,8 @@ public class Constants {
 
     public static final String ENABLE_STR = "ENABLE";
     public static final Integer ENABLE_INT = 1;
+    public static final String DISABLE_STR = "DISABLE";
+    public static final Integer DISABLE_INT = 0;
     public static final String ON_DUTY = "ON_DUTY"; // 在职
 
     public static final String ALL = "all";

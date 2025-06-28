@@ -36,4 +36,7 @@ public interface AlarmRecordMapper {
 
     // 查找待处理或正在处理的报警记录
     List<AlarmRecord> selectNotEndedAlarms();
+
+    // 批量更新报警记录
+    int updateBatch(List<AlarmRecord> alarmRecordList);
 }

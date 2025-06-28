@@ -59,13 +59,13 @@ public interface StudentService {
     int update(Student student);
 
     /**
-     * 更新学生个人信息
+     * 学生更新自己的个人信息
      * 
-     * @param student      学生信息
-     * @param currentEmail 当前邮箱
+     * @param student      新提交的学生信息
+     * @param currentEmail session中学生的邮箱
      * @return 更新结果
      */
-    Result<?> updatePersonalInfo(Student student, String currentEmail);
+    Result<?> updatePersonalInfoByStudent(Student student, String currentEmail);
 
     /**
      * 删除学生信息
@@ -110,4 +110,17 @@ public interface StudentService {
      * @return      学生信息
      */
     PageResult<Student> selectByPageQuery(StudentQuery studentQuery);
+
+    /**
+     * 超级管理员更新学生个人信息
+     * @param newStudentInfo   新的学生信息
+     */
+    int updatePersonalInfoBySuperAdmin(Student newStudentInfo);
+
+    /**
+     * 根据学号列表删除学生信息
+     * @param distinctIds    学号列表
+     * @return               删除行数
+     */
+    int deleteByIds(List<Integer> distinctIds);
 }
