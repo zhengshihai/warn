@@ -148,4 +148,24 @@
         WHERE job_role = #{jobRole}
     </select>
 
+    <!-- 通过sys_user_no批量更新记录 -->
+    <update id="updateBatchBySysUserNo">
+        <foreach collection="sysUserClassList" item="item" separator=";">
+            UPDATE sys_user_class
+            SET
+            class_name = #{item.className},
+            job_role = #{item.jobRole},
+            update_time = #{item.updateTime}
+            WHERE sys_user_no = #{item.sysUserNo}
+        </foreach>
+    </update>
+
+    <!-- 更新班级管理员的额工号 -->
+    <update id="updateSysUserNo">
+        UPDATE sys_user_class
+        SET sys_user_no = #{newSysUserNo},
+            update_time = #{updateTime}
+        WHERE sys_user_no = #{oldSysUserNo}
+    </update>
+
 </mapper>

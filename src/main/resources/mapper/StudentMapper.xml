@@ -126,6 +126,15 @@
     <delete id="deleteById">
         DELETE FROM student WHERE id = #{id}
     </delete>
+
+    <!-- 批量删除 -->
+    <delete id="deleteByIds" parameterType="java.util.List">
+        DELETE FROM student
+        WHERE id IN
+     <foreach collection="list" item="id" open="(" separator="," close=")">
+         #{id}
+     </foreach>
+    </delete>
     
     <!-- 根据宿舍号查询 -->
     <select id="selectByDormitory" resultMap="BaseResultMap">
@@ -252,5 +261,8 @@
         </where>
         ORDER BY student_no ASC
     </select>
+
+
+
 
 </mapper> 

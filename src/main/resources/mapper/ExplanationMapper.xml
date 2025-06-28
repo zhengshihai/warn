@@ -189,4 +189,24 @@
         FROM explanation
         WHERE explanation_id = #{explanationId}
     </select>
+
+    <!-- 批量更新 -->
+    <update id="updateBatch">
+        <foreach collection="explanationList" item="item" separator=";">
+            UPDATE explanation
+            <set>
+                <if test="item.lateReturnId != null">late_return_id = #{item.lateReturnId},</if>
+                <if test="item.studentNo != null">student_no = #{item.studentNo},</if>
+                <if test="item.description != null">description = #{item.description},</if>
+                <if test="item.attachmentUrl != null">attachment_url = #{item.attachmentUrl},</if>
+                <if test="item.submitTime != null">submit_time = #{item.submitTime},</if>
+                <if test="item.auditStatus != null">audit_status = #{item.auditStatus},</if>
+                <if test="item.auditTime != null">audit_time = #{item.auditTime},</if>
+                <if test="item.auditPerson != null">audit_person = #{item.auditPerson},</if>
+                <if test="item.auditRemark != null">audit_remark = #{item.auditRemark},</if>
+                <if test="item.explanationId != null">explanation_id = #{item.explanationId},</if>
+            </set>
+            WHERE id = #{item.id}
+        </foreach>
+    </update>
 </mapper> 

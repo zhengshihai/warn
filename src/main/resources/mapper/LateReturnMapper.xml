@@ -172,6 +172,9 @@
         FROM late_return lr
         LEFT JOIN student s ON lr.student_no = s.student_no
         WHERE lr.late_time BETWEEN #{startTime} AND #{endTime}
+        <if test="studentNo != null and studentNo != ''">
+            AND lr.student_no = #{studentNo}
+        </if>
         ORDER BY lr.late_time DESC
     </select>
     
@@ -220,6 +223,25 @@
             process_remark = #{processRemark},
             update_time = NOW()
         WHERE id = #{id}
+    </update>
+
+    <!-- 批量更新 -->
+    <update id="updateBatch">
+        <foreach collection="lateReturnList" item="item" separator=";">
+            UPDATE late_return
+            <set>
+                <if test="item.lateReturnId != null">late_return_id = #{item.lateReturnId},</if>
+                <if test="item.studentNo != null">student_no = #{item.studentNo},</if>
+                <if test="item.lateTime != null">late_time = #{item.lateTime},</if>
+                <if test="item.reason != null">reason = #{item.reason},</if>
+                <if test="item.processStatus != null">process_status = #{item.processStatus},</if>
+                <if test="item.processResult != null">process_result = #{item.processResult},</if>
+                <if test="item.processRemark != null">process_remark = #{item.processRemark},</if>
+                <if test="item.createTime != null">create_time = #{item.createTime},</if>
+                <if test="item.updateTime != null">update_time = #{item.updateTime},</if>
+            </set>
+            WHERE id = #{item.id}
+        </foreach>
     </update>
 
     <!-- 统计今日晚归人数 -->

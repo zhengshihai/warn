@@ -18,7 +18,7 @@
         <result column="audit_person" property="auditPerson"/>
         <result column="audit_remark" property="auditRemark"/>
         
-         <result column="student_name" property="studentName"/>
+        <result column="student_name" property="studentName"/>
         <result column="college" property="college"/>
         <result column="dormitory" property="dormitory"/>
     </resultMap>
@@ -196,7 +196,34 @@
         </set>
         WHERE id = #{id}
     </update>
-    
+
+    <update id="updateBatch">
+        <foreach collection="applicationList" item="item" separator=";">
+            UPDATE application
+            <set>
+                <if test="item.applicationId != null">application_id = #{item.applicationId},</if>
+                <if test="item.studentNo != null">student_no = #{item.studentNo},</if>
+                <if test="item.expectedReturnTime != null">expected_return_time = #{item.expectedReturnTime},</if>
+                <if test="item.reason != null">reason = #{item.reason},</if>
+                <if test="item.destination != null">destination = #{item.destination},</if>
+                <if test="item.description != null">description = #{item.description},</if>
+                <if test="item.attachmentUrl != null">attachment_url = #{item.attachmentUrl},</if>
+                <if test="item.applyTime != null">apply_time = #{item.applyTime},</if>
+                <if test="item.auditStatus != null">audit_status = #{item.auditStatus},</if>
+                <if test="item.auditTime != null">audit_time = #{item.auditTime},</if>
+                <if test="item.auditPerson != null">audit_person = #{item.auditPerson},</if>
+                <if test="item.auditRemark != null">audit_remark = #{item.auditRemark},</if>
+
+                <!-- 如果你想支持更新学生信息（冗余字段），也可放开注释 -->
+                <if test="item.studentName != null">student_name = #{item.studentName},</if>
+                <if test="item.college != null">college = #{item.college},</if>
+                <if test="item.dormitory != null">dormitory = #{item.dormitory},</if>
+            </set>
+            WHERE id = #{item.id}
+        </foreach>
+    </update>
+
+
     <!-- 删除 -->
     <delete id="deleteById">
         DELETE FROM application WHERE id = #{id}

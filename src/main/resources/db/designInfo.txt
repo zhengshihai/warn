@@ -406,3 +406,15 @@ Consumer收到补偿消息后，再次尝试写入MySQL。
 2.4 日志与监控
 检查日志输出，确认每个环节的异常、重试、死信等都有明确日志。
 可以临时加System.out.println或logger.info辅助观察。
+
+
+sessionLoginUUID
+由后端在用户登录成功后生成（如 UUID）。
+后端将其保存在 Spring Session（即服务端 session）中。
+后端将其返回给前端（可以放在响应体或响应头）。
+requestLoginUUID
+前端收到 sessionLoginUUID 后，本地保存（如 localStorage）。
+之后每次请求业务接口时，前端会把这个 loginUUID 作为 requestLoginUUID 发送给后端（通常放在请求头）。
+校验流程
+后端拦截器拿到 requestLoginUUID（来自请求头）和 sessionLoginUUID（来自 session）。
+只有两者一致时，才允许访问业务接口，否则强制下线或重定向登录。

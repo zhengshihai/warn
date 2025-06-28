@@ -162,4 +162,22 @@
         <include refid="Query_Conditions"/>
     </delete>
 
+    <update id="updateBatch">
+        <foreach collection="statsList" item="item" separator=";">
+            UPDATE student_late_stats
+            <set>
+                <if test="item.studentNo != null">student_no = #{item.studentNo},</if>
+                <if test="item.lateReturnCount != null">late_return_count = #{item.lateReturnCount},</if>
+                <if test="item.statsPeriodStartDate != null">stats_period_start_date = #{item.statsPeriodStartDate},</if>
+                <if test="item.statsPeriodEndDate != null">stats_period_end_date = #{item.statsPeriodEndDate},</if>
+                <if test="item.statsPeriodType != null">stats_period_type = #{item.statsPeriodType},</if>
+                <if test="item.lastUpdatedTime != null">last_updated_time = #{item.lastUpdatedTime},</if>
+                <if test="item.schoolYear != null">school_year = #{item.schoolYear},</if>
+                <if test="item.semester != null">semester = #{item.semester},</if>
+                <if test="item.activeStatus != null">active_status = #{item.activeStatus},</if>
+            </set>
+            WHERE id = #{item.id}
+        </foreach>
+    </update>
+
 </mapper>

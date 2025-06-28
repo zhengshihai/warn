@@ -37,6 +37,12 @@
         WHERE id = #{id}
     </select>
 
+    <select id="selectByStudentNo" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM alarm_record
+        WHERE student_no = {studentNo}
+    </select>
+
     <select id="selectNotEndedAlarms" resultMap="BaseResultMap">
         SELECT alarm_no, student_no
         FROM alarm_record
@@ -56,15 +62,48 @@
     <update id="update" parameterType="com.tianhai.warn.model.AlarmRecord">
         UPDATE alarm_record
         <set>
+            <if test="alarmNo != null and alarmNo != ''">alarm_no = #{alarmNo},</if>
+            <if test="studentNo != null and studentNo != ''">student_no = #{studentNo},</if>
+            <if test="alarmType != null">alarm_type = #{alarmType},</if>
+            <if test="alarmLevel != null">alarm_level = #{alarmLevel},</if>
             <if test="alarmStatus != null">alarm_status = #{alarmStatus},</if>
+            <if test="alarmTime != null">alarm_time = #{alarmTime},</if>
             <if test="latitude != null">latitude = #{latitude},</if>
             <if test="longitude != null">longitude = #{longitude},</if>
-            <if test="locationAddress != null">location_address = #{locationAddress},</if>
-            <if test="description != null">description = #{description},</if>
-            <if test="mediaUrls != null">media_urls = #{mediaUrls,typeHandler=com.tianhai.warn.handler.JsonTypeHandler},</if>
+            <if test="locationAddress != null and locationAddress != ''">location_address = #{locationAddress},</if>
+            <if test="description != null and description != ''">description = #{description},</if>
+            <if test="mediaUrls != null">media_urls = #{mediaUrls, typeHandler=com.tianhai.warn.handler.JsonTypeHandler},</if>
+            <if test="updatedAt != null">updated_at = #{updatedAt}</if>
+            <!-- 不更新 created_at -->
+            <!-- <if test="createdAt != null">created_at = #{createdAt},</if> -->
         </set>
         WHERE id = #{id}
     </update>
+
+    <update id="updateBatch">
+        <foreach collection="alarmRecordList" item="item" separator=";">
+            UPDATE alarm_record
+            <set>
+                <if test="item.alarmNo != null">alarm_no = #{item.alarmNo},</if>
+                <if test="item.studentNo != null">student_no = #{item.studentNo},</if>
+                <if test="item.alarmType != null">alarm_type = #{item.alarmType},</if>
+                <if test="item.alarmLevel != null">alarm_level = #{item.alarmLevel},</if>
+                <if test="item.alarmStatus != null">alarm_status = #{item.alarmStatus},</if>
+                <if test="item.alarmTime != null">alarm_time = #{item.alarmTime},</if>
+                <if test="item.latitude != null">latitude = #{item.latitude},</if>
+                <if test="item.longitude != null">longitude = #{item.longitude},</if>
+                <if test="item.locationAddress != null">location_address = #{item.locationAddress},</if>
+                <if test="item.description != null">description = #{item.description},</if>
+                <if test="item.mediaUrls != null">
+                    media_urls = #{item.mediaUrls, typeHandler=com.tianhai.warn.handler.JsonTypeHandler},
+                </if>
+                <if test="item.updatedAt != null">updated_at = #{item.updatedAt}</if>
+            </set>
+            WHERE id = #{item.id}
+        </foreach>
+    </update>
+
+
 
     <delete id="deleteById">
         DELETE FROM alarm_record WHERE id = #{id}

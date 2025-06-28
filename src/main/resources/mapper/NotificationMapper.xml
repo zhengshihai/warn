@@ -122,10 +122,7 @@
     
     <!-- 根据noticeId查询 -->
     <select id="selectByNoticeId" resultMap="BaseResultMap">
-        SELECT 
-        <include refid="Base_Column_List"/>
-        FROM notification
-        WHERE notice_id = #{noticeId}
+        SELECT * FROM notification WHERE notice_id = #{noticeId}
     </select>
     
     <!-- 插入 -->
@@ -175,6 +172,24 @@
         WHERE id IN
         <foreach collection="ids" item="id" open="(" separator="," close=")">
             #{id}
+        </foreach>
+    </update>
+
+    <!-- 批量更新 -->
+    <update id="updateBatch">
+        <foreach collection="notificationList" item="item" separator=";">
+            UPDATE notification
+            <set>
+                <if test="item.title != null">title = #{item.title},</if>
+                <if test="item.content != null">content = #{item.content},</if>
+                <if test="item.noticeType != null">type = #{item.noticeType},</if>
+                <if test="item.targetType != null">target_type = #{item.targetType},</if>
+                <if test="item.targetId != null">target_id = #{item.targetId},</if>
+                <if test="item.status != null">status = #{item.status},</if>
+                <if test="item.createTime != null">create_time = #{item.createTime},</if>
+                <if test="item.updateTime != null">update_time = #{item.updateTime},</if>
+            </set>
+            WHERE id = #{item.id}
         </foreach>
     </update>
 </mapper> 
