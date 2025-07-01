@@ -32,7 +32,7 @@ public class GlobalExceptionHandler {
         request.setAttribute("errorMsg", e.getMessage());
 
         if (isAjaxRequest(request)) {
-            return Result.error(e.getMessage());
+            return Result.error(e.getResultCode());
         } else {
             return redirectBackWithErrorMessage(request, e.getMessage());
         }
@@ -48,7 +48,7 @@ public class GlobalExceptionHandler {
             HttpServletRequest request) {
         logger.error("系统异常：", e);
 
-        request.setAttribute("errorMsg", e.getMessage());
+        request.setAttribute("errorMsg", e.getResultCode());
 
         if (isAjaxRequest(request)) {
             return Result.error(ResultCode.ERROR);
@@ -108,7 +108,7 @@ public class GlobalExceptionHandler {
      */
     private String redirectBackWithErrorMessage(HttpServletRequest request, String errorMsg) {
         String referer = request.getHeader("Referer");
-        System.out.println("Referer: " + referer);
+        logger.info("Referer: " + referer);
         if (referer != null && !referer.isEmpty() &&
                 referer.contains(request.getServerName())) {
             request.getSession().setAttribute("errorMsg", errorMsg);

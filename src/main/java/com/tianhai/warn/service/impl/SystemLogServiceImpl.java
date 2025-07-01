@@ -1,8 +1,15 @@
 package com.tianhai.warn.service.impl;
 
+import com.tianhai.warn.enums.ResultCode;
+import com.tianhai.warn.exception.BusinessException;
 import com.tianhai.warn.mapper.SystemLogMapper;
 import com.tianhai.warn.model.SystemLog;
+import com.tianhai.warn.query.SystemLogQuery;
 import com.tianhai.warn.service.SystemLogService;
+import org.apache.commons.lang3.StringUtils;
+import org.aspectj.apache.bcel.util.ByteSequence;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -14,6 +21,8 @@ import java.util.List;
  */
 @Service
 public class SystemLogServiceImpl implements SystemLogService {
+
+    private static final Logger logger = LoggerFactory.getLogger(SystemLogServiceImpl.class);
 
     @Autowired
     private SystemLogMapper systemLogMapper;
@@ -29,8 +38,8 @@ public class SystemLogServiceImpl implements SystemLogService {
     }
 
     @Override
-    public List<SystemLog> selectByCondition(SystemLog log) {
-        return systemLogMapper.selectByCondition(log);
+    public List<SystemLog> selectByCondition(SystemLogQuery query) {
+        return systemLogMapper.selectByCondition(query);
     }
 
     @Override
@@ -91,5 +100,21 @@ public class SystemLogServiceImpl implements SystemLogService {
     @Override
     public SystemLog selectByLogId(String logId) {
         return systemLogMapper.selectByLogId(logId);
+    }
+
+    @Override
+    public int updateStudentNo(String oldStudentNo, String newStudentNo) {
+        if (oldStudentNo.equals(newStudentNo)) {
+            logger.info("新学号和旧学号相同，不更新学生表信息, oldStudentNo: {}, newStudentNo: {}",
+                    oldStudentNo, newStudentNo);
+            return 0;
+        }
+
+        if (StringUtils.isBlank(newStudentNo)) {
+            logger.error("新学号不合法，newStudentNo: {}", newStudentNo);
+            throw new BusinessException(ResultCode.PARAMETER_ERROR);
+        }
+
+        return systemLogMapper.updateStudentNo(oldStudentNo, newStudentNo);
     }
 }

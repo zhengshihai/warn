@@ -175,21 +175,59 @@
         </foreach>
     </update>
 
-    <!-- 批量更新 -->
-    <update id="updateBatch">
-        <foreach collection="notificationList" item="item" separator=";">
-            UPDATE notification
-            <set>
-                <if test="item.title != null">title = #{item.title},</if>
-                <if test="item.content != null">content = #{item.content},</if>
-                <if test="item.noticeType != null">type = #{item.noticeType},</if>
-                <if test="item.targetType != null">target_type = #{item.targetType},</if>
-                <if test="item.targetId != null">target_id = #{item.targetId},</if>
-                <if test="item.status != null">status = #{item.status},</if>
-                <if test="item.createTime != null">create_time = #{item.createTime},</if>
-                <if test="item.updateTime != null">update_time = #{item.updateTime},</if>
-            </set>
-            WHERE id = #{item.id}
+    <!-- 批量更新（CASE WHEN方式） -->
+    <update id="updateBatch" parameterType="map">
+        UPDATE notification
+        <set>
+            <trim suffixOverrides=",">
+                title = CASE id
+                <foreach collection="notificationList" item="item">
+                    WHEN #{item.id} THEN #{item.title}
+                </foreach>
+                ELSE title END,
+
+                content = CASE id
+                <foreach collection="notificationList" item="item">
+                    WHEN #{item.id} THEN #{item.content}
+                </foreach>
+                ELSE content END,
+
+                notice_type = CASE id
+                <foreach collection="notificationList" item="item">
+                    WHEN #{item.id} THEN #{item.noticeType}
+                </foreach>
+                ELSE notice_type END,
+
+                target_type = CASE id
+                <foreach collection="notificationList" item="item">
+                    WHEN #{item.id} THEN #{item.targetType}
+                </foreach>
+                ELSE target_type END,
+
+                target_id = CASE id
+                <foreach collection="notificationList" item="item">
+                    WHEN #{item.id} THEN #{item.targetId}
+                </foreach>
+                ELSE target_id END,
+
+                status = CASE id
+                <foreach collection="notificationList" item="item">
+                    WHEN #{item.id} THEN #{item.status}
+                </foreach>
+                ELSE status END,
+
+                update_time = CASE id
+                <foreach collection="notificationList" item="item">
+                    WHEN #{item.id} THEN #{item.updateTime}
+                </foreach>
+                ELSE update_time END
+            </trim>
+        </set>
+
+        WHERE id IN
+        <foreach collection="notificationList" item="item" open="(" separator="," close=")">
+            #{item.id}
         </foreach>
     </update>
+
 </mapper> 

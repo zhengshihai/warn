@@ -1,6 +1,7 @@
 package com.tianhai.warn.mapper;
 
 import com.tianhai.warn.model.SystemLog;
+import com.tianhai.warn.query.SystemLogQuery;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import java.util.List;
@@ -31,10 +32,10 @@ public interface SystemLogMapper {
     /**
      * 根据条件查询系统日志
      *
-     * @param log 查询条件
+     * @param query 查询条件
      * @return 系统日志列表
      */
-    List<SystemLog> selectByCondition(SystemLog log);
+    List<SystemLog> selectByCondition(SystemLogQuery query);
 
     /**
      * 根据用户编号查询系统日志
@@ -140,4 +141,12 @@ public interface SystemLogMapper {
      * @return 系统日志
      */
     SystemLog selectByLogId(String logId);
+
+    /**
+     * 更新学号
+     * @param oldStudentNo    旧学号
+     * @param newStudentNo    新学号
+     * @return                更新行数
+     */
+    int updateStudentNo(String oldStudentNo, String newStudentNo);
 }

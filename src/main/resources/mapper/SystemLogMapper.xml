@@ -40,11 +40,12 @@
     </select>
     
     <!-- 根据条件查询 -->
-    <select id="selectByCondition" resultMap="BaseResultMap" parameterType="com.tianhai.warn.model.SystemLog">
+    <select id="selectByCondition" resultMap="BaseResultMap" parameterType="com.tianhai.warn.query.SystemLogQuery">
         SELECT 
         <include refid="Base_Column_List"/>
         FROM system_log
         <where>
+            <!-- 精确匹配字段 -->
             <if test="id != null">
                 AND id = #{id}
             </if>
@@ -54,26 +55,36 @@
             <if test="userNo != null and userNo != ''">
                 AND user_no = #{userNo}
             </if>
-            <if test="username != null and username != ''">
-                AND username LIKE CONCAT('%', #{username}, '%')
+            <if test="status != null and status != ''">
+                AND status = #{status}
             </if>
             <if test="userRole != null and userRole != ''">
                 AND user_role = #{userRole}
             </if>
-            <if test="operation != null and operation != ''">
-                AND operation LIKE CONCAT('%', #{operation}, '%')
+            
+            <!-- 模糊匹配字段 -->
+            <if test="usernameLike != null and usernameLike != ''">
+                AND username LIKE CONCAT('%', #{usernameLike}, '%')
             </if>
-            <if test="method != null and method != ''">
-                AND method = #{method}
+            <if test="operationLike != null and operationLike != ''">
+                AND operation LIKE CONCAT('%', #{operationLike}, '%')
             </if>
-            <if test="ip != null and ip != ''">
-                AND ip = #{ip}
+            <if test="methodLike != null and methodLike != ''">
+                AND method LIKE CONCAT('%', #{methodLike}, '%')
             </if>
-            <if test="status != null and status != ''">
-                AND status = #{status}
+            <if test="ipLike != null and ipLike != ''">
+                AND ip LIKE CONCAT('%', #{ipLike}, '%')
             </if>
-            <if test="createTime != null">
-                AND create_time = #{createTime}
+            <if test="errorMsgLike != null and errorMsgLike != ''">
+                AND error_msg LIKE CONCAT('%', #{errorMsgLike}, '%')
+            </if>
+            
+            <!-- 时间范围查询 -->
+            <if test="startTime != null">
+                AND create_time >= #{startTime}
+            </if>
+            <if test="endTime != null">
+                AND create_time &lt;= #{endTime}
             </if>
         </where>
         ORDER BY create_time DESC
@@ -189,4 +200,12 @@
         DELETE FROM system_log
         WHERE create_time &lt; #{time}
     </delete>
+
+    <!-- 更新学号 -->
+    <update id="updateStudentNo">
+        UPDATE system_log
+        SET user_no = #{newStudentNo}
+        WHERE user_no= #{oldStudentNo}
+        AND (user_role = 'student' OR user_role = 'STUDENT')
+    </update>
 </mapper>

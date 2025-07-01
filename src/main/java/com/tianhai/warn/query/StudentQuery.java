@@ -33,5 +33,4 @@ public class StudentQuery extends BaseQuery{
     private List<Integer> ids; // 批量ID查询（删除）
     private List<String> names; // 批量姓名查询（删除）
 
-
 }

@@ -52,77 +52,77 @@
     </style>
 </head>
 <body>
-<div class="dashboard-container p-6">
-    <!-- 顶部导航栏 -->
-    <nav class="bg-white shadow-sm rounded-lg mb-6 p-4">
-        <div class="flex justify-between items-center">
-            <h1 class="text-xl font-semibold text-gray-800">学生晚归预警系统 - 超级管理员</h1>
-            <div class="flex items-center space-x-4">
-                <span class="text-gray-600">欢迎，${sessionScope.user.name}（超级管理员）</span>
-                <button class="text-sm text-blue-600 hover:text-blue-800" data-bs-toggle="modal" data-bs-target="#editProfileModal">修改个人信息</button>
-                <button class="text-sm text-red-600 hover:text-red-800" onclick="handleLogout()" >退出登录</button>
+    <div class="dashboard-container p-6">
+        <!-- 顶部导航栏 -->
+        <nav class="bg-white shadow-sm rounded-lg mb-6 p-4">
+            <div class="flex justify-between items-center">
+                <h1 class="text-xl font-semibold text-gray-800">学生晚归预警系统 - 超级管理员</h1>
+                <div class="flex items-center space-x-4">
+                    <span class="text-gray-600">欢迎，${sessionScope.user.name}（超级管理员）</span>
+                    <button class="text-sm text-blue-600 hover:text-blue-800" data-bs-toggle="modal" data-bs-target="#editProfileModal">修改个人信息</button>
+                    <button class="text-sm text-red-600 hover:text-red-800" onclick="handleLogout()" >退出登录</button>
+                </div>
             </div>
-        </div>
-    </nav>
+        </nav>
 
     <!-- 学生列表内容区域 -->
     <div class="card p-6 mb-6">
-        <div class="mb-4 flex justify-between items-center">
+                    <div class="mb-4 flex justify-between items-center">
             <h3 class="text-lg font-medium text-gray-900">学生列表</h3>
-            <div>
+                        <div>
                 <input type="text" id="studentSearch" class="form-control d-inline-block w-auto" placeholder="搜索姓名...">
                 <button class="btn btn-primary ml-2" id="searchStudentBtn">搜索</button>
-            </div>
-        </div>
-        <div class="table-responsive">
+                        </div>
+                    </div>
+                    <div class="table-responsive">
             <table class="table table-hover table-striped table-bordered align-middle">
                 <thead class="table-light">
-                <tr>
-                    <th>ID</th>
-                    <th>学号</th>
-                    <th>姓名</th>
-                    <th>学院</th>
-                    <th>班级</th>
-                    <th>宿舍</th>
-                    <th>邮箱</th>
-                    <th>电话</th>
-                    <th>父亲姓名</th>
-                    <th>父亲电话</th>
-                    <th>母亲姓名</th>
-                    <th>母亲电话</th>
-                    <th>创建时间</th>
-                    <th>更新时间</th>
-                    <th>最后登录时间</th>
-                    <th style="min-width:120px;">操作</th>
-                </tr>
-                </thead>
-                <tbody id="studentTableBody">
-                <!-- 学生数据将通过JS动态加载 -->
-                </tbody>
-            </table>
-        </div>
-        <div class="d-flex justify-content-between align-items-center mt-4">
-            <div class="text-sm text-gray-500">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>学号</th>
+                                    <th>姓名</th>
+                                    <th>学院</th>
+                                    <th>班级</th>
+                                    <th>宿舍</th>
+                                    <th>邮箱</th>
+                                    <th>电话</th>
+                                    <th>父亲姓名</th>
+                                    <th>父亲电话</th>
+                                    <th>母亲姓名</th>
+                                    <th>母亲电话</th>
+                                    <th>创建时间</th>
+                                    <th>更新时间</th>
+                                    <th>最后登录时间</th>
+                                    <th style="min-width:120px;">操作</th>
+                                </tr>
+                            </thead>
+                                <tbody id="studentTableBody">
+                                <!-- 学生数据将通过JS动态加载 -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mt-4">
+                        <div class="text-sm text-gray-500">
                 显示 <span id="studentStartRecord">1</span> 到 <span id="studentEndRecord">10</span> 条，共 <span id="studentTotalRecords">0</span> 条记录
-            </div>
-            <nav>
+                        </div>
+                        <nav>
                 <ul class="pagination" id="studentPagination">
                     <!-- 分页按钮JS生成 -->
-                </ul>
-            </nav>
-        </div>
-    </div>
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
 
     <!-- 班级管理员列表内容区域 -->
     <div class="card p-6 mb-6">
         <div class="mb-4 flex justify-between items-center">
             <h3 class="text-lg font-medium text-gray-900">班级管理员列表</h3>
-            <div>
+                        <div>
                 <input type="text" id="sysUserSearch" class="form-control d-inline-block w-auto" placeholder="搜索姓名...">
                 <button class="btn btn-primary ml-2" id="searchSysUserBtn">搜索</button>
-            </div>
-        </div>
-        <div class="table-responsive">
+                        </div>
+                    </div>
+                    <div class="table-responsive">
             <table class="table table-hover table-striped table-bordered align-middle">
                 <thead class="table-light">
                 <tr>
@@ -137,24 +137,24 @@
                     <th>创建时间</th>
                     <th>更新时间</th>
                     <th style="min-width:160px;">操作</th>
-                </tr>
-                </thead>
+                                </tr>
+                            </thead>
                 <tbody id="sysUserTableBody">
                 <!-- 班级管理员数据将通过JS动态加载 -->
-                </tbody>
-            </table>
-        </div>
-        <div class="d-flex justify-content-between align-items-center mt-4">
-            <div class="text-sm text-gray-500">
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mt-4">
+                        <div class="text-sm text-gray-500">
                 显示 <span id="sysUserStartRecord">1</span> 到 <span id="sysUserEndRecord">10</span> 条，共 <span id="sysUserTotalRecords">0</span> 条记录
-            </div>
-            <nav>
+                        </div>
+                        <nav>
                 <ul class="pagination" id="sysUserPagination">
                     <!-- 分页按钮JS生成 -->
-                </ul>
-            </nav>
-        </div>
-    </div>
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
 
     <!-- 超级管理员列表内容区域 -->
     <div class="card p-6 mb-6">
@@ -184,7 +184,7 @@
                 <!-- 超级管理员数据将通过JS动态加载 -->
                 </tbody>
             </table>
-        </div>
+    </div>
         <div class="d-flex justify-content-between align-items-center mt-4">
             <div class="text-sm text-gray-500">
                 显示 <span id="superAdminStartRecord">1</span> 到 <span id="superAdminEndRecord">10</span> 条，共 <span id="superAdminTotalRecords">0</span> 条记录
@@ -194,31 +194,112 @@
                     <!-- 分页按钮JS生成 -->
                 </ul>
             </nav>
+            </div>
         </div>
     </div>
-</div>
 
 <!-- 修改个人信息模态框 -->
 <div class="modal fade" id="editProfileModal" tabindex="-1" aria-labelledby="editProfileModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
+        <div class="modal-dialog">
+            <div class="modal-content">
             <form id="editProfileForm">
                 <div class="modal-header">
                     <h5 class="modal-title" id="editProfileModalLabel">修改个人信息</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="关闭"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="mb-3">
+                        <div class="mb-3">
                         <label for="editName" class="form-label">姓名</label>
                         <input type="text" class="form-control" id="editName" name="name" required>
-                    </div>
-                    <div class="mb-3">
+                        </div>
+                        <div class="mb-3">
                         <label for="editEmail" class="form-label">邮箱</label>
                         <input type="email" class="form-control" id="editEmail" name="email" required>
-                    </div>
-                    <div class="mb-3">
+                        </div>
+                        <div class="mb-3">
                         <label for="editPassword" class="form-label">新密码</label>
                         <input type="password" class="form-control" id="editPassword" name="password" placeholder="如不修改请留空">
+                        </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary">保存修改</button>
+                </div>
+            </form>
+        </div>
+        </div>
+</div>
+
+<!-- 编辑学生信息模态框 -->
+<div class="modal fade" id="editStudentModal" tabindex="-1" aria-labelledby="editStudentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form id="editStudentForm">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editStudentModalLabel">编辑学生信息</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="关闭"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="studentId" name="id">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="studentNo" class="form-label">学号</label>
+                                <input type="text" class="form-control" id="studentNo" name="studentNo" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="studentName" class="form-label">姓名</label>
+                                <input type="text" class="form-control" id="studentName" name="name" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="studentCollege" class="form-label">学院</label>
+                                <input type="text" class="form-control" id="studentCollege" name="college">
+                            </div>
+                            <div class="mb-3">
+                                <label for="studentClassName" class="form-label">班级</label>
+                                <input type="text" class="form-control" id="studentClassName" name="className">
+                            </div>
+                            <div class="mb-3">
+                                <label for="studentDormitory" class="form-label">宿舍</label>
+                                <input type="text" class="form-control" id="studentDormitory" name="dormitory">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="studentEmail" class="form-label">邮箱</label>
+                                <input type="email" class="form-control" id="studentEmail" name="email">
+                            </div>
+                            <div class="mb-3">
+                                <label for="studentPhone" class="form-label">电话</label>
+                                <input type="text" class="form-control" id="studentPhone" name="phone">
+                            </div>
+                            <div class="mb-3">
+                                <label for="studentPassword" class="form-label">密码</label>
+                                <input type="password" class="form-control" id="studentPassword" name="password" placeholder="留空则不修改">
+                            </div>
+                            <div class="mb-3">
+                                <label for="studentFatherName" class="form-label">父亲姓名</label>
+                                <input type="text" class="form-control" id="studentFatherName" name="fatherName">
+                            </div>
+                            <div class="mb-3">
+                                <label for="studentFatherPhone" class="form-label">父亲电话</label>
+                                <input type="text" class="form-control" id="studentFatherPhone" name="fatherPhone">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="studentMotherName" class="form-label">母亲姓名</label>
+                                <input type="text" class="form-control" id="studentMotherName" name="motherName">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="studentMotherPhone" class="form-label">母亲电话</label>
+                                <input type="text" class="form-control" id="studentMotherPhone" name="motherPhone">
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -230,7 +311,7 @@
     </div>
 </div>
 
-<script>
+    <script>
     function formatDate(dateStr) {
         if (!dateStr) return '-';
         // 兼容 yyyy-MM-dd HH:mm:ss 格式
@@ -247,14 +328,15 @@
         return y + '-' + m + '-' + day + ' ' + h + ':' + min + ':' + s;
     }
 
-    function handleLogout() {
-        if (confirm('确定要退出登录吗？')) {
+        function handleLogout() {
+            if (confirm('确定要退出登录吗？')) {
             localStorage.removeItem('loginUUID');
-            window.location.href = '${pageContext.request.contextPath}/logout';
+                window.location.href = '${pageContext.request.contextPath}/logout';
         }
     }
 
     $(document).ready(function() {
+        // 验证是否已经登录
         $.ajaxSetup({
             beforeSend: function(xhr) {
                 var loginUUID = localStorage.getItem('loginUUID');
@@ -271,7 +353,7 @@
             $('#editPassword').val('');
         });
 
-        // 表单提交
+        // 修改超级管理员个人信息表单提交
         $('#editProfileForm').on('submit', function(e) {
             e.preventDefault();
             var formData = {
@@ -304,7 +386,7 @@
         var studentPageSize = 10;
         function loadStudentList(pageNum) {
             pageNum = pageNum || 1;
-            var nameLike = $('#studentSearch').val();
+            var nameLike = $('#studentSearch').val().trim();
             $.ajax({
                 url: '${pageContext.request.contextPath}/student/page-list',
                 type: 'GET',
@@ -371,23 +453,47 @@
             $('#studentTotalRecords').text(total);
             var totalPages = Math.ceil(total / pageSize);
             var pagin = $('#studentPagination');
+
+            console.log('Updating pagination:', {pageNum, pageSize, total, totalPages}); // 调试
+
             pagin.empty();
             if (totalPages <= 1) return;
+
             // 上一页
-            pagin.append('<li class="page-item' + (pageNum === 1 ? ' disabled' : '') + '"><a class="page-link" href="#" data-page="' + (pageNum - 1) + '">上一页</a></li>');
+            if(pageNum > 1) {
+                pagin.append('<li class="page-item"><a class="page-link" href="#" data-page="' + (pageNum - 1) + '">上一页</a></li>');
+            } else {
+                pagin.append('<li class="page-item disabled"><a class="page-link" href="#">上一页</a></li>');
+            }
+
+            // 页码
             for (var i = 1; i <= totalPages; i++) {
                 pagin.append('<li class="page-item' + (i === pageNum ? ' active' : '') + '"><a class="page-link" href="#" data-page="' + i + '">' + i + '</a></li>');
             }
+
             // 下一页
-            pagin.append('<li class="page-item' + (pageNum === totalPages ? ' disabled' : '') + '"><a class="page-link" href="#" data-page="' + (pageNum + 1) + '">下一页</a></li>');
+            if(pageNum < totalPages) {
+                pagin.append('<li class="page-item"><a class="page-link" href="#" data-page="' + (pageNum + 1) + '">下一页</a></li>');
+            } else {
+                pagin.append('<li class="page-item disabled"><a class="page-link" href="#">下一页</a></li>');
+            }
+
         }
-        // 分页点击
-        $(document).on('click', '#studentPagination .page-link', function(e) {
+
+        // 学生分页事件委托
+        $(document).on('click', '#studentPagination a.page-link:not(.disabled)', function(e) {
             e.preventDefault();
             var page = parseInt($(this).data('page'));
+            console.log('Page clicked:', page); // 调试
+
             if (!isNaN(page)) {
                 studentPageNum = page;
                 loadStudentList(studentPageNum);
+
+                // 滚动到表格顶部
+                $('html, body').animate({
+                    scrollTop: $('#studentTableBody').offset().top - 20
+                }, 200);
             }
         });
         // 搜索按钮
@@ -399,23 +505,29 @@
         loadStudentList(1);
 
         // 编辑按钮事件
+        // 更明确的编辑按钮事件委托
         $(document).on('click', '.edit-student-btn', function() {
-            // 获取当前行学生信息
             var tr = $(this).closest('tr');
-            $('#studentId').val(tr.find('td').eq(0).text());
-            $('#studentNo').val(tr.find('td').eq(1).text());
-            $('#studentName').val(tr.find('td').eq(2).text());
-            $('#studentCollege').val(tr.find('td').eq(3).text());
-            $('#studentClassName').val(tr.find('td').eq(4).text());
-            $('#studentDormitory').val(tr.find('td').eq(5).text());
-            $('#studentEmail').val(tr.find('td').eq(6).text());
-            $('#studentPhone').val(tr.find('td').eq(7).text());
-            $('#studentPassword').val(''); // 密码不回显
-            $('#studentFatherName').val(tr.find('td').eq(8).text());
-            $('#studentFatherPhone').val(tr.find('td').eq(9).text());
-            $('#studentMotherName').val(tr.find('td').eq(10).text());
-            $('#studentMotherPhone').val(tr.find('td').eq(11).text());
-            $('#editStudentModal').modal('show');
+            console.log('编辑按钮点击，学生ID:', $(this).data('id')); // 调试输出
+
+            // 填充表单数据
+            $('#studentId').val(tr.find('td').eq(0).text().trim());
+            $('#studentNo').val(tr.find('td').eq(1).text().trim());
+            $('#studentName').val(tr.find('td').eq(2).text().trim());
+            $('#studentCollege').val(tr.find('td').eq(3).text().trim());
+            $('#studentClassName').val(tr.find('td').eq(4).text().trim());
+            $('#studentDormitory').val(tr.find('td').eq(5).text().trim());
+            $('#studentEmail').val(tr.find('td').eq(6).text().trim());
+            $('#studentPhone').val(tr.find('td').eq(7).text().trim());
+            $('#studentFatherName').val(tr.find('td').eq(8).text().trim());
+            $('#studentFatherPhone').val(tr.find('td').eq(9).text().trim());
+            $('#studentMotherName').val(tr.find('td').eq(10).text().trim());
+            $('#studentMotherPhone').val(tr.find('td').eq(11).text().trim());
+            $('#studentPassword').val(''); // 清空密码字段
+
+            // 显示模态框
+            var editModal = new bootstrap.Modal(document.getElementById('editStudentModal'));
+            editModal.show();
         });
         // 提交修改学生信息
         $('#editStudentForm').on('submit', function(e) {
@@ -436,7 +548,7 @@
                 motherPhone: $('#studentMotherPhone').val()
             };
             $.ajax({
-                url: '${pageContext.request.contextPath}/super-admin/update/per-info',
+                url: '${pageContext.request.contextPath}/student/super-admin/update/per-info',
                 type: 'POST',
                 contentType: 'application/json',
                 data: JSON.stringify(formData),
@@ -464,7 +576,7 @@
                     ids: [studentId]
                 };
                 $.ajax({
-                    url: '${pageContext.request.contextPath}/super-admin/delete',
+                    url: '${pageContext.request.contextPath}/student/super-admin/delete',
                     type: 'DELETE',
                     contentType: 'application/json',
                     data: JSON.stringify(data),

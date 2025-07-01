@@ -151,13 +151,14 @@ public class LateReturnServiceImpl implements LateReturnService {
         int affectedRow = lateReturnMapper.updateProcessStatus(lateReturn.getId(), processStatus, processResult,
                 processRemark);
 
-        /* 只有在更新成功，且晚归记录被判定为不合规时,才发布事件
-        *  晚归记录不合规，有两张情况：
-        * 1. precessStatus为FINISHED 且 processResult为空,
-        *              表示该生晚归后没有提交说明材料，故被判违规
-        * 2. processStatus为FINISHED 且 processResult为REJECTED
-        *              表示该生晚归后有提交说明材料，但材料不通过，故被判为违规
-        * */
+        /*
+         * 只有在更新成功，且晚归记录被判定为不合规时,才发布事件
+         * 晚归记录不合规，有两张情况：
+         * 1. precessStatus为FINISHED 且 processResult为空,
+         * 表示该生晚归后没有提交说明材料，故被判违规
+         * 2. processStatus为FINISHED 且 processResult为REJECTED
+         * 表示该生晚归后有提交说明材料，但材料不通过，故被判为违规
+         */
         if (affectedRow > 0 && isViolationTriggered(processStatus, processResult)) {
             try {
                 // 创建处理动作DTO

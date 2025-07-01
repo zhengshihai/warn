@@ -21,4 +21,7 @@ public class BaseQuery implements Serializable {
 
     private Boolean allowFullUpdate; // 是否允许全量更新
 
+    private String sortField; // 排序字段
+
+    private String sortOrder; // 排序顺序 ASC 或 DESC
 }

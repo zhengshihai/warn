@@ -131,7 +131,7 @@
     <delete id="deleteByIds" parameterType="java.util.List">
         DELETE FROM student
         WHERE id IN
-     <foreach collection="list" item="id" open="(" separator="," close=")">
+     <foreach collection="distinctIds" item="id" open="(" separator="," close=")">
          #{id}
      </foreach>
     </delete>
@@ -262,7 +262,11 @@
         ORDER BY student_no ASC
     </select>
 
-
-
+    <!-- 更新学号 -->
+    <update id="updateStudentNo">
+        UPDATE student
+        SET user_no = #{newUserNo}
+        WHERE user_no = #{oldStudentNo}
+    </update>
 
 </mapper> 

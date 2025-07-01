@@ -18,7 +18,7 @@
 
     <sql id="Base_Column_List">
         id, stats_id, student_no, late_return_count, stats_period_start_date, stats_period_end_date,
-        stats_period_type, last_updated_time, school_year, semester, stats_status
+        stats_period_type, last_updated_time, school_year, semester, active_status
     </sql>
 
     <select id="selectById" resultMap="BaseResultMap">
@@ -56,7 +56,7 @@
             <if test="statsPeriodEndDate != null">
                 AND stats_period_end_date &lt;= #{statsPeriodEndDate,jdbcType=TIMESTAMP}
             </if>
-            <if test="statsStatus != null">
+            <if test="activeStatus != null">
                 AND active_status = #{activeStatus,jdbcType=INTEGER}
             </if>
             <if test="studentNos != null and studentNos.size() > 0">
@@ -78,10 +78,35 @@
         SELECT <include refid="Base_Column_List"/>
         FROM student_late_stats
         <include refid="Query_Conditions"/>
-        <!-- 可根据 BaseQuery 中的排序参数添加 ORDER BY 子句 -->
-        <if test="sortField != null and sortField != '' and sortOrder != null and sortOrder != ''">
-            ORDER BY ${sortField} ${sortOrder}
-        </if>
+
+
+        <!-- 可选排序字段判断 -->
+        <choose>
+            <when test="sortField != null and sortField != '' and sortOrder != null and sortOrder != ''">
+                <trim prefix="ORDER BY" suffixOverrides=",">
+                    <if test="sortField == 'stats_period_start_date'">
+                        stats_period_start_date ${sortOrder},
+                    </if>
+                    <if test="sortField == 'stats_period_end_date'">
+                        stats_period_end_date ${sortOrder},
+                    </if>
+                    <if test="sortField == 'school_year'">
+                        school_year ${sortOrder},
+                    </if>
+                    <if test="sortField == 'semester'">
+                        semester ${sortOrder},
+                    </if>
+                    <if test="sortField == 'create_time'">
+                        create_time ${sortOrder},
+                    </if>
+                </trim>
+            </when>
+            <!-- 否则不排序 -->
+            <otherwise>
+                <!-- 可选默认排序 -->
+                <!-- ORDER BY create_time DESC -->
+            </otherwise>
+        </choose>
     </select>
 
 
@@ -180,4 +205,13 @@
         </foreach>
     </update>
 
+
+    <select id="selectByCondition" resultMap="BaseResultMap" parameterType="com.tianhai.warn.query.StudentLateStatsQuery">
+        SELECT <include refid="Base_Column_List"/>
+        FROM student_late_stats
+        <include refid="Query_Conditions"/>
+        <if test="sortField != null and sortField != '' and sortOrder != null and sortOrder != ''">
+            ORDER BY ${sortField} ${sortOrder}
+        </if>
+    </select>
 </mapper>

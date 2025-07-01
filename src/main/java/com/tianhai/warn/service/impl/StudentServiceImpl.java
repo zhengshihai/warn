@@ -16,6 +16,7 @@ import com.tianhai.warn.query.*;
 import com.tianhai.warn.scheduler.UpdateScheduler;
 import com.tianhai.warn.service.*;
 import com.tianhai.warn.utils.EmailValidator;
+import com.tianhai.warn.utils.NoticeIdGenerator;
 import com.tianhai.warn.utils.PageResult;
 import com.tianhai.warn.utils.Result;
 import org.redisson.api.RLock;
@@ -27,6 +28,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.DigestUtils;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -290,10 +293,16 @@ public class StudentServiceImpl implements StudentService {
 
             updateResult = studentMapper.update(studentToUpdate);
 
-            // 如果学号发生变化，加入异步队列
+            // 如果学号发生变化，给该学生发送通知，并加入异步队列
             if (!studentExisting.getStudentNo().equals(newStudentInfo.getStudentNo())) {
-                logger.info("学号变更将在凌晨2点执行");
-                updateScheduler.scheduleStudentNoUpdate(studentExisting.getStudentNo(), newStudentInfo.getStudentNo());
+                int notificationRow = generateAndInsertNotification(studentExisting.getStudentNo());
+                if (notificationRow <= 0) {
+                    logger.error("生成站内通知出现异常，studentExisting:{}", studentExisting);
+                }
+
+                logger.info("学号变更将在凌晨3点执行");
+                updateScheduler.scheduleStudentNoUpdate(studentExisting.getStudentNo(),
+                        newStudentInfo.getStudentNo());
             }
 
         } catch (InterruptedException e) {
@@ -333,6 +342,35 @@ public class StudentServiceImpl implements StudentService {
             logger.error("该学生正处于报警状态中，不允许修改学生资料");
             throw new SystemException(ResultCode.ERROR);
         }
+    }
+
+    // 插入一条该学生的站内通知
+    private int generateAndInsertNotification(String oldStudentNo) {
+        Notification notification = new Notification();
+
+        LocalDateTime now = LocalDateTime.now();
+        // 取今天凌晨3点
+        LocalDateTime next3AM = now.withHour(3).withMinute(0).withNano(0);
+        // 如果当前时间在今天凌晨3点之后，就取明天的凌晨3点日期
+        if (!now.isBefore(next3AM)) {
+            next3AM = next3AM.plusDays(1);
+        }
+        String dateStr = next3AM.toLocalDate().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+
+        String content = String.format(
+                "你好，由于超级管理员为你更新了学号，所以在%s凌晨 03:00 - 03：10 这个时间段内请不要使用本系统", dateStr);
+
+        notification.setNoticeId(NoticeIdGenerator.generate());
+        notification.setTitle("学号更新通知");
+        notification.setNoticeType("系统通知");
+        notification.setTargetType("STUDENT");
+        notification.setTargetId(oldStudentNo);
+        notification.setStatus("UNREAD");
+        notification.setCreateTime(new Date());// todo 写项目最好优先使用LocalDateTime,LocalDate
+        notification.setUpdateTime(new Date());
+        notification.setContent(content);
+
+        return notificationService.insert(notification);
     }
 
     // 更新学生表之外其他表的学生信息
@@ -460,7 +498,7 @@ public class StudentServiceImpl implements StudentService {
         List<Student> studentList;
         PageResult<Student> result;
         try (Page<Student> page = PageHelper.startPage(query.getPageNum(), query.getPageSize())) {
-            studentList = studentMapper.selectAll();
+            studentList = studentMapper.searchByStudentQuery(query);
             result = buildPageResult(studentList);
         }
 

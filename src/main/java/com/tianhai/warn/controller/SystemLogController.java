@@ -1,6 +1,7 @@
 package com.tianhai.warn.controller;
 
 import com.tianhai.warn.model.SystemLog;
+import com.tianhai.warn.query.SystemLogQuery;
 import com.tianhai.warn.service.SystemLogService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -35,8 +36,8 @@ public class SystemLogController {
      */
     @PostMapping("/search")
     @ResponseBody
-    public List<SystemLog> search(@RequestBody SystemLog log) {
-        return systemLogService.selectByCondition(log);
+    public List<SystemLog> search(@RequestBody SystemLogQuery query) {
+        return systemLogService.selectByCondition(query);
     }
 
     /**
