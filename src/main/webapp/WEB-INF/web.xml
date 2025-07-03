@@ -79,7 +79,12 @@
     <filter-mapping>
         <filter-name>jwtRememberMeFilter</filter-name>
         <url-pattern>/*</url-pattern> <!-- 拦截所有请求 -->
-
     </filter-mapping>
+
+    <!-- 设置环境为开发环境  注：本项目通过IDEA也设置了jvm的环境参数为dev-->
+    <context-param>
+        <param-name>spring.profiles.active</param-name>
+        <param-value>dev</param-value>
+    </context-param>
 </web-app>
 

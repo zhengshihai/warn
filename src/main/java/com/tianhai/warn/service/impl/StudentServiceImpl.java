@@ -32,6 +32,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -523,5 +524,25 @@ public class StudentServiceImpl implements StudentService {
     public int deleteByIds(List<Integer> distinctIds) {
 
         return studentMapper.deleteByIds(distinctIds);
+    }
+
+    @Override
+    public Set<String> selectAllEmail() {
+        Set<String> emailSet = studentMapper.selectAllEmail();
+        if (emailSet.isEmpty()) {
+            logger.warn("学生表中找不到邮箱信息");
+        }
+
+        return emailSet;
+    }
+
+    @Override
+    public Set<String> selectAllStudentNo() {
+        Set<String> studentNoSet = studentMapper.selectAllStudentNo();
+        if (studentNoSet.isEmpty()) {
+            logger.warn("学生表中找不到学号信息");
+        }
+
+        return studentNoSet;
     }
 }

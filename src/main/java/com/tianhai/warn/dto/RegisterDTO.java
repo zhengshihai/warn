@@ -5,7 +5,10 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import jakarta.validation.Valid;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.io.Serial;
 import java.io.Serializable;
@@ -14,6 +17,9 @@ import java.io.Serializable;
  * 注册数据传输对象
  */
 @Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class RegisterDTO implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;

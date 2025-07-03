@@ -1,7 +1,11 @@
 package com.tianhai.warn.service;
 
+import com.tianhai.warn.dto.StudentExcelDTO;
+import com.tianhai.warn.dto.StudentInfoValidateResult;
 import com.tianhai.warn.enums.BusinessType;
 import com.tianhai.warn.utils.Result;
+
+import java.util.List;
 
 public interface VerificationService {
     /**
@@ -45,4 +49,11 @@ public interface VerificationService {
     Result<Boolean> checkRegisterLimit(String sessionId, BusinessType businessType);
 
     void cleanupRegistrationCodes(String sessionId, String email, BusinessType businessType);
+
+    /**
+     * 校验Excel文件的学生信息
+     * @param studentExcelDTOList    待校验的学生信息
+     * @return                       校验结果
+     */
+    List<StudentInfoValidateResult> validateStudentExcelInfo(List<StudentExcelDTO> studentExcelDTOList);
 }

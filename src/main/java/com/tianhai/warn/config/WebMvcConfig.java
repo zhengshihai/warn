@@ -1,16 +1,14 @@
 package com.tianhai.warn.config;
 
-import com.tianhai.warn.controller.FileStorageController;
 import com.tianhai.warn.interceptor.LoginInterceptor;
 import com.tianhai.warn.listeners.AuditEventListener;
-import jakarta.servlet.FilterRegistration;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.core.task.AsyncTaskExecutor;
 import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
@@ -18,6 +16,8 @@ import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.web.servlet.config.annotation.*;
 import org.springframework.web.servlet.view.InternalResourceViewResolver;
+import org.springframework.http.converter.HttpMessageConverter;
+
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -25,9 +25,11 @@ import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  * Web MVC配置
+
+ * 为了避免配置冲突，这里不使用@EnableWebMvc注解，而是通过XML配置来启用Spring MVC功能
  */
 @Configuration
-@EnableWebMvc
+// @EnableWebMvc // 注释掉，避免与XML配置冲突
 @ComponentScan(basePackages = "com.tianhai.warn")
 @EnableAsync
 public class WebMvcConfig implements WebMvcConfigurer {
@@ -35,9 +37,11 @@ public class WebMvcConfig implements WebMvcConfigurer {
         @Autowired
         private LoginInterceptor loginInterceptor;
 
-        // 暂时写死配置值
-        private final String basePath = "E:/Warning/Warn/uploads";
-        private final String baseUrl = "/uploads";
+        @Value("${file.upload.base-path}")
+        private String basePath;
+
+        @Value("${file.upload.base-url}")
+        private String baseUrl;
 
         @Autowired
         private ApplicationContext applicationContext;
@@ -71,7 +75,8 @@ public class WebMvcConfig implements WebMvcConfigurer {
                                 .addResourceLocations("/static/css/");
 
                 // 配置文件上传目录的访问
-                registry.addResourceHandler(baseUrl + "/**")
+                // 使用Spring 6兼容的路径模式，避免PathPatternParser解析错误
+                registry.addResourceHandler("/uploads/**")
                                 .addResourceLocations("file:" + basePath + "/");
         }
 
@@ -85,7 +90,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
         @Override
         public void configureMessageConverters(
-                        List<org.springframework.http.converter.HttpMessageConverter<?>> converters) {
+                        List<HttpMessageConverter<?>> converters) {
                 // 配置StringHttpMessageConverter
                 StringHttpMessageConverter stringConverter = new StringHttpMessageConverter(StandardCharsets.UTF_8);
                 stringConverter.setSupportedMediaTypes(List.of(
@@ -100,14 +105,6 @@ public class WebMvcConfig implements WebMvcConfigurer {
                 converters.add(jsonConverter);
         }
 
-        @Bean
-        public FileStorageController fileStorageController() {
-                FileStorageController controller = new FileStorageController();
-                // 手动设置属性值
-                controller.setBasePath(basePath);
-                controller.setBaseUrl(baseUrl);
-                return controller;
-        }
 
         @Bean
         public ApplicationEventPublisher applicationEventPublisher() {

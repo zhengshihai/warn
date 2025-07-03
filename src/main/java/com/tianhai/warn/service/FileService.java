@@ -5,9 +5,9 @@ import java.io.IOException;
 import java.util.Date;
 
 /**
- * 文件存储服务接口
+ * 文件服务接口
  */
-public interface FileStorageService {
+public interface FileService {
     /**
      * 存储文件
      * 

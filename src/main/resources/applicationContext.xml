@@ -13,9 +13,6 @@
         http://www.springframework.org/schema/aop
         http://www.springframework.org/schema/aop/spring-aop.xsd">
 
-    <!--该文件负责配置应用程序的核心服务、数据源、Bean 等-->
-    <!-- 扫描service包下所有使用注解的类型 -->
-<!--    <context:component-scan base-package="com.tianhai.warn.service"/>-->
 
     <!-- 扫描warn包下所有使用注解的类型 -->
     <context:component-scan base-package="com.tianhai.warn"/>
@@ -24,8 +21,14 @@
     <aop:aspectj-autoproxy proxy-target-class="true"/>
 
     <!-- 配置相关参数 -->
-    <context:property-placeholder location="classpath:jdbc.properties,classpath:file-upload-dev.properties,classpath*:mail.properties,classpath:application.properties" ignore-unresolvable="true"/>
+    <context:property-placeholder location="classpath:jdbc.properties,classpath*:mail.properties,classpath:application.properties" ignore-unresolvable="true"/>
 
+    <beans profile="dev">
+        <context:property-placeholder location="classpath:file-upload-dev.properties"/>
+    </beans>
 
+    <beans profile="prod">
+        <context:property-placeholder location="classpath:file-upload-prod.properties"/>
+    </beans>
 
 </beans> 

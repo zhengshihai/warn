@@ -269,4 +269,17 @@
         WHERE user_no = #{oldStudentNo}
     </update>
 
+    <!-- 查询所有邮箱 -->
+    <select id="selectAllEmail" resultType="string">
+        SELECT DISTINCT  email
+        FROM student
+        WHERE email IS NOT NULL
+    </select>
+
+    <!-- 查询所有学号 -->
+    <select id="selectAllStudentNo" resultType="string">
+        SELECT DISTINCT  student_no
+        FROM student
+        WHERE student_no IS NOT NULL
+    </select>
 </mapper> 

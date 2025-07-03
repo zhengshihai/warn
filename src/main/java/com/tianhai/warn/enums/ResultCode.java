@@ -33,6 +33,7 @@ public enum ResultCode implements IResultCode {
     FILE_NOT_EXISTS(3003, "文件不存在"),
     FILE_DOWNLOAD_ERROR(3003, "文件下载失败"),
     FILE_PREVIEW_ERROR(3004, "文件预览失败"),
+    FILE_PARSE_FAIL(3005, "文件解析失败"),
 
     APPLICATION_DUPLICATE(4000, "您已经提交过该日期的晚归申请"),
     APPLICATION_SAVE_FAILED(4001, "保存晚归申请记录失败"),

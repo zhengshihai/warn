@@ -2,7 +2,7 @@ package com.tianhai.warn.service.impl;
 
 import com.tianhai.warn.enums.ResultCode;
 import com.tianhai.warn.exception.BusinessException;
-import com.tianhai.warn.service.FileStorageService;
+import com.tianhai.warn.service.FileService;
 import com.tianhai.warn.utils.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,13 +26,13 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 @Service
-public class LocalFileStorageServiceImpl implements FileStorageService {
-    private static final Logger logger = LoggerFactory.getLogger(LocalFileStorageServiceImpl.class);
+public class LocalFileServiceImpl implements FileService {
+    private static final Logger logger = LoggerFactory.getLogger(LocalFileServiceImpl.class);
 
     private final String basePath;
     private final String baseUrl;
 
-    public LocalFileStorageServiceImpl() {
+    public LocalFileServiceImpl() {
         // 从系统属性中获取配置，如果没有则使用默认值
         this.basePath = System.getProperty("file.upload.base-path", "E:/Warning/Warn/uploads");
         this.baseUrl = System.getProperty("file.upload.base-url", "/uploads");

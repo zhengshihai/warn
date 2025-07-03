@@ -10,14 +10,13 @@ import com.tianhai.warn.model.Application;
 import com.tianhai.warn.model.Student;
 import com.tianhai.warn.query.ApplicationQuery;
 import com.tianhai.warn.service.ApplicationService;
-import com.tianhai.warn.service.FileStorageService;
+import com.tianhai.warn.service.FileService;
 import com.tianhai.warn.service.StudentService;
 import com.tianhai.warn.utils.ApplicationIdGenerator;
 import com.tianhai.warn.utils.PageResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -38,7 +37,7 @@ public class ApplicationServiceImpl implements ApplicationService {
     private StudentService studentService;
 
     @Autowired
-    private FileStorageService fileStorageService;
+    private FileService fileService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -79,7 +78,7 @@ public class ApplicationServiceImpl implements ApplicationService {
 
                 // 添加时间戳到文件名，避免并发冲突
                 String timestamp = String.valueOf(System.currentTimeMillis());
-                String fileUrl = fileStorageService.storeFile(
+                String fileUrl = fileService.storeFile(
                         file, directory, studentNo, timestamp, expectedReturnTime);
                 application.setAttachmentUrl(fileUrl);
             } catch (IOException e) {

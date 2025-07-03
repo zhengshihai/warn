@@ -6,7 +6,6 @@ import com.tianhai.warn.dto.AuditActionDTO;
 import com.tianhai.warn.enums.CollegeEnum;
 import com.tianhai.warn.enums.ResultCode;
 import com.tianhai.warn.events.AuditEvent;
-import com.tianhai.warn.events.StatsEvent;
 import com.tianhai.warn.exception.BusinessException;
 import com.tianhai.warn.exception.SystemException;
 import com.tianhai.warn.mapper.ExplanationMapper;
@@ -16,7 +15,7 @@ import com.tianhai.warn.model.Student;
 import com.tianhai.warn.query.ExplanationQuery;
 import com.tianhai.warn.query.LateReturnQuery;
 import com.tianhai.warn.service.ExplanationService;
-import com.tianhai.warn.service.FileStorageService;
+import com.tianhai.warn.service.FileService;
 import com.tianhai.warn.service.LateReturnService;
 import com.tianhai.warn.service.StudentService;
 import com.tianhai.warn.utils.ExplanationIdGenerator;
@@ -47,7 +46,7 @@ public class ExplanationServiceImpl implements ExplanationService {
     private LateReturnService lateReturnService;
 
     @Autowired
-    private FileStorageService fileStorageService;
+    private FileService fileService;
 
     @Autowired
     private ApplicationEventPublisher applicationEventPublisher;
@@ -151,7 +150,7 @@ public class ExplanationServiceImpl implements ExplanationService {
                         collegeCode, student.getClassName());
                 // 添加时间戳到文件名，避免并发冲突
                 String timeStamp = String.valueOf(System.currentTimeMillis());
-                String fileUrl = fileStorageService.storeFile(
+                String fileUrl = fileService.storeFile(
                         file, directory, studentNo, timeStamp, lateReturn.getLateTime());
 
                 explanation.setAttachmentUrl(fileUrl);

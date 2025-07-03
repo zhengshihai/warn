@@ -46,8 +46,6 @@
         <constructor-arg value="E:/Warning/Warn/uploads"/>
     </bean>
 
-    <!-- 配置静态资源映射 -->
-    <!-- <mvc:resources mapping="/uploads/**" location="file:#{uploadPath}/"/> -->
 
     <!-- 开启注解扫描 -->
     <context:component-scan base-package="com.tianhai.warn.controller"/>
@@ -84,17 +82,14 @@
         <property name="defaultContentType" value="application/json"/>
     </bean>
 
-    <beans profile="dev">
-        <bean id="uploadPath" class="java.lang.String">
-            <constructor-arg value="E:/Warning/Warn/uploads"/>
-        </bean>
-    </beans>
+    <!-- Spring 6 兼容配置：使用PathPatternParser替代AntPathMatcher -->
+    <!-- 这是Spring 6推荐的新版路径解析器，提供更好的性能和安全性 -->
+    <bean id="pathPatternParser" class="org.springframework.web.util.pattern.PathPatternParser"/>
 
-    <!-- todo 生产环境待配置 -->
-    <beans profile="prod">
-        <bean id="uploadPath" class="java.lang.String">
-            <constructor-arg value="/data/uploads"/>
-        </bean>
-    </beans>
+    <!-- 配置RequestMappingHandlerMapping使用PathPatternParser -->
+    <bean class="org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping">
+        <property name="patternParser" ref="pathPatternParser"/>
+    </bean>
+
 
 </beans> 

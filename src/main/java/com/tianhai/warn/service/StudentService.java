@@ -5,6 +5,7 @@ import com.tianhai.warn.query.StudentQuery;
 import com.tianhai.warn.utils.PageResult;
 import com.tianhai.warn.utils.Result;
 import java.util.List;
+import java.util.Set;
 
 /**
  * 学生信息服务接口
@@ -123,4 +124,16 @@ public interface StudentService {
      * @return               删除行数
      */
     int deleteByIds(List<Integer> distinctIds);
+
+    /**
+     * 查询所有邮箱
+     * @return    邮箱集合
+     */
+    Set<String> selectAllEmail();
+
+    /**
+     * 查询所有学号
+     * @return    学号集合
+     */
+    Set<String> selectAllStudentNo();
 }

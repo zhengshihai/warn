@@ -4,9 +4,7 @@ import com.tianhai.warn.annotation.LogOperation;
 import com.tianhai.warn.annotation.RequirePermission;
 import com.tianhai.warn.enums.ResultCode;
 import com.tianhai.warn.exception.BusinessException;
-import com.tianhai.warn.service.impl.LocalFileStorageServiceImpl;
-import com.tianhai.warn.utils.FileUtils;
-import com.tianhai.warn.utils.Result;
+import com.tianhai.warn.service.impl.LocalFileServiceImpl;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -14,44 +12,30 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.FileSystemResource;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 
 import java.io.File;
-import java.io.IOException;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.nio.file.Path;
 
 @Controller
 @RequestMapping("/file")
-public class FileStorageController {
-    private static final Logger logger = LoggerFactory.getLogger(FileStorageController.class);
+public class FileController {
+    private static final Logger logger = LoggerFactory.getLogger(FileController.class);
 
+    @Value("${file.upload.base-path}")
     private String basePath;
+
+    @Value("${file.upload.base-url}")
     private String baseUrl;
 
-    public void setBasePath(String basePath) {
-        this.basePath = basePath;
-        logger.info("设置文件存储基础路径: {}", basePath);
-    }
-
-    public void setBaseUrl(String baseUrl) {
-        this.baseUrl = baseUrl;
-        logger.info("设置文件访问基础URL: {}", baseUrl);
-    }
-
     @Autowired
-    private LocalFileStorageServiceImpl localFileStorageService;
+    private LocalFileServiceImpl localFileStorageService;
 
     @GetMapping("/download/**")
     @RequirePermission
@@ -86,7 +70,6 @@ public class FileStorageController {
             throw new BusinessException(ResultCode.FILE_NOT_EXISTS);
         }
 
-        // 业务处理交给Service
         return localFileStorageService.buildDownloadResponse(file);
     }
 

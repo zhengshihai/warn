@@ -1,13 +1,17 @@
 package com.tianhai.warn.controller;
 
+import com.alibaba.excel.EasyExcel;
 import com.tianhai.warn.annotation.LogOperation;
 import com.tianhai.warn.annotation.RequirePermission;
 import com.tianhai.warn.constants.Constants;
+import com.tianhai.warn.dto.StudentExcelDTO;
+import com.tianhai.warn.dto.StudentInfoValidateResult;
 import com.tianhai.warn.enums.ResultCode;
 import com.tianhai.warn.exception.BusinessException;
 import com.tianhai.warn.model.SuperAdmin;
 import com.tianhai.warn.query.SuperAdminQuery;
 import com.tianhai.warn.service.SuperAdminService;
+import com.tianhai.warn.service.VerificationService;
 import com.tianhai.warn.utils.PageResult;
 import com.tianhai.warn.utils.Result;
 import com.tianhai.warn.utils.RoleObjectCaster;
@@ -19,8 +23,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 超级管理员信息控制器
@@ -32,6 +42,9 @@ public class SuperAdminController {
 
     @Autowired
     private SuperAdminService superAdminService;
+
+    @Autowired
+    private VerificationService verificationService;
 
     @GetMapping
     public String superAdmin() {
@@ -134,6 +147,45 @@ public class SuperAdminController {
         }
 
         return Result.success(superAdminPageResult);
+
+    }
+
+    @PostMapping("/import-students")
+    @ResponseBody
+    @RequirePermission(roles = Constants.SUPER_ADMIN)
+    @LogOperation("超级管理员批量导入用户信息") //为了检查当前实现的内容，暂时把返回值设置为空
+    public void importStudents(@RequestParam("file") MultipartFile file,
+                               @RequestParam("fileRole") String fileRole) {
+        Map<String, Object> resultMap = new HashMap<>();
+        List<StudentExcelDTO> allExcelStudentInfoList = new ArrayList<>();
+        try (InputStream is = file.getInputStream()) {
+            allExcelStudentInfoList = EasyExcel.read(is)
+                    .head(StudentExcelDTO.class)
+                    .sheet()
+                    .doReadSync();
+        } catch (Exception e) {
+            logger.error("文件解析失败", e);
+//            return Result.error(ResultCode.FILE_PARSE_FAIL);
+        }
+
+        // 校验Excel中的学生信息是否合规
+        List<StudentInfoValidateResult> validateResultList =
+                verificationService.validateStudentExcelInfo(allExcelStudentInfoList);
+
+        // 分离合规的学生信息数据
+        List<StudentExcelDTO> validStudentList = validateResultList.stream()
+                .filter(StudentInfoValidateResult::isValid)
+                .map(StudentInfoValidateResult::getStudentExcelDTO)
+                .toList();
+        logger.info("本次上传的学生数据，合规的学生数据条数为：{}", validStudentList.size());
+
+        // 分离不合规且有错误信息的学生信息数据
+        List<StudentInfoValidateResult> inValidateResultList = validateResultList.stream()
+                .filter(validateResult -> !validateResult.isValid())
+                .toList();
+        logger.info("本次上传的学生数据，不合规的学生数据条数为：{}", inValidateResultList.size());
+
+        
 
     }
 }

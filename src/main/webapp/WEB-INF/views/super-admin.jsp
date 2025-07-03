@@ -226,14 +226,14 @@
                     <button type="submit" class="btn btn-primary">保存修改</button>
                 </div>
             </form>
+            </div>
         </div>
-        </div>
-</div>
+    </div>
 
 <!-- 编辑学生信息模态框 -->
 <div class="modal fade" id="editStudentModal" tabindex="-1" aria-labelledby="editStudentModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
-        <div class="modal-content">
+            <div class="modal-content">
             <form id="editStudentForm">
                 <div class="modal-header">
                     <h5 class="modal-title" id="editStudentModalLabel">编辑学生信息</h5>
@@ -251,15 +251,15 @@
                                 <label for="studentName" class="form-label">姓名</label>
                                 <input type="text" class="form-control" id="studentName" name="name" required>
                             </div>
-                            <div class="mb-3">
+                        <div class="mb-3">
                                 <label for="studentCollege" class="form-label">学院</label>
                                 <input type="text" class="form-control" id="studentCollege" name="college">
-                            </div>
-                            <div class="mb-3">
+                        </div>
+                        <div class="mb-3">
                                 <label for="studentClassName" class="form-label">班级</label>
                                 <input type="text" class="form-control" id="studentClassName" name="className">
-                            </div>
-                            <div class="mb-3">
+                        </div>
+                        <div class="mb-3">
                                 <label for="studentDormitory" class="form-label">宿舍</label>
                                 <input type="text" class="form-control" id="studentDormitory" name="dormitory">
                             </div>
@@ -280,8 +280,8 @@
                             <div class="mb-3">
                                 <label for="studentFatherName" class="form-label">父亲姓名</label>
                                 <input type="text" class="form-control" id="studentFatherName" name="fatherName">
-                            </div>
-                            <div class="mb-3">
+                        </div>
+                        <div class="mb-3">
                                 <label for="studentFatherPhone" class="form-label">父亲电话</label>
                                 <input type="text" class="form-control" id="studentFatherPhone" name="fatherPhone">
                             </div>
@@ -289,13 +289,13 @@
                     </div>
                     <div class="row">
                         <div class="col-md-6">
-                            <div class="mb-3">
+                        <div class="mb-3">
                                 <label for="studentMotherName" class="form-label">母亲姓名</label>
                                 <input type="text" class="form-control" id="studentMotherName" name="motherName">
                             </div>
                         </div>
                         <div class="col-md-6">
-                            <div class="mb-3">
+                        <div class="mb-3">
                                 <label for="studentMotherPhone" class="form-label">母亲电话</label>
                                 <input type="text" class="form-control" id="studentMotherPhone" name="motherPhone">
                             </div>
@@ -307,9 +307,9 @@
                     <button type="submit" class="btn btn-primary">保存修改</button>
                 </div>
             </form>
+            </div>
         </div>
     </div>
-</div>
 
     <script>
     function formatDate(dateStr) {

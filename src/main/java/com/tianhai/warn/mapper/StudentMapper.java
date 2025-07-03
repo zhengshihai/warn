@@ -6,6 +6,7 @@ import org.apache.ibatis.annotations.Param;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
 
 /**
  * 学生信息Mapper接口
@@ -115,4 +116,16 @@ public interface StudentMapper {
      * @return              删除行数
      */
     int deleteByIds(@Param("distinctIds")List<Integer> distinctIds);
+
+    /**
+     * 查询所有学生邮箱
+     * @return          邮箱集合
+     */
+    Set<String> selectAllEmail();
+
+    /**
+     * 查询所有学生学号
+     * @return          学号集合
+     */
+    Set<String> selectAllStudentNo();
 }
