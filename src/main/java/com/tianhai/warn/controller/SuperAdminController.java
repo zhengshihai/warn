@@ -12,8 +12,18 @@ import com.tianhai.warn.utils.PageResult;
 import com.tianhai.warn.utils.Result;
 import com.tianhai.warn.utils.RoleObjectCaster;
 import com.tianhai.warn.utils.SessionUtils;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.FillPatternType;
+import org.apache.poi.ss.usermodel.Font;
+import org.apache.poi.ss.usermodel.IndexedColors;
+import org.apache.poi.ss.usermodel.Row;
+
+import org.apache.poi.xssf.streaming.SXSSFSheet;
+import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,7 +31,13 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
 import java.util.*;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * 超级管理员信息控制器
@@ -144,7 +160,7 @@ public class SuperAdminController {
 
     }
 
-    @PostMapping("/import-students")
+    @PostMapping("/import-batch")
     @ResponseBody
     @RequirePermission(roles = Constants.SUPER_ADMIN)
     @LogOperation("超级管理员批量导入用户信息")
@@ -197,4 +213,57 @@ public class SuperAdminController {
             return Result.success(importResult, message);
         }
     }
+
+    /**
+     * 下载导入错误数据
+     * 
+     * @param requestDataJson 错误数据列表的JSON字符串
+     * @param response        HTTP响应
+     */
+    @PostMapping("/download-error-data")
+    @RequirePermission(roles = Constants.SUPER_ADMIN)
+    @LogOperation("超级管理员下载导入错误数据")
+    @SuppressWarnings("unchecked")
+    public void downloadErrorData(@RequestParam("requestData") String requestDataJson,
+            HttpServletResponse response) {
+        SXSSFWorkbook workbook = null;
+        try {
+            Map<String, Object> requestData = new ObjectMapper().readValue(requestDataJson, Map.class);
+            List<Map<String, Object>> invalidDataList = (List<Map<String, Object>>) requestData.get(INVALID_LIST);
+            String insertUserRole = (String) requestData.get("insertUserRole");
+
+            if (invalidDataList == null || invalidDataList.isEmpty()) {
+                throw new BusinessException("没有错误数据可下载");
+            }
+
+            // 设置响应头
+            String fileName = "errorData_" + insertUserRole + "_" +
+                    new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date()) + ".xlsx";
+            response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+            response.setHeader("Content-Disposition", "attachment; filename=" +
+                    URLEncoder.encode(fileName, StandardCharsets.UTF_8));
+
+            // 根据角色获取表头
+            List<String> headers = superAdminService.getHeadersByRole(insertUserRole);
+
+            // 创建Excel写入器
+            workbook = superAdminService.generateWorkbook(headers, insertUserRole, invalidDataList);
+
+            // 写入响应流
+            workbook.write(response.getOutputStream());
+        } catch (Exception e) {
+            logger.error("下载错误数据失败", e);
+            throw new BusinessException("下载失败：" + e.getMessage());
+        } finally {
+            // 释放SXSSFWorkbook资源
+            if (workbook != null) {
+                try {
+                    workbook.close();
+                } catch (IOException e) {
+                    logger.warn("关闭SXSSFWorkbook时发生异常", e);
+                }
+            }
+        }
+    }
+
 }

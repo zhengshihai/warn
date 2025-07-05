@@ -110,7 +110,7 @@
 
     <insert id="insertBatch" parameterType="java.util.List">
     INSERT INTO super_admin
-        (name, password, email, enabled, create_time, update_time, version, last_login_time)
+        (name, password, email, enabled, create_time, update_time, version)
     VALUES
     <foreach collection="superAdminList" item="item" separator=",">
         (
@@ -120,8 +120,7 @@
             #{item.enabled},
             #{item.createTime},
             #{item.updateTime},
-            #{item.version},
-            #{item.lastLoginTime}
+            #{item.version}
         )
     </foreach>
 </insert>

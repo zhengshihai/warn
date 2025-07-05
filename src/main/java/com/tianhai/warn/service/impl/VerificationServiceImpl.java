@@ -300,10 +300,10 @@ public class VerificationServiceImpl implements VerificationService {
      * 校验单个班级管理员的信息
      */
     private SysUserInfoValidateResult validateSysUser(SysUserExcelDTO dto,
-                                                      Set<String> existingEmailSet,
-                                                      Set<String> existingSysUserNoSet,
-                                                      Set<String> batchEmailSet,
-                                                      Set<String> batchSysUserNoSet) {
+            Set<String> existingEmailSet,
+            Set<String> existingSysUserNoSet,
+            Set<String> batchEmailSet,
+            Set<String> batchSysUserNoSet) {
         SysUserInfoValidateResult result = new SysUserInfoValidateResult();
         result.setSysUserExcelDTO(dto);
         result.setValid(true);
@@ -401,10 +401,10 @@ public class VerificationServiceImpl implements VerificationService {
      * 因需要实现封装错误信息传回前端回显，故这里直接使用条件判断代替注解方式的判断
      */
     private DorManInfoValidateResult validateDormitoryManager(DormitoryManagerExcelDTO dto,
-                                                             Set<String> existingEmailSet,
-                                                             Set<String> existingManagerIdSet,
-                                                             Set<String> batchEmailSet,
-                                                             Set<String> batchManagerId) {
+            Set<String> existingEmailSet,
+            Set<String> existingManagerIdSet,
+            Set<String> batchEmailSet,
+            Set<String> batchManagerId) {
         DorManInfoValidateResult result = new DorManInfoValidateResult();
         result.setDormitoryManagerExcelDTO(dto);
         result.setValid(true);

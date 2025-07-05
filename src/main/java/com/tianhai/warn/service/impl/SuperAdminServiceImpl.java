@@ -19,6 +19,9 @@ import com.tianhai.warn.query.SuperAdminQuery;
 import com.tianhai.warn.service.*;
 import com.tianhai.warn.utils.PageResult;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.streaming.SXSSFSheet;
+import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +31,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.DigestUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -56,7 +60,6 @@ public class SuperAdminServiceImpl implements SuperAdminService {
     private static final String VALID_COUNT = "validCount";
     private static final String INVALID_LIST = "invalidList";
     private static final String TOTAL_COUNT = "totalCount";
-
 
     // 查询超级管理员的的信息（不含密码）
     @Override
@@ -371,10 +374,10 @@ public class SuperAdminServiceImpl implements SuperAdminService {
      */
     private Class<?> getExcelDTOClassByRole(String insertUserRole) {
         return switch (insertUserRole.toLowerCase()) {
-            case Constants.STUDENT            ->  StudentExcelDTO.class;
-            case Constants.DORMITORY_MANAGER  ->  DormitoryManagerExcelDTO.class;
-            case Constants.SYSTEM_USER        ->  SysUserExcelDTO.class;
-            case Constants.SUPER_ADMIN        ->  SuperAdminExcelDTO.class;
+            case Constants.STUDENT -> StudentExcelDTO.class;
+            case Constants.DORMITORY_MANAGER -> DormitoryManagerExcelDTO.class;
+            case Constants.SYSTEM_USER -> SysUserExcelDTO.class;
+            case Constants.SUPER_ADMIN -> SuperAdminExcelDTO.class;
             default -> null;
         };
     }
@@ -397,10 +400,11 @@ public class SuperAdminServiceImpl implements SuperAdminService {
         }
 
         return switch (insertUserRole.toLowerCase()) {
-            case Constants.STUDENT            ->  processStudentImport((List<StudentExcelDTO>) allExcelInfoList);
-            case Constants.DORMITORY_MANAGER  ->  processDormitoryManagerImport((List<DormitoryManagerExcelDTO>) allExcelInfoList);
-            case Constants.SYSTEM_USER        ->  processSysUserImport((List<SysUserExcelDTO>) allExcelInfoList);
-            case Constants.SUPER_ADMIN        ->  processSuperAdminImport((List<SuperAdminExcelDTO>) allExcelInfoList);
+            case Constants.STUDENT -> processStudentImport((List<StudentExcelDTO>) allExcelInfoList);
+            case Constants.DORMITORY_MANAGER ->
+                processDormitoryManagerImport((List<DormitoryManagerExcelDTO>) allExcelInfoList);
+            case Constants.SYSTEM_USER -> processSysUserImport((List<SysUserExcelDTO>) allExcelInfoList);
+            case Constants.SUPER_ADMIN -> processSuperAdminImport((List<SuperAdminExcelDTO>) allExcelInfoList);
 
             default -> {
                 logger.error("暂时不支持该用户角色导入，insertUserRole: {}", insertUserRole);
@@ -454,7 +458,7 @@ public class SuperAdminServiceImpl implements SuperAdminService {
         }
 
         // 构造返回结果
-        resultMap.put(VALID_COUNT, 0);
+        resultMap.put(VALID_COUNT, insertRows);
         resultMap.put(INVALID_LIST, invalidateExcelResultList);
         resultMap.put(TOTAL_COUNT, allExcelStudentInfoList.size());
 
@@ -648,7 +652,8 @@ public class SuperAdminServiceImpl implements SuperAdminService {
     }
 
     // 将DormitoryManagerExcelDTO转成DormitoryManager
-    private List<DormitoryManager> convertDormitoryManagerExcelDTOList( List<DormitoryManagerExcelDTO> dormitoryManagerExcelDTOList) {
+    private List<DormitoryManager> convertDormitoryManagerExcelDTOList(
+            List<DormitoryManagerExcelDTO> dormitoryManagerExcelDTOList) {
         Date now = new Date();
         String status = Constants.ON_DUTY;
 
@@ -685,6 +690,177 @@ public class SuperAdminServiceImpl implements SuperAdminService {
         }
 
         return sysUserList;
+    }
+
+    /**
+     * 生成包含错误数据的Excel工作簿
+     * 
+     * @param headers         表头列表，包含所有需要显示的字段名称
+     * @param insertUserRole  用户角色，用于确定数据结构和字段映射
+     * @param invalidDataList 错误数据列表，每个元素包含原始数据和错误信息
+     * @return 包含错误数据的SXSSFWorkbook对象
+     * @throws SystemException 当生成工作簿过程中发生异常时抛出
+     */
+    @Override
+    public SXSSFWorkbook generateWorkbook(List<String> headers,
+                                        String insertUserRole,
+                                        List<Map<String, Object>> invalidDataList) {
+        SXSSFWorkbook workbook = new SXSSFWorkbook(100);
+        try {
+            SXSSFSheet sheet = workbook.createSheet("错误数据");
+
+            // 创建表头样式 - 灰色背景，粗体字体
+            CellStyle headerStyle = workbook.createCellStyle();
+            Font headerFont = workbook.createFont();
+            headerFont.setBold(true);
+            headerStyle.setFont(headerFont);
+            headerStyle.setFillForegroundColor(IndexedColors.GREY_25_PERCENT.getIndex());
+            headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+            // 创建错误信息样式 - 珊瑚色背景，突出显示错误
+            CellStyle errorStyle = workbook.createCellStyle();
+            errorStyle.setFillForegroundColor(IndexedColors.CORAL.getIndex());
+            errorStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+            // 写入表头行
+            Row headerRow = sheet.createRow(0);
+            for (int i = 0; i < headers.size(); i++) {
+                Cell cell = headerRow.createCell(i);
+                cell.setCellValue(headers.get(i));
+                cell.setCellStyle(headerStyle);
+            }
+
+            // 写入数据行
+            for (int i = 0; i < invalidDataList.size(); i++) {
+                Row dataRow = sheet.createRow(i + 1);
+                Map<String, Object> item = invalidDataList.get(i);
+
+                // 根据角色获取对应的数据对象
+                Map<String, Object> dataObj = getDataObjectByRole(item, insertUserRole);
+
+                // 遍历表头，填充对应的数据
+                for (int j = 0; j < headers.size(); j++) {
+                    Cell cell = dataRow.createCell(j);
+                    String header = headers.get(j);
+
+                    if ("错误信息".equals(header)) {
+                        // 错误信息列特殊处理：合并所有错误信息并用分号分隔
+                        @SuppressWarnings("unchecked")
+                        List<String> errors = (List<String>) item.get("errors");
+                        String errorText = errors != null ? String.join("; ", errors) : "";
+                        cell.setCellValue(errorText);
+                        cell.setCellStyle(errorStyle); // 应用错误样式
+                    } else {
+                        // 普通字段：根据字段名获取对应的值
+                        String value = getFieldValue(dataObj, header, insertUserRole);
+                        cell.setCellValue(value != null ? value : "");
+                    }
+                }
+            }
+
+            // 设置列宽 - 使用安全的列宽设置方法
+            setColumnWidths(sheet, headers);
+
+            return workbook;
+
+        } catch (Exception e) {
+            logger.error("生成Excel工作簿失败", e);
+            throw new SystemException(ResultCode.ERROR);
+        }
+
+    }
+
+    /**
+     * 安全地设置Excel列宽
+     * 
+     * @param sheet   Excel工作表
+     * @param headers 表头列表
+     */
+    private void setColumnWidths(SXSSFSheet sheet, List<String> headers) {
+        for (int i = 0; i < headers.size(); i++) {
+            try {
+                // 尝试自动调整列宽
+                sheet.autoSizeColumn(i);
+            } catch (Exception e) {
+                // 如果自动调整失败，使用默认列宽
+                logger.warn("自动调整列宽失败，使用默认列宽，列索引: {}", i);
+                sheet.setColumnWidth(i, 15 * 256); // 15个字符宽度
+            }
+        }
+    }
+
+    /**
+     * 根据用户角色从错误数据项中提取对应的数据对象
+     * 
+     * @param item           错误数据项，包含不同角色的ExcelDTO对象
+     * @param insertUserRole 用户角色，用于确定提取哪个DTO对象
+     * @return 对应角色的数据对象Map，如果角色不匹配则返回空Map
+     */
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> getDataObjectByRole(Map<String, Object> item, String insertUserRole) {
+        return switch (insertUserRole.toLowerCase()) {
+            case Constants.STUDENT -> (Map<String, Object>) item.get("studentExcelDTO");
+            case Constants.DORMITORY_MANAGER -> (Map<String, Object>) item.get("dormitoryManagerExcelDTO");
+            case Constants.SYSTEM_USER -> (Map<String, Object>) item.get("sysUserExcelDTO");
+            case Constants.SUPER_ADMIN -> (Map<String, Object>) item.get("superAdminExcelDTO");
+            default -> new HashMap<>();
+        };
+    }
+
+    /**
+     * 根据字段名从数据对象中获取对应的值
+     * 
+     * @param dataObj        数据对象，包含字段名和值的映射
+     * @param fieldName      字段的中文名称（表头显示的名称）
+     * @param insertUserRole 用户角色，用于确定某些字段的特殊映射规则
+     * @return 字段对应的值，如果字段不存在或值为null则返回空字符串
+     */
+    private String getFieldValue(Map<String, Object> dataObj, String fieldName, String insertUserRole) {
+        if (dataObj == null) {
+            return "";
+        }
+
+        // 字段名映射表：中文表头 -> 英文字段名
+        Map<String, String> fieldMap = new HashMap<>();
+        fieldMap.put("学号", "studentNo");
+        fieldMap.put("密码", "password");
+        fieldMap.put("姓名", "name");
+        fieldMap.put("学院", "college");
+        fieldMap.put("班级", "className");
+        fieldMap.put("宿舍", "dormitory");
+        fieldMap.put("电话", "phone");
+        fieldMap.put("邮箱", "email");
+        fieldMap.put("父亲姓名", "fatherName");
+        fieldMap.put("父亲电话", "fatherPhone");
+        fieldMap.put("母亲姓名", "motherName");
+        fieldMap.put("母亲电话", "motherPhone");
+        fieldMap.put("负责楼栋", "building");
+        fieldMap.put("职位角色", "jobRole");
+        // 工号字段根据角色有不同的映射
+        fieldMap.put("工号", insertUserRole.equals("dormitorymanager") ? "managerId" : "sysUserNo");
+
+        String field = fieldMap.get(fieldName);
+        Object value = field != null ? dataObj.get(field) : null;
+        return value != null ? value.toString() : "";
+    }
+
+    /**
+     * 根据用户角色获取对应的Excel表头列表
+     * 
+     * @param insertUserRole 用户角色，用于确定需要显示哪些字段
+     * @return 对应角色的表头列表，包含所有需要显示的字段名称和"错误信息"列
+     */
+    @Override
+    public List<String> getHeadersByRole(String insertUserRole) {
+        return switch (insertUserRole.toLowerCase()) {
+            case Constants.STUDENT -> Arrays.asList("学号", "密码", "姓名", "学院",
+                    "班级", "宿舍", "电话", "邮箱",
+                    "父亲姓名", "父亲电话", "母亲姓名", "母亲电话", "错误信息");
+            case Constants.DORMITORY_MANAGER -> Arrays.asList("工号", "密码", "姓名", "电话", "邮箱", "负责楼栋", "错误信息");
+            case Constants.SYSTEM_USER -> Arrays.asList("工号", "密码", "姓名", "电话", "邮箱", "职位角色", "错误信息");
+            case Constants.SUPER_ADMIN -> Arrays.asList("密码", "姓名", "邮箱", "错误信息");
+            default -> new ArrayList<>();
+        };
     }
 
 }

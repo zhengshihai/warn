@@ -49,6 +49,56 @@
             background-color: #f8fafc;
             font-weight: 600;
         }
+        /* 批量导入功能样式 */
+        .import-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .import-section h3 {
+            color: white;
+            margin-bottom: 1rem;
+        }
+        .import-section .form-label {
+            color: white;
+            font-weight: 500;
+        }
+        .import-section .form-control,
+        .import-section .form-select {
+            border: none;
+            border-radius: 0.375rem;
+            background-color: rgba(255, 255, 255, 0.9);
+        }
+        .import-section .form-control:focus,
+        .import-section .form-select:focus {
+            background-color: white;
+            box-shadow: 0 0 0 0.2rem rgba(255, 255, 255, 0.25);
+        }
+        .import-section .btn-primary {
+            background-color: #28a745;
+            border-color: #28a745;
+            font-weight: 500;
+        }
+        .import-section .btn-primary:hover {
+            background-color: #218838;
+            border-color: #1e7e34;
+        }
+        .import-section .btn-primary:disabled {
+            background-color: #6c757d;
+            border-color: #6c757d;
+        }
+        /* 错误数据模态框样式 */
+        #univer-container {
+            border: 1px solid #dee2e6;
+            border-radius: 0.375rem;
+        }
+        .error-data-alert {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
     </style>
 </head>
 <body>
@@ -64,6 +114,39 @@
                 </div>
             </div>
         </nav>
+
+        <!-- 批量导入用户信息功能区域 -->
+        <div class="card p-6 mb-6 import-section">
+            <div class="mb-4 flex justify-between items-center">
+                <h3 class="text-lg font-medium">批量导入用户信息</h3>
+            </div>
+            <div class="row">
+                <div class="col-md-4">
+                    <label for="userRoleSelect" class="form-label">选择用户角色：</label>
+                    <select id="userRoleSelect" class="form-select">
+                        <option value="">请选择用户角色</option>
+                        <option value="student">学生</option>
+                        <option value="dormitorymanager">宿管</option>
+                        <option value="systemuser">班级管理员</option>
+                        <option value="superadmin">超级管理员</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="excelFile" class="form-label">选择Excel文件：</label>
+                    <input type="file" id="excelFile" class="form-control" accept=".xls,.xlsx">
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button type="button" id="importBtn" class="btn btn-primary" disabled>
+                        <i class="fas fa-upload"></i> 批量导入
+                    </button>
+                </div>
+            </div>
+            <div class="mt-3">
+                <small class="text-white-50">
+                    支持的文件格式：.xls, .xlsx，文件大小不超过10MB
+                </small>
+            </div>
+        </div>
 
     <!-- 学生列表内容区域 -->
     <div class="card p-6 mb-6">
@@ -810,6 +893,271 @@
             var id = $(this).data('id');
             alert('点击了启用/禁用，超级管理员ID: ' + id);
         });
+
+        // 批量导入用户信息功能
+        var currentImportData = null; // 存储当前导入的数据
+        
+        // 文件选择和角色选择变化时启用/禁用导入按钮
+        $('#excelFile, #userRoleSelect').on('change', function() {
+            var file = $('#excelFile')[0].files[0];
+            var insertUserRole = $('#userRoleSelect').val();
+            $('#importBtn').prop('disabled', !file || !insertUserRole);
+        });
+        
+        // 批量导入按钮点击事件
+        $('#importBtn').on('click', function() {
+            var file = $('#excelFile')[0].files[0];
+            var insertUserRole = $('#userRoleSelect').val();
+            
+            if (!file || !insertUserRole) {
+                alert('请选择文件和用户角色！');
+                return;
+            }
+            
+            // 检查文件大小（10MB限制）
+            if (file.size > 10 * 1024 * 1024) {
+                alert('文件大小不能超过10MB！');
+                return;
+            }
+            
+            // 检查文件格式
+            var fileName = file.name.toLowerCase();
+            if (!fileName.endsWith('.xls') && !fileName.endsWith('.xlsx')) {
+                alert('请选择Excel文件（.xls或.xlsx格式）！');
+                return;
+            }
+            
+            // 显示加载状态
+            var $btn = $(this);
+            var originalText = $btn.html();
+            $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> 导入中...');
+            
+            // 创建FormData对象
+            var formData = new FormData();
+            formData.append('file', file);
+            formData.append('insertUserRole', insertUserRole);
+            
+            // 发送AJAX请求
+            $.ajax({
+                url: '${pageContext.request.contextPath}/super-admin/import-batch',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(response) {
+                    $btn.prop('disabled', false).html(originalText);
+                    
+                    if (response.success) {
+                        currentImportData = response.data;
+                        showImportResult(response);
+                    } else {
+                        alert('导入失败：' + (response.message || '未知错误'));
+                    }
+                },
+                error: function(xhr) {
+                    $btn.prop('disabled', false).html(originalText);
+                    alert('请求失败：' + (xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : '服务器错误'));
+                }
+            });
+        });
+        
+        // 显示导入结果
+        function showImportResult(response) {
+            var data = response.data;
+            var totalCount = data.totalCount || 0;
+            var validCount = data.validCount || 0;
+            var invalidList = data.invalidList || [];
+            var insertUserRole = $('#userRoleSelect').val(); // 获取当前选择的角色
+            
+            // 更新结果消息
+            var message = '导入完成！总计：' + totalCount + '条，成功：' + validCount + '条，失败：' + invalidList.length + '条';
+            $('#importResultMessage').text(message);
+            
+            if (invalidList.length > 0) {
+                // 有错误数据，显示模态框
+                showErrorDataInTable(invalidList, insertUserRole);
+                $('#errorDataModal').modal('show');
+            } else {
+                // 没有错误数据，显示成功消息
+                alert('导入成功！' + message);
+                // 刷新对应的列表
+                refreshUserList(insertUserRole);
+            }
+        }
+        
+        // 在HTML表格中显示错误数据
+        function showErrorDataInTable(invalidList, insertUserRole) {
+            var headers = getHeadersByRole(insertUserRole);
+            
+            // 生成表头
+            var headerHtml = '';
+            headers.forEach(function(header) {
+                headerHtml += '<th>' + header + '</th>';
+            });
+            $('#errorDataTableHeader').html(headerHtml);
+            
+            // 生成数据行
+            var tbody = $('#errorDataTableBody');
+            tbody.empty();
+            
+            if (!invalidList || invalidList.length === 0) {
+                tbody.append('<tr><td colspan="' + headers.length + '" class="text-center">暂无错误数据</td></tr>');
+                return;
+            }
+            
+            invalidList.forEach(function(item) {
+                var dataObj = getDataObjectByRole(item, insertUserRole);
+                var rowHtml = '';
+                
+                headers.forEach(function(header) {
+                    if (header === '错误信息') {
+                        var errorText = item.errors ? item.errors.join('; ') : '';
+                        rowHtml += '<td class="text-danger bg-light">' + errorText + '</td>';
+                    } else {
+                        var value = getFieldValue(dataObj, header, insertUserRole) || '';
+                        rowHtml += '<td class="bg-warning-light">' + value + '</td>';
+                    }
+                });
+                
+                tbody.append('<tr>' + rowHtml + '</tr>');
+            });
+        }
+        
+        // 根据角色获取表头
+        function getHeadersByRole(insertUserRole) {
+            switch (insertUserRole) {
+                case 'student':
+                    return ['学号', '密码', '姓名', '学院', '班级', '宿舍', '电话', '邮箱', '父亲姓名', '父亲电话', '母亲姓名', '母亲电话', '错误信息'];
+                case 'dormitorymanager':
+                    return ['工号', '密码', '姓名', '电话', '邮箱', '负责楼栋', '错误信息'];
+                case 'systemuser':
+                    return ['工号', '密码', '姓名', '电话', '邮箱', '职位角色', '错误信息'];
+                case 'superadmin':
+                    return ['密码', '姓名', '邮箱', '错误信息'];
+                default:
+                    return [];
+            }
+        }
+        
+        // 根据角色获取数据对象
+        function getDataObjectByRole(item, insertUserRole) {
+            switch (insertUserRole) {
+                case 'student':
+                    return item.studentExcelDTO;
+                case 'dormitorymanager':
+                    return item.dormitoryManagerExcelDTO;
+                case 'systemuser':
+                    return item.sysUserExcelDTO;
+                case 'superadmin':
+                    return item.superAdminExcelDTO;
+                default:
+                    return {};
+            }
+        }
+        
+        // 根据字段名获取值
+        function getFieldValue(dataObj, fieldName, insertUserRole) {
+            if (!dataObj) return '';
+            
+            var fieldMap = {
+                '学号': 'studentNo',
+                '密码': 'password',
+                '姓名': 'name',
+                '学院': 'college',
+                '班级': 'className',
+                '宿舍': 'dormitory',
+                '电话': 'phone',
+                '邮箱': 'email',
+                '父亲姓名': 'fatherName',
+                '父亲电话': 'fatherPhone',
+                '母亲姓名': 'motherName',
+                '母亲电话': 'motherPhone',
+                '工号': insertUserRole === 'dormitorymanager' ? 'managerId' : 'sysUserNo',
+                '负责楼栋': 'building',
+                '职位角色': 'jobRole'
+            };
+            
+            var field = fieldMap[fieldName];
+            return field ? dataObj[field] : '';
+        }
+        
+        // 刷新用户列表
+        function refreshUserList(insertUserRole) {
+            switch (insertUserRole) {
+                case 'student':
+                    loadStudentList(1);
+                    break;
+                case 'dormitorymanager':
+                    // 如果有宿管列表加载函数，调用它
+                    break;
+                case 'systemuser':
+                    loadSysUserList(1);
+                    break;
+                case 'superadmin':
+                    loadSuperAdminList(1);
+                    break;
+            }
+        }
+        
+        // 下载错误数据
+        $('#downloadErrorBtn').on('click', function() {
+            if (!currentImportData || !currentImportData.invalidList) {
+                alert('没有错误数据可下载！');
+                return;
+            }
+            
+            // 获取当前选择的用户角色
+            var insertUserRole = $('#userRoleSelect').val();
+            if (!insertUserRole) {
+                alert('请先选择用户角色！');
+                return;
+            }
+            
+            // 构造请求数据
+            var requestData = {
+                invalidList: currentImportData.invalidList,
+                insertUserRole: insertUserRole
+            };
+            
+            // 创建下载链接
+            var downloadUrl = '${pageContext.request.contextPath}/super-admin/download-error-data';
+            
+            // 创建临时表单进行POST下载
+            var form = document.createElement('form');
+            form.method = 'POST';
+            form.action = downloadUrl;
+            form.target = '_blank';
+            
+            // 添加请求数据
+            var dataInput = document.createElement('input');
+            dataInput.type = 'hidden';
+            dataInput.name = 'requestData';
+            dataInput.value = JSON.stringify(requestData);
+            form.appendChild(dataInput);
+            
+            // 添加CSRF token（如果有的话）
+            var csrfToken = $('meta[name="_csrf"]').attr('content');
+            if (csrfToken) {
+                var csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = '_csrf';
+                csrfInput.value = csrfToken;
+                form.appendChild(csrfInput);
+            }
+            
+            // 提交表单
+            document.body.appendChild(form);
+            form.submit();
+            document.body.removeChild(form);
+        });
+        
+        // 重新导入
+        $('#reimportBtn').on('click', function() {
+            $('#errorDataModal').modal('hide');
+            // 清空文件选择
+            $('#excelFile').val('');
+            $('#importBtn').prop('disabled', true);
+        });
     });
 </script>
 
@@ -820,5 +1168,60 @@
     </script>
     <c:remove var="errorMsg" scope="session" />
 </c:if>
+
+<!-- 错误数据展示模态框 -->
+<div class="modal fade" id="errorDataModal" tabindex="-1" aria-labelledby="errorDataModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="errorDataModalLabel">导入错误数据详情</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <strong>导入结果：</strong>
+                    <span id="importResultMessage"></span>
+                </div>
+                <div class="mb-3">
+                    <button type="button" class="btn btn-success btn-sm" id="downloadErrorBtn">
+                        <i class="fas fa-download"></i> 下载错误数据
+                    </button>
+                    <button type="button" class="btn btn-primary btn-sm" id="reimportBtn">
+                        <i class="fas fa-upload"></i> 重新导入
+                    </button>
+                </div>
+                <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+                    <table class="table table-bordered table-hover" id="errorDataTable">
+                        <thead class="table-light sticky-top">
+                            <tr id="errorDataTableHeader">
+                                <!-- 表头将通过JavaScript动态生成 -->
+                            </tr>
+                        </thead>
+                        <tbody id="errorDataTableBody">
+                            <!-- 数据行将通过JavaScript动态生成 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="univer-container" style="height: 500px; border: 1px solid #dee2e6; border-radius: 0.375rem;"></div>
+
+<!-- 引入Univer相关资源 -->
+<script src="https://unpkg.com/@univerjs/core@0.3.0/lib/index.js"></script>
+<script src="https://unpkg.com/@univerjs/design@0.3.0/lib/index.js"></script>
+<script src="https://unpkg.com/@univerjs/ui@0.3.0/lib/index.js"></script>
+<script src="https://unpkg.com/@univerjs/sheets@0.3.0/lib/index.js"></script>
+<script src="https://unpkg.com/@univerjs/sheets-ui@0.3.0/lib/index.js"></script>
+
+<link rel="stylesheet" href="https://unpkg.com/@univerjs/design@0.3.0/lib/index.css" />
+<link rel="stylesheet" href="https://unpkg.com/@univerjs/ui@0.3.0/lib/index.css" />
+<link rel="stylesheet" href="https://unpkg.com/@univerjs/sheets@0.3.0/lib/index.css" />
+<link rel="stylesheet" href="https://unpkg.com/@univerjs/sheets-ui@0.3.0/lib/index.css" />
 </body>
 </html> 

@@ -65,9 +65,9 @@ CREATE TABLE IF NOT EXISTS sys_user (
 CREATE TABLE `system_log` (
     `id` INT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
     `log_id` VARCHAR(40) NOT NULL COMMENT '系统日志唯一ID',
-    `user_no` VARCHAR(40) NOT NULL COMMENT '用户编号（学号 工号 等）',
-    `username` VARCHAR(50) NOT NULL COMMENT '用户名',
-    `user_role` VARCHAR(32) NOT NULL COMMENT '用户角色',
+    `user_no` VARCHAR(40)  COMMENT '用户编号（学号 工号 等）',
+    `username` VARCHAR(50)  COMMENT '用户名',
+    `user_role` VARCHAR(32)  COMMENT '用户角色',
     `operation` VARCHAR(255) NOT NULL COMMENT '操作内容',
     `method` VARCHAR(255) NOT NULL COMMENT '请求方法',
     `params` TEXT COMMENT '请求参数',

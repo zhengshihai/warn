@@ -3,6 +3,7 @@ package com.tianhai.warn.service;
 import com.tianhai.warn.model.SuperAdmin;
 import com.tianhai.warn.query.SuperAdminQuery;
 import com.tianhai.warn.utils.PageResult;
+import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -55,4 +56,21 @@ public interface SuperAdminService {
      * @return                  插入行数
      */
     int insertBatch(List<SuperAdmin> superAdminList);
+
+    /**
+     * 生成错误数据的workbook
+     * @param     headers          响应头
+     * @param     insertUserRole   用户角色
+     * @return    workbook
+     */
+    SXSSFWorkbook generateWorkbook(List<String> headers,
+                                   String insertUserRole,
+                                   List<Map<String, Object>> invalidDataList);
+
+    /**
+     * 通过用户角色获取表头
+     * @param insertUserRole    用户角色
+     * @return                  响应头
+     */
+    List<String> getHeadersByRole(String insertUserRole);
 }
