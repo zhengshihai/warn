@@ -1,20 +1,19 @@
 package com.tianhai.warn.service.impl;
 
 import com.tianhai.warn.constants.ValidationMessages;
-import com.tianhai.warn.dto.StudentExcelDTO;
-import com.tianhai.warn.dto.StudentInfoValidateResult;
+import com.tianhai.warn.dto.*;
 import com.tianhai.warn.enums.BusinessType;
-import com.tianhai.warn.service.StudentService;
-import com.tianhai.warn.service.VerificationService;
+import com.tianhai.warn.model.DormitoryManager;
+import com.tianhai.warn.model.SuperAdmin;
+import com.tianhai.warn.model.SysUser;
+import com.tianhai.warn.service.*;
 import com.tianhai.warn.utils.CaptchaUtils;
 import com.tianhai.warn.utils.Result;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
@@ -28,6 +27,15 @@ public class VerificationServiceImpl implements VerificationService {
 
     @Autowired
     private StudentService studentService;
+
+    @Autowired
+    private SuperAdminService superAdminService;
+
+    @Autowired
+    private DormitoryManagerService dormitoryManagerService;
+
+    @Autowired
+    private SysUserService sysUserService;
 
     private static final String ITEM = "warn:";
     private static final String CAPTCHA_PREFIX = ITEM + "captcha:";
@@ -209,8 +217,283 @@ public class VerificationServiceImpl implements VerificationService {
 
         // 并行流校验逻辑...
         return studentExcelDTOList.parallelStream()
-                .map(dto -> validateStudent(dto, existingEmailSet, existingStudentNoSet, batchEmailSet, batchStudentNoSet))
+                .map(dto -> validateStudent(dto, existingEmailSet, existingStudentNoSet,
+                        batchEmailSet, batchStudentNoSet))
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<SuperAdminInfoValidateResult> validateSuperAdminExcelInfo(
+            List<SuperAdminExcelDTO> superAdminExcelDTOList) {
+        // 获取数据库已有的超级管理员的邮箱
+        Set<String> existingEmailSet = superAdminService.selectAll().stream()
+                .map(SuperAdmin::getEmail)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        // 用于本次批量导入的重复检查
+        Set<String> batchEmailSet = new HashSet<>();
+
+        return superAdminExcelDTOList.stream()
+                .map(dto -> validateSuperAdmin(dto, existingEmailSet, batchEmailSet))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<DorManInfoValidateResult> validateDorManExcelInfo(
+            List<DormitoryManagerExcelDTO> allExcelDormitoryManagerInfoList) {
+        // 获取全部宿管信息
+        List<DormitoryManager> existingDorManList = dormitoryManagerService.selectAll();
+
+        // 获取数据库已有的宿管的邮箱
+        Set<String> existingEmailSet = existingDorManList.stream()
+                .map(DormitoryManager::getEmail)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        // 获取数据库已有的宿管的工号
+        Set<String> existingManagerId = existingDorManList.stream()
+                .map(DormitoryManager::getManagerId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        // 用于本次批量导入的重复检查
+        Set<String> batchEmailSet = new HashSet<>();
+        Set<String> batchManagerId = new HashSet<>();
+
+        return allExcelDormitoryManagerInfoList.stream()
+                .map(dto -> validateDormitoryManager(dto, existingEmailSet, existingManagerId,
+                        batchEmailSet, batchManagerId))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<SysUserInfoValidateResult> validateSysUserExcelInfo(
+            List<SysUserExcelDTO> allExcelSysUserInfoList) {
+        // 获取全部班级管理员信息
+        List<SysUser> existingSysUserList = sysUserService.selectAll();
+
+        // 获取数据库已有的班级管理员的邮箱
+        Set<String> existingEmailSet = existingSysUserList.stream()
+                .map(SysUser::getEmail)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        // 获取数据库已有的班级管理员的工号
+        Set<String> existingSysUserNoSet = existingSysUserList.stream()
+                .map(SysUser::getSysUserNo)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        // 用于本地批量导入的重复检查
+        Set<String> batchEmailSet = new HashSet<>();
+        Set<String> batchSysUserNoSet = new HashSet<>();
+
+        return allExcelSysUserInfoList.stream()
+                .map(dto -> validateSysUser(dto, existingEmailSet, existingSysUserNoSet,
+                        batchEmailSet, batchSysUserNoSet))
+                .collect(Collectors.toList());
+
+    }
+
+    /**
+     * 校验单个班级管理员的信息
+     */
+    private SysUserInfoValidateResult validateSysUser(SysUserExcelDTO dto,
+                                                      Set<String> existingEmailSet,
+                                                      Set<String> existingSysUserNoSet,
+                                                      Set<String> batchEmailSet,
+                                                      Set<String> batchSysUserNoSet) {
+        SysUserInfoValidateResult result = new SysUserInfoValidateResult();
+        result.setSysUserExcelDTO(dto);
+        result.setValid(true);
+        List<String> errors = new ArrayList<>();
+
+        // 必填校验
+        if (isBlank(dto.getSysUserNo())) {
+            errors.add(ValidationMessages.SYS_USER_NO_EMPTY);
+            result.setValid(false);
+        }
+        if (isBlank(dto.getName())) {
+            errors.add(ValidationMessages.NAME_EMPTY);
+            result.setValid(false);
+        }
+        if (isBlank(dto.getPassword())) {
+            errors.add(ValidationMessages.PASSWORD_EMPTY);
+            result.setValid(false);
+        }
+        if (isBlank(dto.getPhone())) {
+            errors.add(ValidationMessages.PHONE_EMPTY);
+            result.setValid(false);
+        }
+        if (isBlank(dto.getEmail())) {
+            errors.add(ValidationMessages.EMAIL_EMPTY);
+            result.setValid(false);
+        }
+        if (isBlank(dto.getJobRole())) {
+            errors.add(ValidationMessages.JOR_ROLE_EMPTY);
+            result.setValid(false);
+        }
+
+        // 长度校验
+        if (!isBlank(dto.getSysUserNo()) && dto.getSysUserNo().length() > 40) {
+            errors.add(ValidationMessages.SYS_USER_NO_TOO_LONG);
+            result.setValid(false);
+        }
+        if (!isBlank(dto.getName()) && dto.getName().length() > 50) {
+            errors.add(ValidationMessages.NAME_TOO_LONG);
+            result.setValid(false);
+        }
+        if (!isBlank(dto.getPhone()) && dto.getPhone().length() > 20) {
+            errors.add(ValidationMessages.PHONE_TOO_LONG);
+            result.setValid(false);
+        }
+        if (!isBlank(dto.getEmail()) && dto.getEmail().length() > 100) {
+            errors.add(ValidationMessages.EMAIL_TOO_LONG);
+            result.setValid(false);
+        }
+        if (!isBlank(dto.getJobRole()) && dto.getJobRole().length() > 20) {
+            errors.add(ValidationMessages.JOB_ROLE_TOO_LONG);
+            result.setValid(false);
+        }
+        if (!isBlank(dto.getPassword()) && dto.getPassword().length() > 100) {
+            errors.add(ValidationMessages.PASSWORD_TOO_LONG);
+            result.setValid(false);
+        }
+
+        // 格式校验
+        if (!isBlank(dto.getEmail()) && !isValidEmail(dto.getEmail())) {
+            errors.add(ValidationMessages.EMAIL_FORMAT_INVALID);
+            result.setValid(false);
+        }
+        if (!isBlank(dto.getPhone()) && !isValidPhone(dto.getPhone())) {
+            errors.add(ValidationMessages.PHONE_FORMAT_INVALID);
+            result.setValid(false);
+        }
+
+        // 唯一性校验（数据库+本次批量）
+        if (!isBlank(dto.getSysUserNo())) {
+            if (existingSysUserNoSet.contains(dto.getSysUserNo())) {
+                errors.add(ValidationMessages.SYS_USER_NO_EXISTS);
+                result.setValid(false);
+            } else if (!batchSysUserNoSet.add(dto.getSysUserNo())) {
+                errors.add(ValidationMessages.SYS_USER_NO_DUPLICATE);
+                result.setValid(false);
+            }
+        }
+
+        if (!isBlank(dto.getEmail())) {
+            if (existingEmailSet.contains(dto.getEmail())) {
+                errors.add(ValidationMessages.EMAIL_EXISTS);
+                result.setValid(false);
+            } else if (!batchEmailSet.add(dto.getEmail())) {
+                errors.add(ValidationMessages.EMAIL_DUPLICATE);
+                result.setValid(false);
+            }
+        }
+
+        result.setErrors(errors);
+        return result;
+    }
+
+    /**
+     * 校验单个宿管的信息
+     * 因需要实现封装错误信息传回前端回显，故这里直接使用条件判断代替注解方式的判断
+     */
+    private DorManInfoValidateResult validateDormitoryManager(DormitoryManagerExcelDTO dto,
+                                                             Set<String> existingEmailSet,
+                                                             Set<String> existingManagerIdSet,
+                                                             Set<String> batchEmailSet,
+                                                             Set<String> batchManagerId) {
+        DorManInfoValidateResult result = new DorManInfoValidateResult();
+        result.setDormitoryManagerExcelDTO(dto);
+        result.setValid(true);
+        List<String> errors = new ArrayList<>();
+
+        // 必填校验
+        if (isBlank(dto.getManagerId())) {
+            errors.add(ValidationMessages.MANAGER_ID_EMPTY);
+            result.setValid(false);
+        }
+        if (isBlank(dto.getName())) {
+            errors.add(ValidationMessages.NAME_EMPTY);
+            result.setValid(false);
+        }
+        if (isBlank(dto.getBuilding())) {
+            errors.add(ValidationMessages.BUILDING_EMPTY);
+            result.setValid(false);
+        }
+        if (isBlank(dto.getPhone())) {
+            errors.add(ValidationMessages.PHONE_EMPTY);
+            result.setValid(false);
+        }
+        if (isBlank(dto.getPassword())) {
+            errors.add(ValidationMessages.PASSWORD_EMPTY);
+            result.setValid(false);
+        }
+        if (isBlank(dto.getEmail())) {
+            errors.add(ValidationMessages.EMAIL_EMPTY);
+            result.setValid(false);
+        }
+
+        // 长度校验
+        if (!isBlank(dto.getManagerId()) && dto.getManagerId().length() > 20) {
+            errors.add(ValidationMessages.MANAGER_ID_TOO_LONG);
+            result.setValid(false);
+        }
+        if (!isBlank(dto.getName()) && dto.getName().length() > 50) {
+            errors.add(ValidationMessages.NAME_TOO_LONG);
+            result.setValid(false);
+        }
+        if (!isBlank(dto.getBuilding()) && dto.getBuilding().length() > 50) {
+            errors.add(ValidationMessages.BUILDING_TOO_LONG);
+            result.setValid(false);
+        }
+        if (!isBlank(dto.getPhone()) && dto.getPhone().length() > 20) {
+            errors.add(ValidationMessages.PHONE_TOO_LONG);
+            result.setValid(false);
+        }
+        if (!isBlank(dto.getEmail()) && dto.getEmail().length() > 100) {
+            errors.add(ValidationMessages.EMAIL_TOO_LONG);
+            result.setValid(false);
+        }
+        if (!isBlank(dto.getPassword()) && dto.getPassword().length() > 100) {
+            errors.add(ValidationMessages.PASSWORD_TOO_LONG);
+            result.setValid(false);
+        }
+
+        // 格式校验
+        if (!isBlank(dto.getEmail()) && !isValidEmail(dto.getEmail())) {
+            errors.add(ValidationMessages.EMAIL_FORMAT_INVALID);
+            result.setValid(false);
+        }
+        if (!isBlank(dto.getPhone()) && !isValidPhone(dto.getPhone())) {
+            errors.add(ValidationMessages.PHONE_FORMAT_INVALID);
+            result.setValid(false);
+        }
+
+        // 唯一性校验（数据库+本次批量）
+        if (!isBlank(dto.getManagerId())) {
+            if (existingManagerIdSet.contains(dto.getManagerId())) {
+                errors.add(ValidationMessages.MANAGER_ID_EXISTS);
+                result.setValid(false);
+            } else if (!batchManagerId.add(dto.getManagerId())) {
+                errors.add(ValidationMessages.MANAGER_ID_DUPLICATE);
+                result.setValid(false);
+            }
+        }
+        if (!isBlank(dto.getEmail())) {
+            if (existingEmailSet.contains(dto.getEmail())) {
+                errors.add(ValidationMessages.EMAIL_EXISTS);
+                result.setValid(false);
+            } else if (!batchEmailSet.add(dto.getEmail())) {
+                errors.add(ValidationMessages.EMAIL_DUPLICATE);
+                result.setValid(false);
+            }
+        }
+
+        result.setErrors(errors);
+        return result;
     }
 
     /**
@@ -299,6 +582,60 @@ public class VerificationServiceImpl implements VerificationService {
             }
         }
 
+        if (!isBlank(dto.getEmail())) {
+            if (existingEmailSet.contains(dto.getEmail())) {
+                errors.add(ValidationMessages.EMAIL_EXISTS);
+                result.setValid(false);
+            } else if (!batchEmailSet.add(dto.getEmail())) {
+                errors.add(ValidationMessages.EMAIL_DUPLICATE);
+                result.setValid(false);
+            }
+        }
+
+        result.setErrors(errors);
+        return result;
+    }
+
+    /**
+     * 校验超级管理员信息
+     */
+    private SuperAdminInfoValidateResult validateSuperAdmin(SuperAdminExcelDTO dto,
+            Set<String> existingEmailSet,
+            Set<String> batchEmailSet) {
+        SuperAdminInfoValidateResult result = new SuperAdminInfoValidateResult();
+        result.setSuperAdminExcelDTO(dto);
+        result.setValid(true);
+        List<String> errors = new ArrayList<>();
+
+        // 必填校验
+        if (isBlank(dto.getName())) {
+            errors.add(ValidationMessages.NAME_EMPTY);
+            result.setValid(false);
+        }
+        if (isBlank(dto.getEmail())) {
+            errors.add(ValidationMessages.EMAIL_EMPTY);
+            result.setValid(false);
+        }
+        if (isBlank(dto.getPassword())) {
+            errors.add(ValidationMessages.PASSWORD_EMPTY);
+            result.setValid(false);
+        }
+
+        // 长度校验
+        if (!isBlank(dto.getName()) && dto.getName().length() > 50) {
+            errors.add(ValidationMessages.NAME_TOO_LONG);
+            result.setValid(false);
+        }
+        if (!isBlank(dto.getEmail()) && dto.getEmail().length() > 50) {
+            errors.add(ValidationMessages.EMAIL_TOO_LONG);
+            result.setValid(false);
+        }
+        if (!isBlank(dto.getPassword()) && dto.getPassword().length() > 100) {
+            errors.add(ValidationMessages.PASSWORD_TOO_LONG);
+            result.setValid(false);
+        }
+
+        // 唯一性校验（数据库+本次批量）
         if (!isBlank(dto.getEmail())) {
             if (existingEmailSet.contains(dto.getEmail())) {
                 errors.add(ValidationMessages.EMAIL_EXISTS);

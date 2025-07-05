@@ -1,12 +1,10 @@
 package com.tianhai.warn.controller;
 
-import cn.hutool.core.bean.BeanUtil;
 import com.tianhai.warn.annotation.LogOperation;
 import com.tianhai.warn.annotation.RequirePermission;
 import com.tianhai.warn.constants.Constants;
 import com.tianhai.warn.dto.AuditActionDTO;
 import com.tianhai.warn.enums.ResultCode;
-import com.tianhai.warn.enums.UserRole;
 import com.tianhai.warn.exception.BusinessException;
 import com.tianhai.warn.model.Explanation;
 import com.tianhai.warn.query.ExplanationQuery;
@@ -20,16 +18,12 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -153,7 +147,7 @@ public class ExplanationController {
             // 验证文件大小（限制为5MB）
             if (file.getSize() > 5 * 1024 * 1024) {
                 logger.error("文件大小不能超过5MB");
-                throw new BusinessException(ResultCode.FILE_SIZE_ERROR);
+                throw new BusinessException(ResultCode.FILE_SIZE_ERROR_5MB);
             }
             // 验证文件类型
             String contentType = file.getContentType();

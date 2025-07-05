@@ -1,5 +1,6 @@
 package com.tianhai.warn.service;
 
+import com.tianhai.warn.dto.StudentExcelDTO;
 import com.tianhai.warn.model.Student;
 import com.tianhai.warn.query.StudentQuery;
 import com.tianhai.warn.utils.PageResult;
@@ -136,4 +137,11 @@ public interface StudentService {
      * @return    学号集合
      */
     Set<String> selectAllStudentNo();
+
+    /**
+     * 批量插入学生信息
+     * @param validStudentList    学生信息列表
+     * @return                    插入行数
+     */
+    int insertBatch(List<Student> validStudentList);
 }

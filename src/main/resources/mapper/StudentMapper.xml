@@ -282,4 +282,34 @@
         FROM student
         WHERE student_no IS NOT NULL
     </select>
+
+    <!-- 批量插入学生字段 -->
+    <insert id="insertBatch" parameterType="java.util.List">
+        INSERT INTO student (
+        student_no, name, college, class_name, dormitory, phone,
+        email, password, father_name, father_phone, mother_name,
+        mother_phone, create_time, update_time, last_login_time
+        )
+        VALUES
+        <foreach collection="studentList" item="student" separator=",">
+            (
+            #{student.studentNo},
+            #{student.name},
+            #{student.college},
+            #{student.className},
+            #{student.dormitory},
+            #{student.phone},
+            #{student.email},
+            #{student.password},
+            #{student.fatherName},
+            #{student.fatherPhone},
+            #{student.motherName},
+            #{student.motherPhone},
+            #{student.createTime},
+            #{student.updateTime},
+            #{student.lastLoginTime}
+            )
+        </foreach>
+    </insert>
+
 </mapper> 

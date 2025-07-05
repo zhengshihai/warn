@@ -128,4 +128,11 @@ public interface StudentMapper {
      * @return          学号集合
      */
     Set<String> selectAllStudentNo();
+
+    /**
+     * 批量插入学生信息
+     * @param studentList    学生信息
+     * @return               插入行数
+     */
+    int insertBatch(@Param("studentList") List<Student> studentList);
 }

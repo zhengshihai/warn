@@ -10,7 +10,7 @@ import java.io.Serializable;
 import java.util.Date;
 
 /**
- * 系统用户实体类
+ * 班级管理员实体类
  */
 @Data
 @Builder
@@ -31,7 +31,7 @@ public class SysUser implements Serializable {
     private String sysUserNo; // 工号
     private String phone; // 联系电话
     private String email; // 邮箱（用作登录标识）
-    private String jobRole; // 管理员 (辅导员，班主任，院级领导等其他）
+    private String jobRole; // 职位角色 (辅导员，班主任，院级领导等其他）
     private String status; // 状态：启用/禁用
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date lastLoginTime; // 最后登录时间

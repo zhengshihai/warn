@@ -69,7 +69,7 @@ public class DormitoryManagerServiceImpl implements DormitoryManagerService {
     }
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public int insert(DormitoryManager manager) {
         manager.setCreateTime(new Date());
         manager.setUpdateTime(new Date());
@@ -77,7 +77,7 @@ public class DormitoryManagerServiceImpl implements DormitoryManagerService {
     }
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public int update(DormitoryManager manager) {
         manager.setUpdateTime(new Date());
         // 更新信息
@@ -85,6 +85,7 @@ public class DormitoryManagerServiceImpl implements DormitoryManagerService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void updateLastLoginTime(Integer id) {
         if (id == null || id <= 0) {
             throw new BusinessException(ResultCode.VALIDATE_FAILED);
@@ -98,7 +99,7 @@ public class DormitoryManagerServiceImpl implements DormitoryManagerService {
         return dormitoryManagerMapper.selectByEmail(email);
     }
 
-    //todo
+    // todo
     @Override
     public List<String> getManagedDormitories(String managerId) {
         return List.of();
@@ -163,10 +164,22 @@ public class DormitoryManagerServiceImpl implements DormitoryManagerService {
         // 更新信息
         if (updateResult > 0) {
             // todo 如果邮箱发生变化，需要更新其他相关表的数据
-            if (!currentEmail.equals(manager.getEmail())) {}
+            if (!currentEmail.equals(manager.getEmail())) {
+            }
         } else {
             throw new BusinessException(ResultCode.USER_UPDATE_FAILED);
         }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int insertBatch(List<DormitoryManager> dormitoryManagerList) {
+        if (dormitoryManagerList == null || dormitoryManagerList.isEmpty()) {
+            logger.error("批量插入的宿管信息为空");
+            return 0;
+        }
+
+        return dormitoryManagerMapper.insertBatch(dormitoryManagerList);
     }
 
     @Override
@@ -184,6 +197,5 @@ public class DormitoryManagerServiceImpl implements DormitoryManagerService {
     public DormitoryManager getByEmail(String email) {
         return dormitoryManagerMapper.selectByEmail(email);
     }
-
 
 }

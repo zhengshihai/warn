@@ -27,13 +27,14 @@ public enum ResultCode implements IResultCode {
     EMAIL_LOCKED_FAIL(2006, "邮箱锁定失败"), // 获取邮箱锁失败
     EMAIL_SEND_FAIL(2007, "邮件发送失败"), // 邮件发送失败
 
-    FILE_SIZE_ERROR(3000, "文件大小不能超过5MB"),
-    FILE_TYPE_ERROR(3001, "不支持该格式的文件"),
-    FILE_UPLOAD_FAILED(3002, "文件上传失败"),
-    FILE_NOT_EXISTS(3003, "文件不存在"),
-    FILE_DOWNLOAD_ERROR(3003, "文件下载失败"),
-    FILE_PREVIEW_ERROR(3004, "文件预览失败"),
-    FILE_PARSE_FAIL(3005, "文件解析失败"),
+    FILE_SIZE_ERROR_5MB(3000, "文件大小不能超过5MB"),
+    FILE_SIZE_ERROR_10MB(3001, "文件大小不能超过10MB"),
+    FILE_TYPE_ERROR(3002, "不支持该格式的文件"),
+    FILE_UPLOAD_FAILED(3003, "文件上传失败"),
+    FILE_NOT_EXISTS(3004, "文件不存在"),
+    FILE_DOWNLOAD_ERROR(3005, "文件下载失败"),
+    FILE_PREVIEW_ERROR(3006, "文件预览失败"),
+    FILE_PARSE_FAIL(3007, "文件解析失败"),
 
     APPLICATION_DUPLICATE(4000, "您已经提交过该日期的晚归申请"),
     APPLICATION_SAVE_FAILED(4001, "保存晚归申请记录失败"),

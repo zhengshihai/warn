@@ -91,7 +91,6 @@ public interface DormitoryManagerService {
      *
      * @param manager     宿管信息
      * @param currentEmail 当前邮箱
-     * @return 更新结果
      */
     void updatePersonalInfo(DormitoryManager manager, String currentEmail);
 
@@ -99,14 +98,22 @@ public interface DormitoryManagerService {
 
     /**
      * 获取管理的宿舍
-     * @param managerId
-     * @return
+     * @param managerId   宿管工号
+     * @return            宿舍列表
      */
     List<String> getManagedDormitories(String managerId);
 
     /**
      * 更新最后登录的时间
-     * @param id
+     * @param id        主键id
      */
     void updateLastLoginTime(Integer id);
+
+    /**
+     * 批量插入宿管信息
+     *
+     * @param dormitoryManagerList    宿管信息
+     * @return                        插入行数
+     */
+    int insertBatch(List<DormitoryManager> dormitoryManagerList);
 }

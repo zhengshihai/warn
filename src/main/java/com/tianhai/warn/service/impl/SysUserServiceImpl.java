@@ -4,6 +4,7 @@ import cn.hutool.core.bean.BeanUtil;
 import com.github.pagehelper.Page;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
+import com.tianhai.warn.dto.SysUserExcelDTO;
 import com.tianhai.warn.enums.ResultCode;
 import com.tianhai.warn.exception.BusinessException;
 import com.tianhai.warn.exception.SystemException;
@@ -62,7 +63,7 @@ public class SysUserServiceImpl implements SysUserService {
     }
 
     @Override
-    public List<SysUser> getAllSysUsers() {
+    public List<SysUser> selectAll() {
         return sysUserMapper.selectAll();
     }
 
@@ -297,6 +298,16 @@ public class SysUserServiceImpl implements SysUserService {
             if (newSysUserIsLocked) newSysUserLock.unlock();
         }
 
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int insertBatch(List<SysUser> sysUserList) {
+        if (sysUserList.isEmpty()) {
+            return 0;
+        }
+
+        return sysUserMapper.insertBatch(sysUserList);
     }
 
     @Override

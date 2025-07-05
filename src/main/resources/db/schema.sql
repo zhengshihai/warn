@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS student (
     update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     last_login_time DATETIME COMMENT '最后登录时间',
     UNIQUE KEY uk_student_no (student_no),
-    UNIQUE KEY idx_student_name (name)
+    KEY idx_student_name (name)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='学生信息表';
 
 -- 晚归记录表
@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS late_return (
     -- CONSTRAINT fk_late_return_student FOREIGN KEY (student_no) REFERENCES student (student_no)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='晚归记录表';
 
--- 系统用户表（准确来说应该叫班级管理员表）
+-- 班级管理员表
 CREATE TABLE IF NOT EXISTS sys_user (
     id INT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID',
     password VARCHAR(100) NOT NULL COMMENT '密码',
@@ -182,7 +182,7 @@ CREATE TABLE explanation (
      INDEX idx_audit_status (audit_status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='晚归情况说明表';
 
--- 系统用户-班级关联表
+-- 班级管理员-班级关联表
 CREATE TABLE `sys_user_class` (
       `id` INT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
       `sys_user_no` VARCHAR(50) NOT NULL COMMENT '用户编号',

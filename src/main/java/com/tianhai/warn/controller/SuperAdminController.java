@@ -1,17 +1,13 @@
 package com.tianhai.warn.controller;
 
-import com.alibaba.excel.EasyExcel;
 import com.tianhai.warn.annotation.LogOperation;
 import com.tianhai.warn.annotation.RequirePermission;
 import com.tianhai.warn.constants.Constants;
-import com.tianhai.warn.dto.StudentExcelDTO;
-import com.tianhai.warn.dto.StudentInfoValidateResult;
 import com.tianhai.warn.enums.ResultCode;
 import com.tianhai.warn.exception.BusinessException;
 import com.tianhai.warn.model.SuperAdmin;
 import com.tianhai.warn.query.SuperAdminQuery;
 import com.tianhai.warn.service.SuperAdminService;
-import com.tianhai.warn.service.VerificationService;
 import com.tianhai.warn.utils.PageResult;
 import com.tianhai.warn.utils.Result;
 import com.tianhai.warn.utils.RoleObjectCaster;
@@ -25,12 +21,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.*;
 
 /**
  * 超级管理员信息控制器
@@ -43,8 +34,9 @@ public class SuperAdminController {
     @Autowired
     private SuperAdminService superAdminService;
 
-    @Autowired
-    private VerificationService verificationService;
+    private static final String VALID_COUNT = "validCount";
+    private static final String INVALID_LIST = "invalidList";
+    private static final String TOTAL_COUNT = "totalCount";
 
     @GetMapping
     public String superAdmin() {
@@ -53,14 +45,15 @@ public class SuperAdminController {
 
     /**
      * 查找全部超级管理员
-     * @return   超级管理员列表
+     * 
+     * @return 超级管理员列表
      */
     @GetMapping("/list")
     @ResponseBody
     @RequirePermission(roles = Constants.SUPER_ADMIN)
     @LogOperation("查找全部管理员信息")
     public Result<List<SuperAdmin>> searchAllSuperAdmin() {
-        List<SuperAdmin> allSuperAdmins = superAdminService.listAll();
+        List<SuperAdmin> allSuperAdmins = superAdminService.selectAll();
 
         return Result.success(allSuperAdmins);
     }
@@ -68,8 +61,9 @@ public class SuperAdminController {
     /**
      * 更新超级管理员信息
      * 这里允许超级管理员和非超级管理员的邮箱发生重叠
-     * @param updateSuperAdmin        更新信息
-     * @return                  更新结果
+     * 
+     * @param updateSuperAdmin 更新信息
+     * @return 更新结果
      */
     @PostMapping("/update/per-info")
     @ResponseBody
@@ -153,39 +147,54 @@ public class SuperAdminController {
     @PostMapping("/import-students")
     @ResponseBody
     @RequirePermission(roles = Constants.SUPER_ADMIN)
-    @LogOperation("超级管理员批量导入用户信息") //为了检查当前实现的内容，暂时把返回值设置为空
-    public void importStudents(@RequestParam("file") MultipartFile file,
-                               @RequestParam("fileRole") String fileRole) {
-        Map<String, Object> resultMap = new HashMap<>();
-        List<StudentExcelDTO> allExcelStudentInfoList = new ArrayList<>();
-        try (InputStream is = file.getInputStream()) {
-            allExcelStudentInfoList = EasyExcel.read(is)
-                    .head(StudentExcelDTO.class)
-                    .sheet()
-                    .doReadSync();
-        } catch (Exception e) {
-            logger.error("文件解析失败", e);
-//            return Result.error(ResultCode.FILE_PARSE_FAIL);
+    @LogOperation("超级管理员批量导入用户信息")
+    public Result<?> importUserInfoBatch(@RequestParam("file") MultipartFile file,
+            @RequestParam("insertUserRole") String insertUserRole) {
+        // 校验插入的角色是否合规
+        if (StringUtils.isBlank(insertUserRole)) {
+            logger.error("批量导入的用户角色不合规， insertRole: {}", insertUserRole);
+            throw new BusinessException(ResultCode.USER_ROLE_DISABLE);
         }
 
-        // 校验Excel中的学生信息是否合规
-        List<StudentInfoValidateResult> validateResultList =
-                verificationService.validateStudentExcelInfo(allExcelStudentInfoList);
+        Set<String> roleSet = new HashSet<>(Arrays.asList(Constants.SUPER_ADMIN,
+                Constants.STUDENT,
+                Constants.DORMITORY_MANAGER,
+                Constants.SYSTEM_USER));
+        boolean isRequiredUserRole = roleSet.stream()
+                .anyMatch(role -> role.equalsIgnoreCase(insertUserRole));
+        if (!isRequiredUserRole) {
+            logger.error("批量导入的用户角色不合规， insertRole: {}", insertUserRole);
+            throw new BusinessException(ResultCode.USER_ROLE_DISABLE);
+        }
 
-        // 分离合规的学生信息数据
-        List<StudentExcelDTO> validStudentList = validateResultList.stream()
-                .filter(StudentInfoValidateResult::isValid)
-                .map(StudentInfoValidateResult::getStudentExcelDTO)
-                .toList();
-        logger.info("本次上传的学生数据，合规的学生数据条数为：{}", validStudentList.size());
+        // 校验上传的文件类型和大小是否合规（不大于10MB）
+        String fileName = file.getOriginalFilename();
+        if (fileName == null || !(fileName.endsWith(".xls") || fileName.endsWith(".xlsx"))) {
+            logger.error("上传的文件格式不符合要求， fileName: {}", fileName);
+            throw new BusinessException(ResultCode.FILE_TYPE_ERROR);
+        }
+        if (file.getSize() > 10 * 1024 * 1024) {
+            logger.error("单次上传的文件大小不能超过10MB");
+            throw new BusinessException(ResultCode.FILE_SIZE_ERROR_10MB);
+        }
 
-        // 分离不合规且有错误信息的学生信息数据
-        List<StudentInfoValidateResult> inValidateResultList = validateResultList.stream()
-                .filter(validateResult -> !validateResult.isValid())
-                .toList();
-        logger.info("本次上传的学生数据，不合规的学生数据条数为：{}", inValidateResultList.size());
+        // 批量导入用户信息
+        Map<String, Object> importResult = superAdminService.importExcelInfoBatch(file, insertUserRole);
 
-        
+        // 获取导入结果
+        Integer validCount = (Integer) importResult.get(VALID_COUNT);
+        List<?> invalidList = (List<?>) importResult.get(INVALID_LIST);
+        Integer totalCount = (Integer) importResult.get(TOTAL_COUNT);
 
+        // 构建返回消息
+        String message = String.format("导入完成！总计：%d条，成功：%d条，失败：%d条",
+                totalCount, validCount, invalidList.size());
+
+        // 如果有失败的数据，返回详细信息
+        if (!invalidList.isEmpty()) {
+            return Result.success(importResult, message);
+        } else {
+            return Result.success(importResult, message);
+        }
     }
 }

@@ -94,7 +94,7 @@ public class StudentServiceImpl implements StudentService {
     }
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public int insert(Student student) {
         student.setCreateTime(new Date());
         student.setUpdateTime(new Date());
@@ -102,14 +102,14 @@ public class StudentServiceImpl implements StudentService {
     }
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public int update(Student student) {
         student.setUpdateTime(new Date());
         return studentMapper.update(student);
     }
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public int deleteById(Integer id) {
         return studentMapper.deleteById(id);
     }
@@ -130,6 +130,7 @@ public class StudentServiceImpl implements StudentService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void updateLastLoginTime(Integer id) {
         if (id == null || id <= 0) {
             throw new BusinessException(ResultCode.VALIDATE_FAILED);
@@ -375,8 +376,8 @@ public class StudentServiceImpl implements StudentService {
     }
 
     // 更新学生表之外其他表的学生信息
-    private void updateStudentInfoInOtherTables2(Student newStudentInfo, Student oldStudentInfo) {
-        // todo alarm_process_record表尚未同步修改
+    @Deprecated
+    private void updateStudentInfoInOtherTables(Student newStudentInfo, Student oldStudentInfo) {
 
         String oldStudentNo = oldStudentInfo.getStudentNo();
         String newStudentNo = newStudentInfo.getStudentNo();
@@ -482,7 +483,6 @@ public class StudentServiceImpl implements StudentService {
             }
         }
 
-        // todo 更新系统日志该学生的操作
     }
 
 
@@ -544,5 +544,38 @@ public class StudentServiceImpl implements StudentService {
         }
 
         return studentNoSet;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int insertBatch(List<Student> studentList) {
+        if (studentList == null || studentList.isEmpty()) {
+            logger.error("批量插入的学生信息为空");
+            return 0;
+        }
+
+        final int batchSize = 1000;
+        int totalInsertCount = 0;
+
+        try {
+            for (int i = 0; i < studentList.size(); i += batchSize) {
+                int end = Math.min(i + batchSize, studentList.size());
+                List<Student> batch = studentList.subList(i, end);
+                int insertedRows = studentMapper.insertBatch(batch);
+
+                if (insertedRows != batch.size()) {
+                    logger.error("批次插入未完成，应插入 {} 条，实际插入 {} 条", batch.size(), insertedRows);
+                    throw new SystemException(ResultCode.ERROR);
+                }
+
+                totalInsertCount += insertedRows;
+                logger.info("已成功插入第 {} 批， 插入 {} 条", (i / batchSize) + 1, insertedRows);
+            }
+
+            return totalInsertCount;
+        } catch (Exception e) {
+            logger.error("批量插入学生信息异常", e);
+            throw new SystemException(ResultCode.ERROR);
+        }
     }
 }

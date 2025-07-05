@@ -1,8 +1,8 @@
 package com.tianhai.warn.service;
 
-import com.tianhai.warn.dto.StudentExcelDTO;
-import com.tianhai.warn.dto.StudentInfoValidateResult;
+import com.tianhai.warn.dto.*;
 import com.tianhai.warn.enums.BusinessType;
+import com.tianhai.warn.model.SuperAdmin;
 import com.tianhai.warn.utils.Result;
 
 import java.util.List;
@@ -56,4 +56,25 @@ public interface VerificationService {
      * @return                       校验结果
      */
     List<StudentInfoValidateResult> validateStudentExcelInfo(List<StudentExcelDTO> studentExcelDTOList);
+
+    /**
+     * 校验Excel文件的超级管理员信息
+     * @param superAdminExcelDTOList       待校验的超级管理员信息
+     * @return                             校验结果
+     */
+    List<SuperAdminInfoValidateResult> validateSuperAdminExcelInfo(List<SuperAdminExcelDTO> superAdminExcelDTOList);
+
+    /**
+     * 校验Excel文件的宿管信息
+     * @param allExcelDormitoryManagerInfoList    待校验的宿管信息
+     * @return                                    校验结果
+     */
+    List<DorManInfoValidateResult> validateDorManExcelInfo(List<DormitoryManagerExcelDTO> allExcelDormitoryManagerInfoList);
+
+    /**
+     * 校验Excel文件的班级管理员信息
+     * @param allExcelSysUserInfoList    待校验的班级管理员信息
+     * @return                           校验结果
+     */
+    List<SysUserInfoValidateResult> validateSysUserExcelInfo(List<SysUserExcelDTO> allExcelSysUserInfoList);
 }

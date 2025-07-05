@@ -160,7 +160,7 @@ public class ApplicationController {
             // 验证文件大小（限制为5MB）
             if (file.getSize() > 5 * 1024 * 1024) {
                 logger.error("文件大小不能超过5MB");
-                throw new BusinessException(ResultCode.FILE_SIZE_ERROR);
+                throw new BusinessException(ResultCode.FILE_SIZE_ERROR_5MB);
             }
             // 验证文件类型
             String contentType = file.getContentType();

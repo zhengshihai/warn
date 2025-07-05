@@ -27,7 +27,7 @@ public class GlobalExceptionHandler {
      */
     @ResponseBody
     public Object handleBusinessException(BusinessException e, HttpServletRequest request) {
-        logger.warn("业务异常：{}", e.getMessage());
+        logger.error("业务异常：{}", e.getMessage());
 
         request.setAttribute("errorMsg", e.getMessage());
 
@@ -44,11 +44,10 @@ public class GlobalExceptionHandler {
      * 修改：加@ResponseBody，确保AJAX请求时返回JSON，防止返回视图名导致404
      */
     @ResponseBody
-    public Object handleSystemException(SystemException e,
-            HttpServletRequest request) {
+    public Object handleSystemException(SystemException e, HttpServletRequest request) {
         logger.error("系统异常：", e);
 
-        request.setAttribute("errorMsg", e.getResultCode());
+        request.setAttribute("errorMsg", e.getMessage());
 
         if (isAjaxRequest(request)) {
             return Result.error(ResultCode.ERROR);

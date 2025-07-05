@@ -25,5 +25,5 @@ public interface SuperAdminMapper {
 
     int countAll();
 
-
+    int insertBatch(@Param("superAdminList") List<SuperAdmin> superAdminList);
 }

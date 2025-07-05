@@ -90,7 +90,16 @@ public interface DormitoryManagerMapper {
 
     /**
      * 更新最后登录时间
+     * 
      * @param id
      */
     void updateLastLoginTime(Integer id);
+
+    /**
+     * 批量插入宿管信息
+     * 
+     * @param dormitoryManagerList 宿管信息列表
+     * @return 插入成功的记录数
+     */
+    int insertBatch(@Param("dormitoryManagerList") List<DormitoryManager> dormitoryManagerList);
 }

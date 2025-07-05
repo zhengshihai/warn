@@ -1,9 +1,9 @@
 package com.tianhai.warn.service;
 
+import com.tianhai.warn.dto.SysUserExcelDTO;
 import com.tianhai.warn.model.SysUser;
 import com.tianhai.warn.query.SysUserQuery;
 import com.tianhai.warn.utils.PageResult;
-import com.tianhai.warn.utils.Result;
 
 import java.util.List;
 
@@ -25,7 +25,7 @@ public interface SysUserService {
     /**
      * 获取所有系统用户列表
      */
-    List<SysUser> getAllSysUsers();
+    List<SysUser> selectAll();
 
     /**
      * 条件查询系统用户
@@ -94,7 +94,13 @@ public interface SysUserService {
     /**
      * 超级管理员更新班级管理员信息
      * @param newSysUserInfo    班级管理员信息
-     * @return                  更新行数
      */
     void updatePersonalInfoBySuperAdmin(SysUser newSysUserInfo);
+
+    /**
+     * 批量插入班级管理员信息
+     * @param sysUserList    班级管理员信息
+     * @return                         插入行数
+     */
+    int insertBatch(List<SysUser> sysUserList);
 }

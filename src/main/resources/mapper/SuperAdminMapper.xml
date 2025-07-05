@@ -108,4 +108,21 @@
         WHERE id = #{id}
     </update>
 
+    <insert id="insertBatch" parameterType="java.util.List">
+    INSERT INTO super_admin
+        (name, password, email, enabled, create_time, update_time, version, last_login_time)
+    VALUES
+    <foreach collection="superAdminList" item="item" separator=",">
+        (
+            #{item.name},
+            #{item.password},
+            #{item.email},
+            #{item.enabled},
+            #{item.createTime},
+            #{item.updateTime},
+            #{item.version},
+            #{item.lastLoginTime}
+        )
+    </foreach>
+</insert>
 </mapper>

@@ -142,4 +142,25 @@
             update_time = NOW()
         WHERE id = #{id}
     </update>
+    
+    <!-- 批量插入宿管信息 -->
+    <insert id="insertBatch" parameterType="java.util.List">
+        INSERT INTO dormitory_manager
+            (manager_id, name, building, phone, email, status, password, create_time, update_time, last_login_time)
+        VALUES
+        <foreach collection="dormitoryManagerList" item="item" separator=",">
+            (
+                #{item.managerId},
+                #{item.name},
+                #{item.building},
+                #{item.phone},
+                #{item.email},
+                #{item.status},
+                #{item.password},
+                #{item.createTime},
+                #{item.updateTime},
+                #{item.lastLoginTime}
+            )
+        </foreach>
+    </insert>
 </mapper> 

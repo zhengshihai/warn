@@ -186,4 +186,23 @@
             #{sysUserNo}
         </foreach>
     </select>
+
+    <!-- 批量插入班级管理员数据 -->
+    <insert id="insertBatch" parameterType="java.util.List">
+        insert into sys_user (sys_user_no, password, name, phone, email, job_role, status, create_time, update_time)
+        values
+        <foreach collection="sysUserList" item="sysUser" separator=",">
+            (
+                #{sysUser.sysUserNo},
+                #{sysUser.password},
+                #{sysUser.name},
+                #{sysUser.phone},
+                #{sysUser.email},
+                #{sysUser.jobRole},
+                #{sysUser.status},
+                now(),
+                now()
+            )
+        </foreach>
+    </insert>
 </mapper> 
