@@ -3,10 +3,8 @@ package com.tianhai.warn.service.impl;
 import com.tianhai.warn.constants.Constants;
 import com.tianhai.warn.enums.ResultCode;
 import com.tianhai.warn.exception.BusinessException;
-import com.tianhai.warn.exception.SystemException;
 import com.tianhai.warn.mapper.StudentMapper;
 import com.tianhai.warn.mapper.SysUserClassMapper;
-import com.tianhai.warn.model.SysUser;
 import com.tianhai.warn.model.SysUserClass;
 import com.tianhai.warn.service.SysUserClassService;
 import org.apache.commons.lang3.StringUtils;
@@ -45,7 +43,7 @@ public class SysUserClassServiceImpl implements SysUserClassService {
             List<String> oldClassList = sysUserClassMapper.selectClassesByUserNo(sysUserNo);
 
             //先删除原有关联
-            sysUserClassMapper.deleteByUserNo(sysUserNo);
+            sysUserClassMapper.deleteBySysUserNo(sysUserNo);
 
             //添加新的关联
             if (classList != null && !classList.isEmpty()) {
@@ -150,5 +148,26 @@ public class SysUserClassServiceImpl implements SysUserClassService {
     @Override
     public int updateSysUserNo(String oldSysUserNo, String newSysUserNo, Date updateTime) {
         return sysUserClassMapper.updateSysUserNo(oldSysUserNo, newSysUserNo, updateTime);
+    }
+
+    @Override
+    public int countBySysUserNo(String sysUserNo) {
+        if (StringUtils.isBlank(sysUserNo)) {
+            logger.error("班级管理员的工号不合法， syUserNo:{}", sysUserNo);
+            throw new BusinessException(ResultCode.PARAMETER_ERROR);
+        }
+
+        return sysUserClassMapper.countBySysUserNo(sysUserNo);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int deleteBySysUserNo(String sysUserNo) {
+        if (StringUtils.isBlank(sysUserNo)) {
+            logger.error("班级管理员工号不合法， sysUserNo:{}", sysUserNo);
+            throw new BusinessException(ResultCode.PARAMETER_ERROR);
+        }
+
+        return sysUserClassMapper.deleteBySysUserNo(sysUserNo);
     }
 }

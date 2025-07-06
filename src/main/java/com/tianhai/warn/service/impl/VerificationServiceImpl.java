@@ -361,6 +361,17 @@ public class VerificationServiceImpl implements VerificationService {
             result.setValid(false);
         }
 
+        // 职位角色校验
+        if (!isBlank(dto.getJobRole())) {
+            if (!dto.getJobRole().equals("辅导员")
+                && !dto.getJobRole().equals("班主任")
+                && !dto.getJobRole().equals("院级领导")
+                && !dto.getJobRole().equals("其他角色")) {
+                errors.add(ValidationMessages.JOB_ROLE_DISABLE);
+                result.setValid(false);
+            }
+        }
+
         // 格式校验
         if (!isBlank(dto.getEmail()) && !isValidEmail(dto.getEmail())) {
             errors.add(ValidationMessages.EMAIL_FORMAT_INVALID);

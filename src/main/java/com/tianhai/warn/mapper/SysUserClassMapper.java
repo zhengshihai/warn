@@ -13,7 +13,7 @@ import java.util.List;
 @Mapper
 public interface SysUserClassMapper {
     /**
-     * 根据用户编号查询班级列表
+     * 根据班级管理员工号查询班级列表
      * 
      * @param sysUserNo 用户编号
      * @return 班级列表
@@ -21,25 +21,25 @@ public interface SysUserClassMapper {
     List<String> selectClassesByUserNo(String sysUserNo);
 
     /**
-     * 根据用户编号删除关联数据
+     * 根据班级管理员工号删除关联数据
      * 
      * @param sysUserNo 用户编号
      * @return 影响行数
      */
-    int deleteByUserNo(String sysUserNo);
+    int deleteBySysUserNo(String sysUserNo);
 
     /**
-     * 批量插入用户-班级关联
+     * 批量插入班级管理员-班级关联
      * 
-     * @param list 用户-班级关联列表
+     * @param list 班级管理员-班级关联列表
      * @return 影响行数
      */
     int batchInsert(List<SysUserClass> list);
 
     /**
-     * 检查用户是否有权限管理指定班级
+     * 检查班级管理员是否有权限管理指定班级
      * 
-     * @param sysUserNo 用户编号
+     * @param sysUserNo 班级管理员工号
      * @param className 班级
      * @return 记录数
      */
@@ -62,7 +62,7 @@ public interface SysUserClassMapper {
 
 
     /**
-     * 根据sysUserNo更新SysUserClass表
+     * 根据班级管理员工号更新表
      * @param sysUserClassList    更新信息
      * @return                    更新行数
      */
@@ -70,12 +70,19 @@ public interface SysUserClassMapper {
 
     /**
      * 更新班级管理员的工号
-     * @param oldSysUserNo     旧工号
-     * @param newSysUserNo     新工号
+     * @param oldSysUserNo     班级管理员旧工号
+     * @param newSysUserNo     班级管理员新工号
      * @param updateTime       更新时间
      * @return                 更新行数
      */
     int updateSysUserNo(@Param("oldSysUserNo") String oldSysUserNo,
                         @Param("newSysUserNo") String newSysUserNo,
                         @Param("updateTime") Date updateTime);
+
+    /**
+     * 根据班级管理员工号统计
+     * @param sysUserNo     班级管理员工号
+     * @return              班级管理员-班级结果数
+     */
+    int countBySysUserNo(String sysUserNo);
 }

@@ -11,6 +11,7 @@ import com.tianhai.warn.exception.SystemException;
 import com.tianhai.warn.mapper.SysUserMapper;
 import com.tianhai.warn.model.Student;
 import com.tianhai.warn.model.SysUser;
+import com.tianhai.warn.model.SysUserClass;
 import com.tianhai.warn.query.SysUserQuery;
 import com.tianhai.warn.service.SysUserClassService;
 import com.tianhai.warn.service.SysUserService;
@@ -93,7 +94,7 @@ public class SysUserServiceImpl implements SysUserService {
     }
 
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public SysUser insertSysUser(SysUser user) {
         user.setCreateTime(new Date());
         user.setUpdateTime(new Date());
@@ -102,17 +103,59 @@ public class SysUserServiceImpl implements SysUserService {
     }
 
     @Override
-    @Transactional
-    public SysUser updateSysUser(SysUser user) {
-        user.setUpdateTime(new Date());
-        sysUserMapper.update(user);
-        return user;
+    @Transactional(rollbackFor = Exception.class)
+    public SysUser updateSysUser(SysUser sysUser) {
+        if (sysUser.getId() == null || sysUser.getId() <= 0) {
+            logger.error("修改信息不合规， sysUser:{}", sysUser);
+            throw new BusinessException(ResultCode.PARAMETER_ERROR);
+        }
+
+        sysUser.setUpdateTime(new Date());
+
+        sysUserMapper.update(sysUser);
+
+        return sysUser;
     }
 
     @Override
-    @Transactional
-    public void deleteSysUser(Integer id) {
-        sysUserMapper.deleteById(id);
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteSysUserById(Integer id) {
+        // 从班级管理员查找该用户
+        SysUser existingSysUser = sysUserMapper.selectById(id);
+        if (existingSysUser == null) {
+            logger.info("班级管理员表没有该用户，id:{}", id);
+        }
+
+        // 从班级管理员-班级表查找该用户
+        int sysUserClassCount = 0;
+        if (existingSysUser != null) {
+            String sysUserNo = existingSysUser.getSysUserNo();
+            sysUserClassCount = sysUserClassService.countBySysUserNo(sysUserNo);
+            if (sysUserClassCount == 0) {
+                logger.info("班级管理员-班级表没有相关信息，sysUserNo:{}", sysUserNo);
+            }
+        }
+
+        // 删除班级管理员-班级表的信息
+        if (sysUserClassCount > 0) {
+            int sysUserClassRow = sysUserClassService.deleteBySysUserNo(existingSysUser.getSysUserNo());
+            if (sysUserClassRow < sysUserClassCount) {
+                logger.error("在班级管理员-班级表删除班级管理员出现异常，sysUserNo:{}",
+                        existingSysUser.getSysUserNo());
+                throw new SystemException(ResultCode.ERROR);
+            }
+            logger.info("在班级管理员-班级表中成功删除 {} 条数据", sysUserClassRow);
+        }
+
+        // 删除班级管理员表的信息
+        if (existingSysUser != null) {
+            int sysUserRow = sysUserMapper.deleteById(id);
+            if (sysUserRow <= 0) {
+                logger.error("在班级管理员表删除班级管理员出现异常，id:{}", id);
+                throw new SystemException(ResultCode.ERROR);
+            }
+            logger.info("在班级管理员表中成功删除 {} 条数据", sysUserRow);
+        }
     }
 
     @Override
@@ -224,7 +267,7 @@ public class SysUserServiceImpl implements SysUserService {
 
         String oldSysUserLockKey = "lock:sysUserNo:" + oldSysUserNo;
         String newSysUserLockKey = "lock:sysUserNo:" + newSysUserNo;
-        RLock oldSysUserLock = null,  newSysUserLock = null;
+        RLock oldSysUserLock = null, newSysUserLock = null;
         boolean oldSysUserIsLocked = false, newSysUserIsLocked = false;
 
         try {
@@ -294,8 +337,10 @@ public class SysUserServiceImpl implements SysUserService {
             }
 
             // 释放sysUserNo锁
-            if (oldSysUserIsLocked) oldSysUserLock.unlock();
-            if (newSysUserIsLocked) newSysUserLock.unlock();
+            if (oldSysUserIsLocked)
+                oldSysUserLock.unlock();
+            if (newSysUserIsLocked)
+                newSysUserLock.unlock();
         }
 
     }
@@ -324,7 +369,7 @@ public class SysUserServiceImpl implements SysUserService {
         PageResult<SysUser> result;
 
         try (Page<SysUser> page = PageHelper.startPage(query.getPageNum(), query.getPageSize())) {
-            sysUserList = sysUserMapper.selectAll();
+            sysUserList = sysUserMapper.selectByCondition(query);
             result = buildPageResult(sysUserList);
         }
 

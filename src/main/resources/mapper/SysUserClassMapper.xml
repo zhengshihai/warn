@@ -26,7 +26,7 @@
     </select>
 
     <!-- 根据用户编号删除关联数据 -->
-    <delete id="deleteByUserNo">
+    <delete id="deleteBySysUserNo">
         DELETE FROM sys_user_class
         WHERE sys_user_no = #{sysUserNo}
     </delete>
@@ -160,7 +160,7 @@
         </foreach>
     </update>
 
-    <!-- 更新班级管理员的额工号 -->
+    <!-- 更新班级管理员的工号 -->
     <update id="updateSysUserNo">
         UPDATE sys_user_class
         SET sys_user_no = #{newSysUserNo},
@@ -168,4 +168,10 @@
         WHERE sys_user_no = #{oldSysUserNo}
     </update>
 
+    <!-- 根据班级管理员工号统计行数 -->
+    <select id="countBySysUserNo" resultType="int" parameterType="string">
+        SELECT COUNT(*)
+        FROM sys_user_class
+        WHERE sys_user_no = #{sysUserNo}
+    </select>
 </mapper>

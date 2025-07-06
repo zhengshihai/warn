@@ -64,4 +64,18 @@ public interface SysUserClassService {
      * @return                 更新行数
      */
     int updateSysUserNo(String oldSysUserNo, String newSysUserNo, Date updateTime);
+
+    /**
+     * 根据班级管理员工号统计总数
+     * @param sysUserNo     班级管理员工号
+     * @return              总数
+     */
+    int countBySysUserNo(String sysUserNo);
+
+    /**
+     * 根据班级管理员工号删除信息
+     * @param sysUserNo    班级管理员
+     * @return             删除行数
+     */
+    int deleteBySysUserNo(String sysUserNo);
 }

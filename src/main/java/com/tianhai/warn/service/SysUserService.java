@@ -1,6 +1,5 @@
 package com.tianhai.warn.service;
 
-import com.tianhai.warn.dto.SysUserExcelDTO;
 import com.tianhai.warn.model.SysUser;
 import com.tianhai.warn.query.SysUserQuery;
 import com.tianhai.warn.utils.PageResult;
@@ -45,7 +44,7 @@ public interface SysUserService {
     /**
      * 删除系统用户
      */
-    void deleteSysUser(Integer id);
+    void deleteSysUserById(Integer id);
 
     /**
      * 根据角色获取系统用户列表

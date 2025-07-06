@@ -394,6 +394,70 @@
         </div>
     </div>
 
+<!-- 编辑班级管理员信息模态框 -->
+<div class="modal fade" id="editSysUserModal" tabindex="-1" aria-labelledby="editSysUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form id="editSysUserForm">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editSysUserModalLabel">编辑班级管理员信息</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="关闭"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="sysUserId" name="id">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="sysUserNo" class="form-label">工号</label>
+                                <input type="text" class="form-control" id="sysUserNo" name="sysUserNo" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="sysUserName" class="form-label">姓名</label>
+                                <input type="text" class="form-control" id="sysUserName" name="name" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="sysUserPhone" class="form-label">电话</label>
+                                <input type="text" class="form-control" id="sysUserPhone" name="phone" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="sysUserEmail" class="form-label">邮箱</label>
+                                <input type="email" class="form-control" id="sysUserEmail" name="email" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="sysUserJobRole" class="form-label">职位角色</label>
+                                <select class="form-control" id="sysUserJobRole" name="jobRole" required>
+                                    <option value="">请选择职位角色</option>
+                                    <option value="COUNSELOR">辅导员</option>
+                                    <option value="CLASS_TEACHER">班主任</option>
+                                    <option value="SUPER_ADMIN">超级管理员</option>
+                                    <option value="DORMITORY_MANAGER">宿管</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="sysUserPassword" class="form-label">密码</label>
+                                <input type="password" class="form-control" id="sysUserPassword" name="password" placeholder="留空则不修改">
+                            </div>
+                            <div class="mb-3">
+                                <label for="sysUserStatus" class="form-label">状态</label>
+                                <select class="form-control" id="sysUserStatus" name="status" required>
+                                    <option value="ENABLE">启用</option>
+                                    <option value="DISABLE">禁用</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary">保存修改</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
     <script>
     function formatDate(dateStr) {
         if (!dateStr) return '-';
@@ -774,17 +838,112 @@
         // 操作按钮事件
         $(document).on('click', '.edit-sysuser-btn', function() {
             var id = $(this).data('id');
-            alert('点击了修改，班级管理员ID: ' + id);
+            // 获取班级管理员信息并打开编辑模态框
+            $.ajax({
+                url: '${pageContext.request.contextPath}/sysuser/' + id,
+                type: 'GET',
+                success: function(response) {
+                    if (response.success) {
+                        var sysUser = response.data;
+                        // 填充表单数据
+                        $('#sysUserId').val(sysUser.id);
+                        $('#sysUserNo').val(sysUser.sysUserNo);
+                        $('#sysUserName').val(sysUser.name);
+                        $('#sysUserPhone').val(sysUser.phone);
+                        $('#sysUserEmail').val(sysUser.email);
+                        $('#sysUserJobRole').val(sysUser.jobRole);
+                        $('#sysUserStatus').val(sysUser.status);
+                        $('#sysUserPassword').val(''); // 清空密码字段
+                        
+                        // 打开模态框
+                        $('#editSysUserModal').modal('show');
+                    } else {
+                        alert('获取班级管理员信息失败：' + (response.message || '未知错误'));
+                    }
+                },
+                error: function(xhr) {
+                    alert('请求失败：' + (xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : '服务器错误'));
+                }
+            });
         });
         $(document).on('click', '.delete-sysuser-btn', function() {
             var id = $(this).data('id');
             if (confirm('确定要删除该班级管理员吗？')) {
-                alert('已确认删除，班级管理员ID: ' + id);
+                $.ajax({
+                    url: '${pageContext.request.contextPath}/sysuser/' + id,
+                    type: 'DELETE',
+                    success: function(response) {
+                        if (response.success) {
+                            alert('删除成功！');
+                            loadSysUserList(1); // 重新加载班级管理员列表
+                        } else {
+                            alert('删除失败：' + (response.message || '未知错误'));
+                        }
+                    },
+                    error: function(xhr) {
+                        alert('请求失败：' + (xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : '服务器错误'));
+                    }
+                });
             }
         });
         $(document).on('click', '.toggle-sysuser-btn', function() {
             var id = $(this).data('id');
-            alert('点击了启用/禁用，班级管理员ID: ' + id);
+            var $btn = $(this);
+            var currentStatus = $btn.text().trim();
+            var newStatus = currentStatus === '启用' ? 'ENABLE' : 'DISABLE';
+            var confirmText = currentStatus === '启用' ? '确定要启用该班级管理员吗？' : '确定要禁用该班级管理员吗？';
+            
+            if (confirm(confirmText)) {
+                $.ajax({
+                    url: '${pageContext.request.contextPath}/sysuser/update-status/' + id + '/' + newStatus,
+                    type: 'GET',
+                    success: function(response) {
+                        if (response.success) {
+                            alert('操作成功！');
+                            loadSysUserList(1); // 重新加载班级管理员列表
+                        } else {
+                            alert('操作失败：' + (response.message || '未知错误'));
+                        }
+                    },
+                    error: function(xhr) {
+                        alert('请求失败：' + (xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : '服务器错误'));
+                    }
+                });
+            }
+        });
+
+        // 编辑班级管理员表单提交
+        $('#editSysUserForm').on('submit', function(e) {
+            e.preventDefault();
+            var formData = {
+                id: $('#sysUserId').val(),
+                sysUserNo: $('#sysUserNo').val(),
+                name: $('#sysUserName').val(),
+                phone: $('#sysUserPhone').val(),
+                email: $('#sysUserEmail').val(),
+                jobRole: $('#sysUserJobRole').val(),
+                status: $('#sysUserStatus').val(),
+                password: $('#sysUserPassword').val()
+            };
+            
+            $.ajax({
+                url: '${pageContext.request.contextPath}/sysuser/super-admin/update/per-info',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(formData),
+                success: function(response) {
+                    if (response.success) {
+                        $('#editSysUserModal').modal('hide');
+                        alert('修改成功！');
+                        loadSysUserList(1); // 重新加载班级管理员列表
+                    } else {
+                        alert('修改失败：' + (response.message || '未知错误'));
+                    }
+                },
+                error: function(xhr) {
+                    alert('请求失败：' + (xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : '服务器错误'));
+                }
+            });
         });
 
         // 超级管理员列表相关

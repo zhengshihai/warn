@@ -684,12 +684,39 @@ public class SuperAdminServiceImpl implements SuperAdminService {
             sysUser.setStatus(enabled);
             sysUser.setCreateTime(now);
             sysUser.setUpdateTime(now);
+            sysUser.setJobRole(convertJobRole(dto.getJobRole()));
             sysUser.setPassword(DigestUtils.md5DigestAsHex(dto.getPassword().getBytes()));
 
             sysUserList.add(sysUser);
         }
 
         return sysUserList;
+    }
+
+    // 将中文形式的jobRole转为英文
+    private String convertJobRole(String jobRoleCN) {
+        switch (jobRoleCN) {
+            case "辅导员" -> {
+                return Constants.JOB_ROLE_COUNSELOR;
+            }
+
+            case "班主任" -> {
+                return Constants.JOB_ROLE_CLASS_TEACHER;
+            }
+
+            case "院级领导" -> {
+                return Constants.JOB_ROLE_DEAN;
+            }
+
+            case "其他角色" -> {
+                return Constants.JOB_ROLE_OTHER;
+            }
+
+            default -> logger.error("暂时不支持该职位角色");
+
+        }
+
+        return jobRoleCN;
     }
 
     /**

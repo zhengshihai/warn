@@ -44,4 +44,5 @@ public class ValidationMessages {
     public static final String SYS_USER_NO_EXISTS = "班级管理员工号已存在";
     public static final String SYS_USER_NO_DUPLICATE = "导入数据中班级管理员工号存在重复";
 
+    public static final String JOB_ROLE_DISABLE = "班级管理员职位角色不合规";
 }
