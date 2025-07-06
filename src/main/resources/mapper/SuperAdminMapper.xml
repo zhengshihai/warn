@@ -22,7 +22,7 @@
     </select>
 
     <select id="selectAll" resultMap="BaseResultMap">
-        SELECT * FROM super_admin ORDER BY id DESC
+        SELECT * FROM super_admin ORDER BY id ASC
     </select>
 
     <insert id="insert" parameterType="com.tianhai.warn.model.SuperAdmin" useGeneratedKeys="true" keyProperty="id">

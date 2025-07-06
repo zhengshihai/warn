@@ -1,14 +1,22 @@
 package com.tianhai.warn.service.impl;
 
+import com.tianhai.warn.constants.Constants;
 import com.tianhai.warn.constants.ValidationMessages;
 import com.tianhai.warn.dto.*;
 import com.tianhai.warn.enums.BusinessType;
+import com.tianhai.warn.enums.ResultCode;
+import com.tianhai.warn.exception.BusinessException;
 import com.tianhai.warn.model.DormitoryManager;
 import com.tianhai.warn.model.SuperAdmin;
 import com.tianhai.warn.model.SysUser;
 import com.tianhai.warn.service.*;
 import com.tianhai.warn.utils.CaptchaUtils;
 import com.tianhai.warn.utils.Result;
+import com.tianhai.warn.utils.RoleObjectCaster;
+import com.tianhai.warn.utils.SessionUtils;
+import jakarta.servlet.http.HttpSession;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -21,6 +29,8 @@ import java.util.stream.Collectors;
 
 @Service
 public class VerificationServiceImpl implements VerificationService {
+
+    private static final Logger logger = LoggerFactory.getLogger(VerificationServiceImpl.class);
 
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
@@ -36,6 +46,7 @@ public class VerificationServiceImpl implements VerificationService {
 
     @Autowired
     private SysUserService sysUserService;
+
 
     private static final String ITEM = "warn:";
     private static final String CAPTCHA_PREFIX = ITEM + "captcha:";
@@ -294,6 +305,28 @@ public class VerificationServiceImpl implements VerificationService {
                         batchEmailSet, batchSysUserNoSet))
                 .collect(Collectors.toList());
 
+    }
+
+    @Override
+    public void checkSuperAdminStatus() {
+        // 获取当前登录的超级管理员信息
+        HttpSession session = SessionUtils.getSession(false);
+        if (session == null) {
+            throw new BusinessException(ResultCode.UNAUTHORIZED);
+        }
+        Object superAdminObject = session.getAttribute(Constants.SESSION_ATTRIBUTE_USER);
+        if (!(superAdminObject instanceof SuperAdmin)) {
+            throw new BusinessException(ResultCode.UNAUTHORIZED);
+        }
+
+        SuperAdmin superAdmin = RoleObjectCaster.cast(Constants.SUPER_ADMIN, superAdminObject);
+
+        // 检查当前超级管理员是否被禁用
+        SuperAdmin superAdminDB = superAdminService.selectByIdWithoutPassword(superAdmin.getId());
+        if (Objects.equals(superAdminDB.getEnabled(), Constants.DISABLE_INT)) {
+            logger.error("该超级管理员已被禁用");
+            throw new BusinessException(ResultCode.SUPER_ADMIN_DISABLE);
+        }
     }
 
     /**

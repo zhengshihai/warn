@@ -8,6 +8,7 @@ import com.tianhai.warn.exception.BusinessException;
 import com.tianhai.warn.model.SuperAdmin;
 import com.tianhai.warn.query.SuperAdminQuery;
 import com.tianhai.warn.service.SuperAdminService;
+import com.tianhai.warn.service.VerificationService;
 import com.tianhai.warn.utils.PageResult;
 import com.tianhai.warn.utils.Result;
 import com.tianhai.warn.utils.RoleObjectCaster;
@@ -15,14 +16,6 @@ import com.tianhai.warn.utils.SessionUtils;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.CellStyle;
-import org.apache.poi.ss.usermodel.FillPatternType;
-import org.apache.poi.ss.usermodel.Font;
-import org.apache.poi.ss.usermodel.IndexedColors;
-import org.apache.poi.ss.usermodel.Row;
-
-import org.apache.poi.xssf.streaming.SXSSFSheet;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,6 +43,9 @@ public class SuperAdminController {
     @Autowired
     private SuperAdminService superAdminService;
 
+    @Autowired
+    private VerificationService verificationService;
+
     private static final String VALID_COUNT = "validCount";
     private static final String INVALID_LIST = "invalidList";
     private static final String TOTAL_COUNT = "totalCount";
@@ -75,7 +71,28 @@ public class SuperAdminController {
     }
 
     /**
-     * 更新超级管理员信息
+     * 根据ID获取超级管理员信息
+     */
+    @GetMapping("/{id}")
+    @ResponseBody
+    @RequirePermission(roles = Constants.SUPER_ADMIN)
+    @LogOperation("超级管理员获取超级管理员信息")
+    public Result<SuperAdmin> getSuperAdminById(@PathVariable Integer id) {
+        if (id == null || id <= 0) {
+            logger.error("超级管理员ID不合法，id：{}", id);
+            throw new BusinessException(ResultCode.PARAMETER_ERROR);
+        }
+
+        SuperAdmin superAdmin = superAdminService.selectByIdWithoutPassword(id);
+        if (superAdmin == null) {
+            throw new BusinessException(ResultCode.USER_NOT_EXISTS);
+        }
+
+        return Result.success(superAdmin);
+    }
+
+    /**
+     * 超级管理员修改自己的信息
      * 这里允许超级管理员和非超级管理员的邮箱发生重叠
      * 
      * @param updateSuperAdmin 更新信息
@@ -115,21 +132,70 @@ public class SuperAdminController {
         return Result.success();
     }
 
-    // 校验修改信息是否符合要求
-    private void validateUpdateInfo(SuperAdmin superAdmin) {
-        if (StringUtils.isNotBlank(superAdmin.getName())) {
-            if (superAdmin.getName().length() > 20) {
-                logger.error("用户名超过规定长度，name:{}", superAdmin.getName());
-                throw new BusinessException(ResultCode.PARAMETER_ERROR);
-            }
+    /**
+     * 超级管理员修改其他超级管理员信息
+     */
+    @PostMapping("/update/other-admin")
+    @ResponseBody
+    @RequirePermission(roles = Constants.SUPER_ADMIN)
+    @LogOperation("超级管理员修改其他超级管理员信息")
+    public Result<?> updateOtherSuperAdmin(@RequestBody SuperAdmin updateSuperAdmin) {
+        // 校验超级管理员状态
+        verificationService.checkSuperAdminStatus();
+
+        if (updateSuperAdmin.getId() == null || updateSuperAdmin.getId() <= 0) {
+            logger.error("超级管理员ID不合法，id：{}", updateSuperAdmin.getId());
+            throw new BusinessException(ResultCode.PARAMETER_ERROR);
         }
 
-        if (StringUtils.isNotBlank(superAdmin.getEmail())) {
-            if (!superAdmin.getEmail().matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
-                logger.error("邮箱格式不正确，email{}", superAdmin.getEmail());
-                throw new BusinessException(ResultCode.PARAMETER_ERROR);
-            }
+        validateUpdateInfo(updateSuperAdmin);
+
+        // 更新超级管理员信息
+        superAdminService.update(updateSuperAdmin);
+
+        return Result.success();
+    }
+
+    @DeleteMapping("/delete/{id}")
+    @ResponseBody
+    @RequirePermission(roles = Constants.SUPER_ADMIN)
+    @LogOperation("超级管理员删除超级管理员信息")
+    public Result<?> delete(@PathVariable Integer id) {
+        // 校验超级管理员状态
+        verificationService.checkSuperAdminStatus();
+
+        if (id == null || id <= 0) {
+            logger.error("删除的超级管理员id不合法，id：{}", id);
+            throw new BusinessException(ResultCode.PARAMETER_ERROR);
         }
+
+        superAdminService.deleteById(id);
+
+        return Result.success();
+    }
+
+    @GetMapping("/update-status/{id}/{enabled}")
+    @ResponseBody
+    @RequirePermission(roles = Constants.SUPER_ADMIN)
+    @LogOperation("超级管理员修改超级管理员状态")
+    public Result<?> updateStatus(@PathVariable Integer id, @PathVariable Integer enabled) {
+        // 校验超级管理员状态
+        verificationService.checkSuperAdminStatus();
+
+        if (id == null || id <= 0) {
+            logger.error("修改的超级管理员id不合法，id：{}", id);
+            throw new BusinessException(ResultCode.PARAMETER_ERROR);
+        }
+        if (enabled == null ||
+                (!enabled.equals(Constants.ENABLE_INT) && !enabled.equals(Constants.DISABLE_INT))) {
+            logger.error("修改的超级管理员enabled不合法，enabled：{}", enabled);
+            throw new BusinessException(ResultCode.PARAMETER_ERROR);
+        }
+
+        SuperAdmin superAdmin = SuperAdmin.builder().id(id).enabled(enabled).build();
+        superAdminService.update(superAdmin);
+
+        return Result.success();
     }
 
     @GetMapping("/page-list")
@@ -166,6 +232,9 @@ public class SuperAdminController {
     @LogOperation("超级管理员批量导入用户信息")
     public Result<?> importUserInfoBatch(@RequestParam("file") MultipartFile file,
             @RequestParam("insertUserRole") String insertUserRole) {
+        // 校验超级管理员状态
+        verificationService.checkSuperAdminStatus();
+
         // 校验插入的角色是否合规
         if (StringUtils.isBlank(insertUserRole)) {
             logger.error("批量导入的用户角色不合规， insertRole: {}", insertUserRole);
@@ -262,6 +331,23 @@ public class SuperAdminController {
                 } catch (IOException e) {
                     logger.warn("关闭SXSSFWorkbook时发生异常", e);
                 }
+            }
+        }
+    }
+
+    // 校验修改信息是否符合要求
+    private void validateUpdateInfo(SuperAdmin superAdmin) {
+        if (StringUtils.isNotBlank(superAdmin.getName())) {
+            if (superAdmin.getName().length() > 20) {
+                logger.error("用户名超过规定长度，name:{}", superAdmin.getName());
+                throw new BusinessException(ResultCode.PARAMETER_ERROR);
+            }
+        }
+
+        if (StringUtils.isNotBlank(superAdmin.getEmail())) {
+            if (!superAdmin.getEmail().matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
+                logger.error("邮箱格式不正确，email{}", superAdmin.getEmail());
+                throw new BusinessException(ResultCode.PARAMETER_ERROR);
             }
         }
     }

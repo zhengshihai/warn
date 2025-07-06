@@ -5,11 +5,11 @@ import com.tianhai.warn.annotation.RequirePermission;
 import com.tianhai.warn.constants.Constants;
 import com.tianhai.warn.enums.ResultCode;
 import com.tianhai.warn.exception.BusinessException;
-import com.tianhai.warn.model.SuperAdmin;
 import com.tianhai.warn.model.SysUser;
 import com.tianhai.warn.query.SysUserQuery;
 import com.tianhai.warn.service.SuperAdminService;
 import com.tianhai.warn.service.SysUserService;
+import com.tianhai.warn.service.VerificationService;
 import com.tianhai.warn.utils.PageResult;
 import com.tianhai.warn.utils.Result;
 
@@ -27,7 +27,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 /**
  * 班级管理员管理控制器
@@ -44,13 +43,17 @@ public class SysUserController {
     @Autowired
     private SuperAdminService superAdminService;
 
+    @Autowired
+    private VerificationService verificationService;
+
     @GetMapping
-    public String sysuser(HttpSession session, Model model) {
-        Object sysuser = session.getAttribute("user");
-        if (sysuser instanceof SysUser user) {
+    public String sysUser(HttpSession session, Model model) {
+        Object sysUser = session.getAttribute(Constants.SESSION_ATTRIBUTE_USER);
+        if (sysUser instanceof SysUser user) {
             model.addAttribute("name", user.getName());
             model.addAttribute("email", user.getEmail());
-            model.addAttribute("role", session.getAttribute("role"));
+            model.addAttribute(Constants.SESSION_ATTRIBUTE_ROLE,
+                    session.getAttribute(Constants.SESSION_ATTRIBUTE_ROLE));
         }
 
         return "staff-dashboard";
@@ -142,6 +145,7 @@ public class SysUserController {
             throw new BusinessException(ResultCode.UNAUTHORIZED);
         }
 
+        // 校验修改的信息是否合规
         validateUpdateInfo(sysUser);
 
         SysUser currentSysUser = RoleObjectCaster.cast(Constants.SYSTEM_USER, sessionUser);
@@ -162,7 +166,7 @@ public class SysUserController {
     @LogOperation("超级管理员修改班级管理员信息")
     public Result<?> updateSysUserBySuperAdmin(@RequestBody SysUser newSysUserInfo) {
         // 校验超级管理员状态
-        checkSuperAdminStatus();
+        verificationService.checkSuperAdminStatus();
 
         if (newSysUserInfo.getId() == null || newSysUserInfo.getId() <= 0) {
             // 密码脱敏
@@ -177,27 +181,6 @@ public class SysUserController {
         return Result.success();
     }
 
-    private void checkSuperAdminStatus() {
-        // 获取当前登录的超级管理员信息
-        HttpSession session = SessionUtils.getSession(false);
-        if (session == null) {
-            throw new BusinessException(ResultCode.UNAUTHORIZED);
-        }
-        Object superAdminObject = session.getAttribute(Constants.SESSION_ATTRIBUTE_USER);
-        if (!(superAdminObject instanceof SuperAdmin)) {
-            throw new BusinessException(ResultCode.UNAUTHORIZED);
-        }
-
-        SuperAdmin superAdmin = RoleObjectCaster.cast(Constants.SUPER_ADMIN, superAdminObject);
-
-        // 检查当前超级管理员是否被禁用
-        SuperAdmin superAdminDB = superAdminService.selectByIdWithoutPassword(superAdmin.getId());
-        if (Objects.equals(superAdminDB.getEnabled(), Constants.DISABLE_INT)) {
-            logger.error("该超级管理员已被禁用");
-            throw new BusinessException(ResultCode.SUPER_ADMIN_DISABLE);
-        }
-    }
-
     /**
      * 删除班级管理员
      */
@@ -207,7 +190,7 @@ public class SysUserController {
     @LogOperation("超级管理员删除班级管理员信息")
     public Result<?> deleteSysUser(@PathVariable Integer id) {
         // 校验超级管理员状态
-        checkSuperAdminStatus();
+        verificationService.checkSuperAdminStatus();
 
         if (id == null || id <= 0) {
             logger.error("提交的班级管理员id不合法，id：{}", id);
@@ -228,7 +211,7 @@ public class SysUserController {
     @LogOperation("超级管理员修改班级管理员状态")
     public Result<Void> updateStatus(@PathVariable Integer id, @PathVariable String status) {
         // 校验超级管理员状态
-        checkSuperAdminStatus();
+        verificationService.checkSuperAdminStatus();
 
         if (id == null || id <= 0) {
             logger.error("班级管理员 id: {} 不合规，无法启用或禁用", id);

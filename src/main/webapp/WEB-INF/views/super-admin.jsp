@@ -259,7 +259,6 @@
                     <th>创建时间</th>
                     <th>更新时间</th>
                     <th>最后登录时间</th>
-                    <th>版本号</th>
                     <th style="min-width:160px;">操作</th>
                 </tr>
                 </thead>
@@ -444,6 +443,52 @@
                                 <select class="form-control" id="sysUserStatus" name="status" required>
                                     <option value="ENABLE">启用</option>
                                     <option value="DISABLE">禁用</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary">保存修改</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 超级管理员编辑模态框 -->
+<div class="modal fade" id="editSuperAdminModal" tabindex="-1" aria-labelledby="editSuperAdminModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form id="editSuperAdminForm">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editSuperAdminModalLabel">编辑超级管理员信息</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="关闭"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="superAdminId" name="id">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="superAdminName" class="form-label">姓名</label>
+                                <input type="text" class="form-control" id="superAdminName" name="name" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="superAdminEmail" class="form-label">邮箱</label>
+                                <input type="email" class="form-control" id="superAdminEmail" name="email" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="superAdminPassword" class="form-label">密码</label>
+                                <input type="password" class="form-control" id="superAdminPassword" name="password" placeholder="留空则不修改">
+                            </div>
+                            <div class="mb-3">
+                                <label for="superAdminEnabled" class="form-label">状态</label>
+                                <select class="form-control" id="superAdminEnabled" name="enabled" required>
+                                    <option value="1">启用</option>
+                                    <option value="0">禁用</option>
                                 </select>
                             </div>
                         </div>
@@ -970,11 +1015,11 @@
                         updateSuperAdminTable(superAdmins);
                         updateSuperAdminPagination(pageNum, pageSize, total);
                     } else {
-                        $('#superAdminTableBody').html('<tr><td colspan="9">加载失败：' + (response.message || '未知错误') + '</td></tr>');
+                        $('#superAdminTableBody').html('<tr><td colspan="8">加载失败：' + (response.message || '未知错误') + '</td></tr>');
                     }
                 },
                 error: function(xhr) {
-                    $('#superAdminTableBody').html('<tr><td colspan="9">请求失败</td></tr>');
+                    $('#superAdminTableBody').html('<tr><td colspan="8">请求失败</td></tr>');
                 }
             });
         }
@@ -982,7 +1027,7 @@
             var tbody = $('#superAdminTableBody');
             tbody.empty();
             if (!superAdmins || superAdmins.length === 0) {
-                tbody.append('<tr><td colspan="9" class="text-center">暂无数据</td></tr>');
+                tbody.append('<tr><td colspan="8" class="text-center">暂无数据</td></tr>');
                 return;
             }
             superAdmins.forEach(function(admin) {
@@ -996,10 +1041,9 @@
                     '<td>' + (admin.createTime ? formatDate(admin.createTime) : '-') + '</td>' +
                     '<td>' + (admin.updateTime ? formatDate(admin.updateTime) : '-') + '</td>' +
                     '<td>' + (admin.lastLoginTime ? formatDate(admin.lastLoginTime) : '-') + '</td>' +
-                    '<td>' + (admin.version != null ? admin.version : '-') + '</td>' +
                     '<td>' +
                     '<button class="btn btn-sm btn-primary me-2 edit-superadmin-btn" data-id="' + (admin.id || '') + '">修改</button>' +
-                    '<button class="btn btn-sm btn-danger me-2 delete-superadmin-btn" data-id="' + (admin.id || '') + '">删除</button>' +
+                    '<button class="btn btn-sm btn-danger delete-superadmin-btn" data-id="' + (admin.id || '') + '">删除</button>' +
                     '<button class="btn btn-sm btn-warning toggle-superadmin-btn" data-id="' + (admin.id || '') + '">' + toggleBtnText + '</button>' +
                     '</td>' +
                     '</tr>');
@@ -1040,17 +1084,106 @@
         // 操作按钮事件
         $(document).on('click', '.edit-superadmin-btn', function() {
             var id = $(this).data('id');
-            alert('点击了修改，超级管理员ID: ' + id);
+            // 获取超级管理员信息并打开编辑模态框
+            $.ajax({
+                url: '${pageContext.request.contextPath}/super-admin/' + id,
+                type: 'GET',
+                success: function(response) {
+                    if (response.success) {
+                        var superAdmin = response.data;
+                        // 填充表单数据
+                        $('#superAdminId').val(superAdmin.id);
+                        $('#superAdminName').val(superAdmin.name);
+                        $('#superAdminEmail').val(superAdmin.email);
+                        $('#superAdminEnabled').val(superAdmin.enabled);
+                        $('#superAdminPassword').val(''); // 清空密码字段
+                        
+                        // 打开模态框
+                        $('#editSuperAdminModal').modal('show');
+                    } else {
+                        alert('获取超级管理员信息失败：' + (response.message || '未知错误'));
+                    }
+                },
+                error: function(xhr) {
+                    alert('请求失败：' + (xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : '服务器错误'));
+                }
+            });
         });
         $(document).on('click', '.delete-superadmin-btn', function() {
             var id = $(this).data('id');
             if (confirm('确定要删除该超级管理员吗？')) {
-                alert('已确认删除，超级管理员ID: ' + id);
+                $.ajax({
+                    url: '${pageContext.request.contextPath}/super-admin/delete/' + id,
+                    type: 'DELETE',
+                    success: function(response) {
+                        if (response.success) {
+                            alert('删除成功！');
+                            loadSuperAdminList(1); // 重新加载超级管理员列表
+                        } else {
+                            alert('删除失败：' + (response.message || '未知错误'));
+                        }
+                    },
+                    error: function(xhr) {
+                        alert('请求失败：' + (xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : '服务器错误'));
+                    }
+                });
             }
         });
         $(document).on('click', '.toggle-superadmin-btn', function() {
             var id = $(this).data('id');
-            alert('点击了启用/禁用，超级管理员ID: ' + id);
+            var $btn = $(this);
+            var superAdminCurrentStatus = $btn.text().trim();
+            var superAdminNewEnabled = superAdminCurrentStatus === '启用' ? 1 : 0; // 启用按钮发送1，禁用按钮发送0
+            var superAdminConfirmText = superAdminCurrentStatus === '启用' ? '确定要启用该超级管理员吗？' : '确定要禁用该超级管理员吗？';
+            
+            if (confirm(superAdminConfirmText)) {
+                $.ajax({
+                    url: '${pageContext.request.contextPath}/super-admin/update-status/' + id + '/' + superAdminNewEnabled,
+                    type: 'GET',
+                    success: function(response) {
+                        if (response.success) {
+                            alert('操作成功！');
+                            loadSuperAdminList(1); // 重新加载超级管理员列表
+                        } else {
+                            alert('操作失败：' + (response.message || '未知错误'));
+                        }
+                    },
+                    error: function(xhr) {
+                        alert('请求失败：' + (xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : '服务器错误'));
+                    }
+                });
+            }
+        });
+
+        // 编辑超级管理员表单提交
+        $('#editSuperAdminForm').on('submit', function(e) {
+            e.preventDefault();
+            var formData = {
+                id: $('#superAdminId').val(),
+                name: $('#superAdminName').val(),
+                email: $('#superAdminEmail').val(),
+                password: $('#superAdminPassword').val(),
+                enabled: $('#superAdminEnabled').val()
+            };
+            
+            $.ajax({
+                url: '${pageContext.request.contextPath}/super-admin/update/other-admin',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(formData),
+                success: function(response) {
+                    if (response.success) {
+                        $('#editSuperAdminModal').modal('hide');
+                        alert('修改成功！');
+                        loadSuperAdminList(1); // 重新加载超级管理员列表
+                    } else {
+                        alert('修改失败：' + (response.message || '未知错误'));
+                    }
+                },
+                error: function(xhr) {
+                    alert('请求失败：' + (xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : '服务器错误'));
+                }
+            });
         });
 
         // 批量导入用户信息功能

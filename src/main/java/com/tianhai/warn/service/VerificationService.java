@@ -77,4 +77,9 @@ public interface VerificationService {
      * @return                           校验结果
      */
     List<SysUserInfoValidateResult> validateSysUserExcelInfo(List<SysUserExcelDTO> allExcelSysUserInfoList);
+
+    /**
+     * 校验当前超级管理员的状态
+     */
+    void checkSuperAdminStatus();
 }
