@@ -1,23 +1,22 @@
-package com.tianhai.warn.service.impl;
+package com.tianhai.warn.utils;
 
-import com.tianhai.warn.enums.ResultCode;
-import com.tianhai.warn.exception.BusinessException;
 import com.tianhai.warn.model.CalculationResult;
+import com.tianhai.warn.model.LateReturn;
+import jakarta.servlet.ServletOutputStream;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-
 
 import com.tianhai.warn.vo.CollegeLateReturnStatVO;
 import com.tianhai.warn.vo.DormitoryLateReturnStatVO;
 import com.tianhai.warn.vo.ReportCardStatVO;
-import com.tianhai.warn.vo.TimeRangeLateReturnStatVO;
 import com.tianhai.warn.vo.WeekLateReturnStatVO;
-import com.tianhai.warn.vo.WeekWarnStatVO;
 
-import java.io.OutputStream;
+import java.io.IOException;
+import java.util.Date;
 import java.util.List;
 import java.util.Map; // 导入 Map
 // todo 以宿舍门牌号作为维度的数据导出
+
 public class ReportExcelExporter {
     // 私有构造函数，防止实例化
     private ReportExcelExporter() {}
@@ -66,6 +65,7 @@ public class ReportExcelExporter {
 
     /**
      * 创建并填充 Sheet 1: 报表概览
+     * 
      * @param workbook          Workbook 对象
      * @param reportCardStatVO          统计卡片数据
      * @param calculationResult 高危预警计算结果
@@ -119,7 +119,6 @@ public class ReportExcelExporter {
         dormitoryRow.createCell(0).setCellValue("宿舍楼:");
         dormitoryRow.createCell(1).setCellValue(dormitoryBuilding != null ? dormitoryBuilding : "全部");
 
-
         // A8: 统计数据:
         Row statsTitleRow = sheet.createRow(7);
         Cell statsTitleCell = statsTitleRow.createCell(0);
@@ -144,7 +143,6 @@ public class ReportExcelExporter {
                 : null;
         totalLateRow.createCell(1).setCellValue(totalLateReturns != null ? totalLateReturns.toString() : "-"); // 安全获取并转为字符串
 
-
         // A11: 晚归学生数 | B11: [晚归学生数数值]
         Row lateStudentRow = sheet.createRow(10);
         lateStudentRow.createCell(0).setCellValue("晚归学生数");
@@ -154,7 +152,6 @@ public class ReportExcelExporter {
                 : null;
         lateStudentRow.createCell(1).setCellValue(lateStudentCount != null ? lateStudentCount.toString() : "-"); // 安全获取并转为字符串
 
-
         // A12: 高危预警数 | B12: [高危预警数数值]
         Row highRiskRow = sheet.createRow(11);
         highRiskRow.createCell(0).setCellValue("高危预警数");
@@ -162,7 +159,6 @@ public class ReportExcelExporter {
                 ? calculationResult.getCount()
                 : null; // 假设 CalculationResult 返回 Map 且 key 是 "count"
         highRiskRow.createCell(1).setCellValue(highRiskCount != null ? highRiskCount.toString() : "-"); // 安全获取并转为字符串
-
 
         // A13: 处理完成率 | B13: [处理完成率百分比]
         Row completionRateRow = sheet.createRow(12);
@@ -173,14 +169,12 @@ public class ReportExcelExporter {
                 : null;
         completionRateRow.createCell(1).setCellValue(completionRate != null ? completionRate.toString() : "-"); // 安全获取并直接使用字符串
 
-
         // --- 自动调整列宽（可选） ---
         sheet.autoSizeColumn(0); // 自动调整第一列宽度
         sheet.autoSizeColumn(1); // 自动调整第二列宽度
         // 如果筛选条件列太长，可以适当调整合并或手动设置宽度
         // sheet.setColumnWidth(1, 5000); // 例如设置B列宽度
     }
-
 
     /**
      * 创建并填充 Sheet 2: 晚归趋势
@@ -275,7 +269,6 @@ public class ReportExcelExporter {
         sheet.autoSizeColumn(0);
         sheet.autoSizeColumn(1);
     }
-
 
     /**
      * 创建并填充 Sheet 3: 学院分布
@@ -447,4 +440,54 @@ public class ReportExcelExporter {
         sheet.autoSizeColumn(1);
     }
 
+    // 处理晚归数据的导出
+    public static void exportLateReturn(List<LateReturn> lateReturnList, ServletOutputStream outputStream)
+            throws IOException {
+        // 1. 创建工作簿和表
+        Workbook workbook = new XSSFWorkbook();
+        Sheet sheet = workbook.createSheet("晚归记录");
+
+        // 2. 标题行（中文）
+        String[] titles = { "学号", "姓名", "学院", "宿舍号", "晚归时间", "晚归原因", "处理状态", "处理结果", "处理备注", "创建时间", "更新时间", "晚归记录ID" };
+        Row titleRow = sheet.createRow(0);
+        for (int i = 0; i < titles.length; i++) {
+            titleRow.createCell(i).setCellValue(titles[i]);
+        }
+
+        // 3. 数据行
+        int rowIdx = 2;
+        for (LateReturn lr : lateReturnList) {
+            Row row = sheet.createRow(rowIdx++);
+            int col = 0;
+            row.createCell(col++).setCellValue(nvl(lr.getStudentNo()));
+            row.createCell(col++).setCellValue(nvl(lr.getStudentName()));
+            row.createCell(col++).setCellValue(nvl(lr.getCollege()));
+            row.createCell(col++).setCellValue(nvl(lr.getDormitory()));
+            row.createCell(col++).setCellValue(formatDate(lr.getLateTime()));
+            row.createCell(col++).setCellValue(nvl(lr.getReason()));
+            row.createCell(col++).setCellValue(nvl(lr.getProcessStatus()));
+            row.createCell(col++).setCellValue(nvl(lr.getProcessResult()));
+            row.createCell(col++).setCellValue(nvl(lr.getProcessRemark()));
+            row.createCell(col++).setCellValue(nvl(lr.getLateReturnId()));
+        }
+
+        // 自动列宽
+        for (int i = 0; i < titles.length; i++) {
+            sheet.autoSizeColumn(i);
+        }
+
+        // 5. 输出
+        workbook.write(outputStream);
+        workbook.close();
+    }
+
+    private static String nvl(String s) {
+        return s == null ? "" : s;
+    }
+
+    private static String formatDate(Date date) {
+        if (date == null)
+            return "";
+        return new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(date);
+    }
 }

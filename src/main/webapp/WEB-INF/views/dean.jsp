@@ -187,10 +187,10 @@
     </div>
 
     <!-- 引入 jQuery -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<%--    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>--%>
     <!-- 引入 Bootstrap JS 和 Popper.js -->
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.10.2/dist/umd/popper.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.min.js"></script>
+<%--    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.min.js"></script>--%>
     <!-- 引入验证脚本 -->
     <script src="${pageContext.request.contextPath}/static/js/sysuser-validation.js"></script>
 

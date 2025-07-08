@@ -36,9 +36,6 @@ public class ApplicationController {
     @Autowired
     private ApplicationService applicationService;
 
-    @Value("E:/Warning/Warn/uploads")
-    private String uploadPath;
-
     /**
      * 根据申请ID查询晚归申请
      */
@@ -87,9 +84,8 @@ public class ApplicationController {
         }
 
         PageResult<Application> applications = applicationService.selectByPageQuery(query);
-        Result<PageResult<Application>> result = Result.success(applications);
 
-        return result;
+        return Result.success(applications);
     }
 
     @PostMapping("/list")
@@ -102,23 +98,6 @@ public class ApplicationController {
         return Result.success(applicationList);
     }
 
-    // /**
-    // * 查询所有晚归申请
-    // */
-    // @GetMapping("/list")
-    // @ResponseBody
-    // public List<Application> getAll() {
-    // return applicationService.selectAll();
-    // }
-
-    /**
-     * 根据条件查询晚归申请
-     */
-    // @PostMapping("/search")
-    // @ResponseBody
-    // public List<Application> search(@RequestBody Application application) {
-    // return applicationService.selectByCondition(application);
-    // }
 
     /**
      * 添加晚归申请

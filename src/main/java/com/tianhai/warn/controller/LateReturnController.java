@@ -6,6 +6,7 @@ import com.tianhai.warn.constants.Constants;
 import com.tianhai.warn.enums.ResultCode;
 import com.tianhai.warn.enums.UserRole;
 import com.tianhai.warn.exception.BusinessException;
+import com.tianhai.warn.exception.SystemException;
 import com.tianhai.warn.model.DormitoryManager;
 import com.tianhai.warn.model.LateReturn;
 import com.tianhai.warn.model.Student;
@@ -16,10 +17,11 @@ import com.tianhai.warn.service.DormitoryManagerService;
 import com.tianhai.warn.service.StudentService;
 import com.tianhai.warn.service.SysUserClassService;
 import com.tianhai.warn.utils.PageResult;
+import com.tianhai.warn.utils.ReportExcelExporter;
 import com.tianhai.warn.utils.Result;
 
 import com.tianhai.warn.utils.RoleObjectCaster;
-import com.tianhai.warn.utils.SessionUtils;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -29,6 +31,10 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 /**
@@ -162,11 +168,66 @@ public class LateReturnController {
     @PostMapping("/list")
     @ResponseBody
     @RequirePermission
+    @LogOperation("查询晚归列表数据")
     public Result<List<LateReturn>> searchConditionalList(@RequestBody LateReturnQuery lateReturnQuery) {
+        validateLateReturnQuery(lateReturnQuery);
+
         List<LateReturn> lateReturnList = lateReturnService.selectByCondition(lateReturnQuery);
 
         return Result.success(lateReturnList);
     }
+
+    @PostMapping("/export-excel")
+    @RequirePermission
+    @LogOperation("以Excel文件导出晚归列表数据")
+    public void exportLateReturnToExcel(LateReturnQuery lateReturnQuery,
+                                        HttpServletResponse response) {
+        try {
+            validateLateReturnQuery(lateReturnQuery);
+
+            List<LateReturn> lateReturnList = lateReturnService.selectByCondition(lateReturnQuery);
+            if (lateReturnList.isEmpty()) {
+                logger.info("该条件下没有晚归数据, lateReturnQuery: {}", lateReturnQuery);
+                return;
+            }
+
+            // 处理Excel文件名
+            String excelDateStr = new SimpleDateFormat("yyyy-MM-dd").format(new Date());
+            String fileName = URLEncoder.encode("lateReturn_" + excelDateStr + ".xlsx",
+                    StandardCharsets.UTF_8);
+            response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+            response.setHeader("Content-Disposition", "attachment; filename*=UTF-8''" + fileName);
+
+            ReportExcelExporter.exportLateReturn(lateReturnList, response.getOutputStream());
+        } catch (IOException e) {
+            logger.error("以Excel文件形式导出晚归列表数据时出现IO异常", e);
+            response.setStatus(500);
+            throw new SystemException(ResultCode.ERROR);
+        } catch (Exception e) {
+            logger.error("导出晚归列表数据出现异常", e);
+            response.setStatus(500);
+            throw new SystemException(ResultCode.ERROR);
+        }
+
+    }
+
+
+    // 校验晚归查询条件
+    private void validateLateReturnQuery(LateReturnQuery lateReturnQuery) {
+        if (lateReturnQuery == null) {
+            logger.error("晚归查询参数为空, lateReturnQuery: {}", lateReturnQuery);
+            throw new BusinessException(ResultCode.PARAMETER_ERROR);
+        }
+        if (lateReturnQuery.getStartLateTime() != null && lateReturnQuery.getEndLateTime() == null) {
+            lateReturnQuery.setEndLateTime(new Date());
+            logger.info("晚归时间范围结束时间点为空，设置结束时间为当前时间");
+        }
+        if (lateReturnQuery.getStartLateTime() == null) {
+            logger.error("晚归查询起始时间为空");
+            throw new BusinessException(ResultCode.PARAMETER_ERROR);
+        }
+    }
+
 
     /**
      * 根据处理状态查询晚归记录
@@ -229,15 +290,6 @@ public class LateReturnController {
         }
     }
 
-    /**
-     * 跳转到编辑晚归记录页面
-     */
-    // @GetMapping("/edit/{id}")
-    // public String toEdit(@PathVariable String lateReturnId, Model model) {
-    // LateReturn lateReturn = lateReturnService.selectBy
-    // model.addAttribute("lateReturn", lateReturn);
-    // return "late-return/edit";
-    // }
 
 
     /**

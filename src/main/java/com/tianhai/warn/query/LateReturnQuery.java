@@ -3,6 +3,7 @@ package com.tianhai.warn.query;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
+import org.springframework.format.annotation.DateTimeFormat;
 
 import java.util.Date;
 import java.util.List;
@@ -22,10 +23,14 @@ public class LateReturnQuery extends BaseQuery {
     private String college;
     private String dormitory;
 
+    // 本项目同时存在Ajax请求和表单提交
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date startLateTime; // 晚归时间范围-起
+
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private Date endLateTime;
+    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private Date endLateTime; // 晚归时间范围-终
 
     private String studentName; // 学生姓名
 

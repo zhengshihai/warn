@@ -54,22 +54,18 @@
             <div class="flex justify-between items-center">
                 <h1 class="text-xl font-semibold text-gray-800">学生晚归预警系统</h1>
                 <div class="flex items-center space-x-4">
-                    <a href="dean" class="text-gray-600 hover:text-gray-900">返回首页</a>
-                    <span class="text-gray-600">欢迎</span>
+                    <a href="${pageContext.request.contextPath}/dean" class="text-gray-600 hover:text-gray-900">返回首页</a>
                     <button class="text-sm text-red-600 hover:text-red-800" onclick="handleLogout()">退出登录</button>
                 </div>
             </div>
         </nav>
 
-        <!-- 页面标题和操作按钮 -->
+        <!-- 页面标题按钮 -->
         <div class="flex justify-between items-center mb-6">
             <h2 class="text-2xl font-bold text-gray-800">晚归记录列表</h2>
             <div class="flex space-x-4">
                 <button class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
                     导出数据
-                </button>
-                <button class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
-                    批量处理
                 </button>
             </div>
         </div>
@@ -276,6 +272,34 @@
                     currentPage = page;
                     loadData();
                 }
+            });
+
+            // 导出按钮事件
+            $('.bg-indigo-600:contains("导出数据")').on('click', function() {
+                // 获取参数
+                var startLateTime = $('#startDate').val() ? formatDateForBackend($('#startDate').val()) : '';
+                var endLateTime = $('#endDate').val() ? formatDateForBackend($('#endDate').val()) : '';
+                var college = $('#college').val();
+                var processStatus = $('#processStatus').val();
+                var studentName = $('#studentNameInput').val();
+                var studentNo = $('#studentNoInput').val();
+
+                // 判断是否全部为空
+                if (!startLateTime && !endLateTime && !college && !processStatus && !studentName && !studentNo) {
+                    alert('请至少填写一个筛选条件后再导出数据！');
+                    return;
+                }
+
+                // 设置表单参数
+                $('#exportForm [name="startLateTime"]').val(startLateTime);
+                $('#exportForm [name="endLateTime"]').val(endLateTime);
+                $('#exportForm [name="college"]').val(college);
+                $('#exportForm [name="processStatus"]').val(processStatus);
+                $('#exportForm [name="studentName"]').val(studentName || '');
+                $('#exportForm [name="studentNo"]').val(studentNo || '');
+
+                // 提交表单
+                $('#exportForm').submit();
             });
         });
         
@@ -759,5 +783,14 @@
         </script>
         <c:remove var="errorMsg" scope="session" />
     </c:if>
+
+    <form id="exportForm" method="post" action="${pageContext.request.contextPath}/late-return/export-excel" target="_blank" style="display:none;">
+        <input type="hidden" name="startLateTime">
+        <input type="hidden" name="endLateTime">
+        <input type="hidden" name="college">
+        <input type="hidden" name="processStatus">
+        <input type="hidden" name="studentName">
+        <input type="hidden" name="studentNo">
+    </form>
 </body>
 </html> 
