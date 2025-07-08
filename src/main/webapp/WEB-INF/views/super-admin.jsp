@@ -5,17 +5,33 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>学生晚归预警系统 - 超级管理员</title>
+    <title>学生晚归预警系统 - 超级管理员</title> <!--todo 宿管角色列表无法显示 简直莫名其妙-->
 
     <!-- 引入 CSS 文件 -->
     <link href="${pageContext.request.contextPath}/static/css/tailwind.min.css" rel="stylesheet">
     <link href="${pageContext.request.contextPath}/static/css/fontawesome.min.css" rel="stylesheet">
     <link href="${pageContext.request.contextPath}/static/css/bootstrap.min.css" rel="stylesheet">
 
+    <!-- 引入 UniverJS 相关本地 CSS 文件 -->
+    <link href="${pageContext.request.contextPath}/static/univer/design.css" />
+    <link href="${pageContext.request.contextPath}/static/univer/ui.css" />
+<%--    <link href="${pageContext.request.contextPath}/static/univer/sheets.css" />--%>
+    <link href="${pageContext.request.contextPath}/static/univer/sheets-ui.css" />
+
     <!-- 引入 JS 文件 -->
     <script src="${pageContext.request.contextPath}/static/js/jquery.min.js"></script>
     <script src="${pageContext.request.contextPath}/static/js/popper.min.js"></script>
     <script src="${pageContext.request.contextPath}/static/js/bootstrap.bundle.min.js"></script>
+
+    <!-- 引入 UniverJS 相关本地 JS 文件 -->
+    <script src="${pageContext.request.contextPath}/static/univer/core.js"></script>
+    <script src="${pageContext.request.contextPath}/static/univer/design.js"></script>
+    <script src="${pageContext.request.contextPath}/static/univer/ui.js"></script>
+    <script src="${pageContext.request.contextPath}/static/univer/sheets.js"></script>
+    <script src="${pageContext.request.contextPath}/static/univer/sheets-ui.js"></script>
+
+    
+
     <style>
         .dashboard-container {
             min-height: 100vh;
@@ -194,7 +210,7 @@
                             </ul>
                         </nav>
                     </div>
-                </div>
+    </div>
 
     <!-- 班级管理员列表内容区域 -->
     <div class="card p-6 mb-6">
@@ -237,7 +253,10 @@
                             </ul>
                         </nav>
                     </div>
-                </div>
+    </div>
+
+    
+
 
     <!-- 超级管理员列表内容区域 -->
     <div class="card p-6 mb-6">
@@ -277,6 +296,52 @@
                 </ul>
             </nav>
             </div>
+        </div>
+    </div>
+
+    <div>88888888888888888888888888888</div>
+
+    <!-- 宿管列表内容区域 -->
+    <div class="card p-6 mb-6">
+        <div class="mb-4 flex justify-between items-center">
+            <h3 class="text-lg font-medium text-gray-900">宿管列表</h3>
+            <div>
+                <input type="text" id="dormManSearch" class="form-control d-inline-block w-auto" placeholder="搜索姓名...">
+                <button class="btn btn-primary ml-2" id="searchDormManBtn">搜索</button>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover table-striped table-bordered align-middle">
+                <thead class="table-light">
+                <tr>
+                    <th>ID</th>
+                    <th>工号</th>
+                    <th>姓名</th>
+                    <th>负责宿舍楼</th>
+                    <th>电话</th>
+                    <th>邮箱</th>
+                    <th>状态</th>
+                    <th>创建时间</th>
+                    <th>更新时间</th>
+                    <th>最后登录时间</th>
+                    <th style="min-width:160px;">操作</th>
+                </tr>
+                </thead>
+                <div>555555555555555555</div>
+                <tbody id="dormManTableBody">
+                <!-- 宿管数据将通过JS动态加载 -->
+                </tbody>
+            </table>
+        </div>
+        <div class="d-flex justify-content-between align-items-center mt-4">
+            <div class="text-sm text-gray-500">
+                显示 <span id="dormManStartRecord">1</span> 到 <span id="dormManEndRecord">10</span> 条，共 <span id="dormManTotalRecords">0</span> 条记录
+            </div>
+            <nav>
+                <ul class="pagination" id="dormManPagination">
+                    <!-- 分页按钮JS生成 -->
+                </ul>
+            </nav>
         </div>
     </div>
 
@@ -503,6 +568,66 @@
     </div>
 </div>
 
+
+
+<!-- 宿管编辑模态框 -->
+<div class="modal fade" id="editDormManModal" tabindex="-1" aria-labelledby="editDormManModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form id="editDormManForm">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editDormManModalLabel">编辑宿管信息</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="关闭"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="dormManId" name="id">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="dormManManagerId" class="form-label">工号</label>
+                                <input type="text" class="form-control" id="dormManManagerId" name="managerId" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="dormManName" class="form-label">姓名</label>
+                                <input type="text" class="form-control" id="dormManName" name="name" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="dormManBuilding" class="form-label">负责宿舍楼</label>
+                                <input type="text" class="form-control" id="dormManBuilding" name="building" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="dormManPhone" class="form-label">电话</label>
+                                <input type="text" class="form-control" id="dormManPhone" name="phone" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="dormManEmail" class="form-label">邮箱</label>
+                                <input type="email" class="form-control" id="dormManEmail" name="email" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="dormManPassword" class="form-label">密码</label>
+                                <input type="password" class="form-control" id="dormManPassword" name="password" placeholder="留空则不修改">
+                            </div>
+                            <div class="mb-3">
+                                <label for="dormManStatus" class="form-label">状态</label>
+                                <select class="form-control" id="dormManStatus" name="status" required>
+                                    <option value="ON_DUTY">在职</option>
+                                    <option value="OFF_DUTY">离职</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary">保存修改</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
     <script>
     function formatDate(dateStr) {
         if (!dateStr) return '-';
@@ -573,9 +698,10 @@
             });
         });
 
+        
         // 学生列表相关
         var studentPageNum = 1;
-        var studentPageSize = 10;
+        var studentPageSize = 15;
         function loadStudentList(pageNum) {
             pageNum = pageNum || 1;
             var nameLike = $('#studentSearch').val().trim();
@@ -594,7 +720,7 @@
                         var students = pageData.data || [];
                         var total = pageData.total || 0;
                         var pageNum = pageData.pageNum || 1;
-                        var pageSize = pageData.pageSize || 10;
+                        var pageSize = pageData.pageSize || 15;
                         updateStudentTable(students);
                         updateStudentPagination(pageNum, pageSize, total);
                     } else {
@@ -646,8 +772,6 @@
             var totalPages = Math.ceil(total / pageSize);
             var pagin = $('#studentPagination');
 
-            console.log('Updating pagination:', {pageNum, pageSize, total, totalPages}); // 调试
-
             pagin.empty();
             if (totalPages <= 1) return;
 
@@ -672,7 +796,7 @@
 
         }
 
-        // 学生分页事件委托
+        // 学生分页事件
         $(document).on('click', '#studentPagination a.page-link:not(.disabled)', function(e) {
             e.preventDefault();
             var page = parseInt($(this).data('page'));
@@ -693,6 +817,15 @@
             studentPageNum = 1;
             loadStudentList(studentPageNum);
         });
+        
+        // 学生搜索框回车事件
+        $('#studentSearch').on('keypress', function(e) {
+            if (e.which === 13) { // Enter key
+                studentPageNum = 1;
+                loadStudentList(studentPageNum);
+            }
+        });
+        
         // 页面加载时自动加载第一页
         loadStudentList(1);
 
@@ -878,6 +1011,15 @@
             sysUserPageNum = 1;
             loadSysUserList(sysUserPageNum);
         });
+        
+        // 班级管理员搜索框回车事件
+        $('#sysUserSearch').on('keypress', function(e) {
+            if (e.which === 13) { // Enter key
+                sysUserPageNum = 1;
+                loadSysUserList(sysUserPageNum);
+            }
+        });
+        
         // 页面加载时自动加载第一页
         loadSysUserList(1);
         // 操作按钮事件
@@ -1043,8 +1185,8 @@
                     '<td>' + (admin.lastLoginTime ? formatDate(admin.lastLoginTime) : '-') + '</td>' +
                     '<td>' +
                     '<button class="btn btn-sm btn-primary me-2 edit-superadmin-btn" data-id="' + (admin.id || '') + '">修改</button>' +
-                    '<button class="btn btn-sm btn-danger delete-superadmin-btn" data-id="' + (admin.id || '') + '">删除</button>' +
-                    '<button class="btn btn-sm btn-warning toggle-superadmin-btn" data-id="' + (admin.id || '') + '">' + toggleBtnText + '</button>' +
+                    '<button class="btn btn-sm btn-danger me-2 delete-superadmin-btn" data-id="' + (admin.id || '') + '">删除</button>' +
+                    '<button class="btn btn-sm btn-warning  me-2 toggle-superadmin-btn" data-id="' + (admin.id || '') + '">' + toggleBtnText + '</button>' +
                     '</td>' +
                     '</tr>');
             });
@@ -1079,6 +1221,15 @@
             superAdminPageNum = 1;
             loadSuperAdminList(superAdminPageNum);
         });
+        
+        // 超级管理员搜索框回车事件
+        $('#superAdminSearch').on('keypress', function(e) {
+            if (e.which === 13) { // Enter key
+                superAdminPageNum = 1;
+                loadSuperAdminList(superAdminPageNum);
+            }
+        });
+        
         // 页面加载时自动加载第一页
         loadSuperAdminList(1);
         // 操作按钮事件
@@ -1380,7 +1531,7 @@
                     loadStudentList(1);
                     break;
                 case 'dormitorymanager':
-                    // 如果有宿管列表加载函数，调用它
+                    loadDormManList(1); 
                     break;
                 case 'systemuser':
                     loadSysUserList(1);
@@ -1450,6 +1601,234 @@
             $('#excelFile').val('');
             $('#importBtn').prop('disabled', true);
         });
+
+        // 搜索按钮
+        $('#searchSuperAdminBtn').on('click', function() {
+            superAdminPageNum = 1;
+            loadSuperAdminList(superAdminPageNum);
+        });
+
+        // 宿管列表相关
+        var dormManPageNum = 1;
+        var dormManPageSize = 10;
+        function loadDormManList(pageNum) {
+            pageNum = pageNum || 1;
+            var nameLike = $('#dormManSearch').val().trim();
+            $.ajax({
+                url: '${pageContext.request.contextPath}/dorman/page-list',
+                type: 'GET',
+                data: {
+                    pageNum: pageNum,
+                    pageSize: dormManPageSize,
+                    nameLike: nameLike
+                },
+                success: function(response) {
+                    if (response.success) {
+                        var pageData = response.data && response.data.data ? response.data : response.data;
+                        var dormMans = pageData.data || [];
+                        var total = pageData.total || 0;
+                        var pageNum = pageData.pageNum || 1;
+                        var pageSize = pageData.pageSize || 10;
+                        updateDormManTable(dormMans);
+                        updateDormManPagination(pageNum, pageSize, total);
+                    } else {
+                        $('#dormManTableBody').html('<tr><td colspan="11">加载失败：' + (response.message || '未知错误') + '</td></tr>');
+                    }
+                },
+                error: function(xhr) {
+                    $('#dormManTableBody').html('<tr><td colspan="11">请求失败</td></tr>');
+                }
+            });
+        }
+        
+        function updateDormManTable(dormMans) {
+            var tbody = $('#dormManTableBody');
+            tbody.empty();
+            if (!dormMans || dormMans.length === 0) {
+                tbody.append('<tr><td colspan="11" class="text-center">暂无数据</td></tr>');
+                return;
+            }
+            dormMans.forEach(function(dormMan) {
+                var statusBadge = dormMan.status === 'ON_DUTY' ? '<span class="badge bg-success">在职</span>' : '<span class="badge bg-secondary">离职</span>';
+                var toggleBtnText = dormMan.status === 'ON_DUTY' ? '设为离职' : '设为在职';
+                var newStatus = dormMan.status === 'ON_DUTY' ? 'OFF_DUTY' : 'ON_DUTY';
+                
+                tbody.append('<tr>' +
+                    '<td>' + (dormMan.id || '-') + '</td>' +
+                    '<td>' + (dormMan.managerId || '-') + '</td>' +
+                    '<td>' + (dormMan.name || '-') + '</td>' +
+                    '<td>' + (dormMan.building || '-') + '</td>' +
+                    '<td>' + (dormMan.phone || '-') + '</td>' +
+                    '<td>' + (dormMan.email || '-') + '</td>' +
+                    '<td>' + statusBadge + '</td>' +
+                    '<td>' + (dormMan.createTime ? formatDate(dormMan.createTime) : '-') + '</td>' +
+                    '<td>' + (dormMan.updateTime ? formatDate(dormMan.updateTime) : '-') + '</td>' +
+                    '<td>' + (dormMan.lastLoginTime ? formatDate(dormMan.lastLoginTime) : '-') + '</td>' +
+                    '<td>' +
+                    '<button class="btn btn-sm btn-primary me-2 edit-dormman-btn" data-id="' + (dormMan.id || '') + '">修改</button>' +
+                    '<button class="btn btn-sm btn-danger me-2 delete-dormman-btn" data-id="' + (dormMan.id || '') + '">删除</button>' +
+                    '<button class="btn btn-sm btn-warning toggle-dormman-btn" data-id="' + (dormMan.id || '') + '" data-status="' + newStatus + '">' + toggleBtnText + '</button>' +
+                    '</td>' +
+                    '</tr>');
+            });
+        }
+        
+        function updateDormManPagination(pageNum, pageSize, total) {
+            var start = (total === 0) ? 0 : ((pageNum - 1) * pageSize + 1);
+            var end = Math.min(pageNum * pageSize, total);
+            $('#dormManStartRecord').text(start);
+            $('#dormManEndRecord').text(end);
+            $('#dormManTotalRecords').text(total);
+            var totalPages = Math.ceil(total / pageSize);
+            var pagin = $('#dormManPagination');
+            pagin.empty();
+            if (totalPages <= 1) return;
+            pagin.append('<li class="page-item' + (pageNum === 1 ? ' disabled' : '') + '"><a class="page-link" href="#" data-page="' + (pageNum - 1) + '">上一页</a></li>');
+            for (var i = 1; i <= totalPages; i++) {
+                pagin.append('<li class="page-item' + (i === pageNum ? ' active' : '') + '"><a class="page-link" href="#" data-page="' + i + '">' + i + '</a></li>');
+            }
+            pagin.append('<li class="page-item' + (pageNum === totalPages ? ' disabled' : '') + '"><a class="page-link" href="#" data-page="' + (pageNum + 1) + '">下一页</a></li>');
+        }
+        
+        // 宿管分页点击
+        $(document).on('click', '#dormManPagination .page-link', function(e) {
+            e.preventDefault();
+            var page = parseInt($(this).data('page'));
+            if (!isNaN(page)) {
+                dormManPageNum = page;
+                loadDormManList(dormManPageNum);
+            }
+        });
+        
+        // 宿管搜索按钮
+        $('#searchDormManBtn').on('click', function() {
+            dormManPageNum = 1;
+            loadDormManList(dormManPageNum);
+        });
+        
+        // 宿管搜索框回车事件
+        $('#dormManSearch').on('keypress', function(e) {
+            if (e.which === 13) { // Enter key
+                dormManPageNum = 1;
+                loadDormManList(dormManPageNum);
+            }
+        });
+        
+        // 宿管操作按钮事件
+        $(document).on('click', '.edit-dormman-btn', function() {
+            var id = $(this).data('id');
+            // 获取宿管信息并打开编辑模态框
+            $.ajax({
+                url: '${pageContext.request.contextPath}/dorman/search',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({id: id}),
+                success: function(response) {
+                    if (response && response.length > 0) {
+                        var dormMan = response[0]; // 获取第一个匹配的宿管
+                        // 填充表单数据
+                        $('#dormManId').val(dormMan.id);
+                        $('#dormManManagerId').val(dormMan.managerId);
+                        $('#dormManName').val(dormMan.name);
+                        $('#dormManBuilding').val(dormMan.building);
+                        $('#dormManPhone').val(dormMan.phone);
+                        $('#dormManEmail').val(dormMan.email);
+                        $('#dormManStatus').val(dormMan.status);
+                        $('#dormManPassword').val(''); // 清空密码字段
+                        
+                        // 打开模态框
+                        $('#editDormManModal').modal('show');
+                    } else {
+                        alert('获取宿管信息失败：未找到对应的宿管信息');
+                    }
+                },
+                error: function(xhr) {
+                    alert('请求失败：' + (xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : '服务器错误'));
+                }
+            });
+        });
+        
+        $(document).on('click', '.delete-dormman-btn', function() {
+            var id = $(this).data('id');
+            if (confirm('确定要删除该宿管吗？')) {
+                $.ajax({
+                    url: '${pageContext.request.contextPath}/dorman/delete/' + id,
+                    type: 'DELETE',
+                    success: function(response) {
+                        if (response.success) {
+                            alert('删除成功！');
+                            loadDormManList(1); // 重新加载宿管列表
+                        } else {
+                            alert('删除失败：' + (response.message || '未知错误'));
+                        }
+                    },
+                    error: function(xhr) {
+                        alert('请求失败：' + (xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : '服务器错误'));
+                    }
+                });
+            }
+        });
+        
+        $(document).on('click', '.toggle-dormman-btn', function() {
+            var id = $(this).data('id');
+            var status = $(this).data('status');
+            var confirmText = status === 'ON_DUTY' ? '确定要将该宿管设为在职吗？' : '确定要将该宿管设为离职吗？';
+            
+            if (confirm(confirmText)) {
+                $.ajax({
+                    url: '${pageContext.request.contextPath}/dorman/update-status/' + id + '/' + status,
+                    type: 'GET',
+                    success: function(response) {
+                        if (response.success) {
+                            alert('操作成功！');
+                            loadDormManList(1); // 重新加载宿管列表
+                        } else {
+                            alert('操作失败：' + (response.message || '未知错误'));
+                        }
+                    },
+                    error: function(xhr) {
+                        alert('请求失败：' + (xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : '服务器错误'));
+                    }
+                });
+            }
+        });
+
+        // 编辑宿管表单提交
+        $('#editDormManForm').on('submit', function(e) {
+            e.preventDefault();
+            var formData = {
+                id: $('#dormManId').val(),
+                managerId: $('#dormManManagerId').val(),
+                name: $('#dormManName').val(),
+                building: $('#dormManBuilding').val(),
+                phone: $('#dormManPhone').val(),
+                email: $('#dormManEmail').val(),
+                status: $('#dormManStatus').val(),
+                password: $('#dormManPassword').val()
+            };
+            
+            $.ajax({
+                url: '${pageContext.request.contextPath}/dorman/super-admin/update/per-info',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(formData),
+                success: function(response) {
+                    if (response.success) {
+                        $('#editDormManModal').modal('hide');
+                        alert('修改成功！');
+                        loadDormManList(1); // 重新加载宿管列表
+                    } else {
+                        alert('修改失败：' + (response.message || '未知错误'));
+                    }
+                },
+                error: function(xhr) {
+                    alert('请求失败：' + (xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : '服务器错误'));
+                }
+            });
+        });
+
+        // 页面加载时自动加载第一页
+        loadDormManList(1);
     });
 </script>
 
@@ -1504,16 +1883,7 @@
 
 <div id="univer-container" style="height: 500px; border: 1px solid #dee2e6; border-radius: 0.375rem;"></div>
 
-<!-- 引入Univer相关资源 -->
-<script src="https://unpkg.com/@univerjs/core@0.3.0/lib/index.js"></script>
-<script src="https://unpkg.com/@univerjs/design@0.3.0/lib/index.js"></script>
-<script src="https://unpkg.com/@univerjs/ui@0.3.0/lib/index.js"></script>
-<script src="https://unpkg.com/@univerjs/sheets@0.3.0/lib/index.js"></script>
-<script src="https://unpkg.com/@univerjs/sheets-ui@0.3.0/lib/index.js"></script>
 
-<link rel="stylesheet" href="https://unpkg.com/@univerjs/design@0.3.0/lib/index.css" />
-<link rel="stylesheet" href="https://unpkg.com/@univerjs/ui@0.3.0/lib/index.css" />
-<link rel="stylesheet" href="https://unpkg.com/@univerjs/sheets@0.3.0/lib/index.css" />
-<link rel="stylesheet" href="https://unpkg.com/@univerjs/sheets-ui@0.3.0/lib/index.css" />
+
 </body>
 </html> 

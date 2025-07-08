@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.Date;
 
@@ -17,6 +18,7 @@ import java.util.Date;
 @NoArgsConstructor
 @AllArgsConstructor
 public class DormitoryManager implements Serializable {
+    @Serial
     private static final long serialVersionUID = 1L;
 
     private Integer id; // 主键ID
@@ -27,12 +29,15 @@ public class DormitoryManager implements Serializable {
     private String email; // 电子邮箱
     private String status; // 状态：ON_DUTY表示在职/ OFF_DUTY表示离职
     private String password; // 登录密码
+
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date createTime; // 创建时间
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date updateTime; // 更新时间
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date lastLoginTime; // 最后登录时间
+
+    private Integer version; // 版本号
 
     @Override
     public String toString() {
@@ -47,6 +52,7 @@ public class DormitoryManager implements Serializable {
                 ", password='" + password + '\'' +
                 ", createTime=" + createTime +
                 ", updateTime=" + updateTime +
+                ", version=" + version +
                 '}';
     }
 }

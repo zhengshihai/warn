@@ -1,6 +1,7 @@
 package com.tianhai.warn.mapper;
 
 import com.tianhai.warn.model.DormitoryManager;
+import com.tianhai.warn.query.DormitoryManagerQuery;
 import org.apache.ibatis.annotations.Param;
 import java.util.List;
 
@@ -102,4 +103,18 @@ public interface DormitoryManagerMapper {
      * @return 插入成功的记录数
      */
     int insertBatch(@Param("dormitoryManagerList") List<DormitoryManager> dormitoryManagerList);
+
+    /**
+     * 分页条件查询宿管信息
+     * @param query    查询条件
+     * @return         宿管信息
+     */
+    List<DormitoryManager> selectByPageQuery(DormitoryManagerQuery query);
+
+    /**
+     * 更新宿管状态
+     * @param dormitoryManager    宿管信息
+     * @return                    更新行数
+     */
+    int updateStatus(DormitoryManager dormitoryManager);
 }

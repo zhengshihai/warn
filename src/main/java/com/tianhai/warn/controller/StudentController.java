@@ -1,6 +1,5 @@
 package com.tianhai.warn.controller;
 
-import cn.hutool.json.JSONUtil;
 import com.tianhai.warn.annotation.LogOperation;
 import com.tianhai.warn.annotation.RequirePermission;
 import com.tianhai.warn.constants.Constants;
@@ -12,6 +11,7 @@ import com.tianhai.warn.model.SuperAdmin;
 import com.tianhai.warn.query.StudentQuery;
 import com.tianhai.warn.service.StudentService;
 import com.tianhai.warn.service.SuperAdminService;
+import com.tianhai.warn.service.VerificationService;
 import com.tianhai.warn.utils.PageResult;
 import com.tianhai.warn.utils.Result;
 import com.tianhai.warn.utils.RoleObjectCaster;
@@ -43,6 +43,9 @@ public class StudentController {
     @Autowired
     private SuperAdminService superAdminService;
 
+    @Autowired
+    private VerificationService verificationService;
+
     @GetMapping
     public String student(HttpSession session, Model model) {
         Object user = session.getAttribute(Constants.SESSION_ATTRIBUTE_USER);
@@ -61,10 +64,11 @@ public class StudentController {
     @LogOperation("超级管理员分页查询学生信息")
     public Result<PageResult<Student>> getStudentListPage(StudentQuery query) {
         if (query == null) {
-            return Result.error(ResultCode.PARAMETER_ERROR);
+            logger.error("查询条件不合规， query: {}", query);
+            throw new BusinessException(ResultCode.PARAMETER_ERROR);
         }
 
-        checkSuperAdminStatus();
+        verificationService.checkSuperAdminStatus();
 
         // 分页参数校验
         if (query.getPageNum() == null || query.getPageNum() < 1) {
@@ -124,7 +128,7 @@ public class StudentController {
     @ResponseBody
     @RequirePermission(roles = Constants.STUDENT)
     @LogOperation("学生更新学生信息")
-    public Result<?> updateByStudent(@RequestBody Student newStudentInfo) {
+    public Result<?> updateByOneself(@RequestBody Student newStudentInfo) {
         try {
             // 获取当前登录的学生信息
             HttpSession session = SessionUtils.getSession(false);
@@ -166,7 +170,7 @@ public class StudentController {
     @LogOperation("超级管理员更新学生信息")
     public Result<?> updateBySuperAdmin(@RequestBody Student newStudentInfo) {
         // 检查超级管理员的状态
-        checkSuperAdminStatus();
+        verificationService.checkSuperAdminStatus();
 
         if (newStudentInfo.getId() == null) {
             // 密码脱敏
@@ -174,7 +178,7 @@ public class StudentController {
             logger.error("提交的学生信息缺少id，newStudentInfo: {}", newStudentInfo);
             throw new BusinessException(ResultCode.PARAMETER_ERROR);
         }
-        if (newStudentInfo.getId() < 0) {
+        if (newStudentInfo.getId() <= 0) {
             // 密码脱敏
             newStudentInfo.setPassword(null);
             logger.error("提交的学生的id不合法， newStudentInfo: {}",newStudentInfo);
@@ -188,28 +192,6 @@ public class StudentController {
         }
 
         return Result.success();
-    }
-
-
-    private void checkSuperAdminStatus() {
-        // 获取当前登录的超级管理员信息
-        HttpSession session = SessionUtils.getSession(false);
-        if (session == null) {
-            throw new BusinessException(ResultCode.UNAUTHORIZED);
-        }
-        Object superAdminObject = session.getAttribute(Constants.SESSION_ATTRIBUTE_USER);
-        if (!(superAdminObject instanceof SuperAdmin)) {
-            throw new BusinessException(ResultCode.UNAUTHORIZED);
-        }
-
-        SuperAdmin superAdmin = RoleObjectCaster.cast(Constants.SUPER_ADMIN, superAdminObject);
-
-        // 检查当前超级管理员是否被禁用
-        SuperAdmin superAdminDB = superAdminService.selectByIdWithoutPassword(superAdmin.getId());
-        if (Objects.equals(superAdminDB.getEnabled(), Constants.DISABLE_INT)) {
-            logger.error("该超级管理员已被禁用");
-            throw new BusinessException(ResultCode.SUPER_ADMIN_DISABLE);
-        }
     }
 
     /**
@@ -231,7 +213,7 @@ public class StudentController {
             throw new BusinessException(ResultCode.PARAMETER_ERROR);
         }
 
-        checkSuperAdminStatus();
+        verificationService.checkSuperAdminStatus();
 
         List<Integer> distinctIds = ids.stream().distinct().toList();
 

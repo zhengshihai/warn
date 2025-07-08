@@ -24,13 +24,13 @@ public class ApplicationQuery extends BaseQuery {
     private Integer auditStatus; // 0待审核,1通过,2驳回
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date auditTime;
-    private String auditPerson;
+    private String auditPerson; // 审核人工号
     private String auditRemark;
 
     // 批量查询条件
     private List<String> studentNos; // 学号列表
     private List<Integer> auditStatuses; // 审核状态列表
-    private List<String> auditPersons; // 审核人列表
+    private List<String> auditPersons; // 审核人工号列表
 
     // 时间范围查询
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")

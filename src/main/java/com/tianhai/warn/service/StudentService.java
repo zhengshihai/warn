@@ -116,6 +116,7 @@ public interface StudentService {
     /**
      * 超级管理员更新学生个人信息
      * @param newStudentInfo   新的学生信息
+     * @return                 更新行数
      */
     int updatePersonalInfoBySuperAdmin(Student newStudentInfo);
 

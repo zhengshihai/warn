@@ -254,7 +254,7 @@ public class AuditEventListener implements ApplicationListener<AuditEvent> {
      * 
      * @param nextAuditor 下一个审核人
      * @param student     学生信息
-     * @param auditPerson 当前审核人
+     * @param auditPerson 当前审核人的工号
      */
     private void validateAuditPermission(SysUser nextAuditor, Student student, String auditPerson) {
         if (!sysUserClassService.hasClassPermission(

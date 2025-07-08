@@ -88,7 +88,8 @@ public class SysUserController {
     @LogOperation("超级管理员分页查询班级管理员信息")
     public Result<PageResult<SysUser>> getSysUserListPage(SysUserQuery query) {
         if (query == null) {
-            return Result.error(ResultCode.PARAMETER_ERROR);
+            logger.error("查询条件不合规， query: {}", query);
+            throw new BusinessException(ResultCode.PARAMETER_ERROR);
         }
 
         // 分页参数校验
@@ -128,13 +129,13 @@ public class SysUserController {
     }
 
     /**
-     * 更新班级管理员信息
+     * 班级管理员更新班级管理员信息
      */
     @PostMapping("/update/per-info")
     @ResponseBody
     @RequirePermission(roles = Constants.SYSTEM_USER)
     @LogOperation("班级管理员修改班级管理员信息")
-    public Result<?> updateSysUser(@RequestBody SysUser sysUser) {
+    public Result<Void> updateSysUserByOneself(@RequestBody SysUser sysUser) {
         // 获取当前登录的班级管理员的信息
         HttpSession session = SessionUtils.getSession(false);
         if (session == null) {
@@ -157,7 +158,7 @@ public class SysUserController {
         sysUser.setPassword(null); // 清除密码
         session.setAttribute(Constants.SESSION_ATTRIBUTE_USER, sysUser); // 更新 session 中的用户信息
 
-        return Result.success(ResultCode.SUCCESS);
+        return Result.success();
     }
 
     @PostMapping("/super-admin/update/per-info")
@@ -188,7 +189,7 @@ public class SysUserController {
     @ResponseBody
     @RequirePermission(roles = Constants.SUPER_ADMIN)
     @LogOperation("超级管理员删除班级管理员信息")
-    public Result<?> deleteSysUser(@PathVariable Integer id) {
+    public Result<Void> deleteSysUser(@PathVariable Integer id) {
         // 校验超级管理员状态
         verificationService.checkSuperAdminStatus();
 
@@ -197,7 +198,7 @@ public class SysUserController {
             throw new BusinessException(ResultCode.PARAMETER_ERROR);
         }
 
-        sysUserService.deleteSysUserById(id);
+        sysUserService.deleteById(id);
 
         return Result.success();
     }

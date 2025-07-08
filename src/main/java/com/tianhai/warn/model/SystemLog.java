@@ -26,6 +26,8 @@ public class SystemLog implements Serializable {
     private String status;
     private String errorMsg;
 
+//    private String newUserNo; todo 处理用户工号的变更
+
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date createTime;
 }

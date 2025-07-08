@@ -102,7 +102,7 @@ public class SuperAdminController {
     @ResponseBody
     @RequirePermission(roles = Constants.SUPER_ADMIN)
     @LogOperation("超级管理员更新个人信息")
-    public Result<?> update(@RequestBody SuperAdmin updateSuperAdmin) {
+    public Result<?> updateByOneself(@RequestBody SuperAdmin updateSuperAdmin) {
         HttpSession session = SessionUtils.getSession(false);
         if (session == null) {
             throw new BusinessException(ResultCode.UNAUTHORIZED);
@@ -159,7 +159,7 @@ public class SuperAdminController {
     @DeleteMapping("/delete/{id}")
     @ResponseBody
     @RequirePermission(roles = Constants.SUPER_ADMIN)
-    @LogOperation("超级管理员删除超级管理员信息")
+    @LogOperation("超级管理员删除超级管理员信息") // todo 1号管理员不能被其他管理员修改信息
     public Result<?> delete(@PathVariable Integer id) {
         // 校验超级管理员状态
         verificationService.checkSuperAdminStatus();
@@ -204,7 +204,8 @@ public class SuperAdminController {
     @LogOperation("超级管理员分页查询超级管理员信息")
     public Result<PageResult<SuperAdmin>> getSuperAdminListPage(SuperAdminQuery query) {
         if (query == null) {
-            return Result.error(ResultCode.PARAMETER_ERROR);
+            logger.error("查询条件不合规， query: {}", query);
+            throw new BusinessException(ResultCode.PARAMETER_ERROR);
         }
 
         // 分页参数校验

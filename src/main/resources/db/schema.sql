@@ -126,6 +126,7 @@ CREATE TABLE IF NOT EXISTS dormitory_manager (
     create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     last_login_time DATETIME COMMENT '最后登录时间',
+    version INT DEFAULT 0 COMMENT '乐观锁版本号',
     UNIQUE KEY uk_manager_id (manager_id),
     UNIQUE KEY uk_email (email)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='宿管信息表';
@@ -154,7 +155,7 @@ CREATE TABLE application (
     apply_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '申请时间',
     audit_status TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '审核状态(0待审核,1通过,2驳回)',
     audit_time DATETIME DEFAULT NULL COMMENT '审核时间',
-    audit_person VARCHAR(50) DEFAULT NULL COMMENT '审核人(宿管 辅导员 班主任等）',
+    audit_person VARCHAR(50) DEFAULT NULL COMMENT '审核人的工号(宿管 辅导员 班主任等）',
     audit_remark VARCHAR(500) DEFAULT NULL COMMENT '审核备注',
     UNIQUE KEY uk_application_id (application_id),
     INDEX idx_student_id (student_no),
@@ -173,7 +174,7 @@ CREATE TABLE explanation (
      submit_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '提交时间',
      audit_status TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '审核状态(0待审核,1通过,2驳回)',
      audit_time DATETIME DEFAULT NULL COMMENT '审核时间',
-     audit_person VARCHAR(50) DEFAULT NULL COMMENT '审核人(宿管 辅导员 班主任 院级主任等）',
+     audit_person VARCHAR(50) DEFAULT NULL COMMENT '审核人的工号(宿管 辅导员 班主任 院级主任等）',
      audit_remark VARCHAR(500) DEFAULT NULL COMMENT '审核备注',
      
      UNIQUE KEY uk_application_id (explanation_id),

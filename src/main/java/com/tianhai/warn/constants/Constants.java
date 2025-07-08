@@ -23,6 +23,7 @@ public class Constants {
     public static final String DISABLE_STR = "DISABLE";
     public static final Integer DISABLE_INT = 0;
     public static final String ON_DUTY = "ON_DUTY"; // 在职
+    public static final String OFF_DUTY = "OFF_DUTY"; // 离职
 
     public static final String ALL = "all";
 
@@ -102,5 +103,6 @@ public class Constants {
     public static final String CACHE_REPORT_COLLEGE = CACHE_REPORT_PREFIX + "college:";
     public static final String CACHE_REPORT_DORMITORY = CACHE_REPORT_PREFIX + "dormitory:";
     public static final long CACHE_REPORT_EXPIRE_TIME = 7200; // 2小时过期
+
 
 }

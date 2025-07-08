@@ -44,7 +44,7 @@ public interface SysUserService {
     /**
      * 删除系统用户
      */
-    void deleteSysUserById(Integer id);
+    void deleteById(Integer id);
 
     /**
      * 根据角色获取系统用户列表

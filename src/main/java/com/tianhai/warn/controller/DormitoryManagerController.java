@@ -5,12 +5,17 @@ import com.tianhai.warn.annotation.RequirePermission;
 import com.tianhai.warn.constants.Constants;
 import com.tianhai.warn.enums.ResultCode;
 import com.tianhai.warn.exception.BusinessException;
+import com.tianhai.warn.exception.SystemException;
 import com.tianhai.warn.model.DormitoryManager;
+import com.tianhai.warn.model.SysUser;
+import com.tianhai.warn.query.DormitoryManagerQuery;
 import com.tianhai.warn.service.DormitoryManagerService;
+import com.tianhai.warn.service.VerificationService;
+import com.tianhai.warn.utils.PageResult;
 import com.tianhai.warn.utils.Result;
+import com.tianhai.warn.utils.RoleObjectCaster;
 import com.tianhai.warn.utils.SessionUtils;
 import jakarta.servlet.http.HttpSession;
-import lombok.extern.java.Log;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,10 +23,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.util.DigestUtils;
 
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 /**
@@ -35,14 +38,15 @@ public class DormitoryManagerController {
     @Autowired
     private DormitoryManagerService dormitoryManagerService;
 
+    @Autowired
+    private VerificationService verificationService;
+
 
     @GetMapping
-    public String dorman(HttpSession session, Model model) {
-//        Object dorman = session.getAttribute("user");
-//        session = SessionUtils.getSession(true);
-        Object dorman = session.getAttribute(Constants.SESSION_ATTRIBUTE_USER);
+    public String dorMan(HttpSession session, Model model) {
+        Object dorMan = session.getAttribute(Constants.SESSION_ATTRIBUTE_USER);
 
-        if (dorman instanceof DormitoryManager dormitoryManager) {
+        if (dorMan instanceof DormitoryManager dormitoryManager) {
             model.addAttribute("name", dormitoryManager.getName());
             model.addAttribute("email", dormitoryManager.getEmail());
             model.addAttribute("role", session.getAttribute("role"));
@@ -52,57 +56,16 @@ public class DormitoryManagerController {
     }
 
     /**
-     * 跳转到宿管列表页面
-     */
-    @GetMapping("/list")
-    public String list(Model model) {
-        List<DormitoryManager> managers = dormitoryManagerService.selectAll();
-        model.addAttribute("managers", managers);
-        return "dormitory-manager/list";
-    }
-
-    /**
-     * 跳转到添加宿管页面
-     */
-    @GetMapping("/add")
-    public String toAdd() {
-        return "dormitory-manager/add";
-    }
-
-    /**
-     * 添加宿管
-     */
-    @PostMapping("/add")
-    @ResponseBody
-    public String add(@RequestBody DormitoryManager manager) {
-        try {
-            dormitoryManagerService.insert(manager);
-            return "success";
-        } catch (Exception e) {
-            return "error";
-        }
-    }
-
-    /**
-     * 跳转到编辑宿管页面
-     */
-    @GetMapping("/edit/{id}")
-    public String toEdit(@PathVariable Integer id, Model model) {
-        DormitoryManager manager = dormitoryManagerService.selectById(id);
-        model.addAttribute("manager", manager);
-        return "dormitory-manager/edit";
-    }
-
-    /**
-     * 更新宿管信息
+     * 宿管更新宿管信息
      */
     @PostMapping("/update/per-info")
     @ResponseBody
     @RequirePermission(roles = {Constants.SYSTEM_USER, Constants.SUPER_ADMIN})
     @LogOperation("更新宿管信息")
-    public Result<?> update(@RequestBody DormitoryManager manager) {
+    public Result<?> updateByOneself(@RequestBody DormitoryManager manager) {
         // 获取当前登录用户
         HttpSession session = SessionUtils.getSession(false);
+        assert session != null;
         Object user = session.getAttribute(Constants.SESSION_ATTRIBUTE_USER);
 
         if (!(user instanceof DormitoryManager)) {
@@ -112,7 +75,7 @@ public class DormitoryManagerController {
         validateUpdateInfo(manager);
 
         // 设置当前用户的 ID
-        DormitoryManager currentManager = (DormitoryManager) user;
+        DormitoryManager currentManager = RoleObjectCaster.cast(Constants.DORMITORY_MANAGER, user);
         manager.setId(currentManager.getId());
 
         // 调用 Service 层处理更新
@@ -125,17 +88,108 @@ public class DormitoryManagerController {
     }
 
     /**
-     * 删除宿管
+     * 超级管理员更新宿管信息 todo 有bug
      */
-    @PostMapping("/delete/{id}")
+    @PostMapping("/super-admin/update/per-info")
     @ResponseBody
-    public String delete(@PathVariable Integer id) {
-        try {
-            dormitoryManagerService.deleteById(id);
-            return "success";
-        } catch (Exception e) {
-            return "error";
+    @RequirePermission(roles = Constants.SUPER_ADMIN)
+    @LogOperation("超级管理员更新宿管信息")
+    public Result<?> updateBySuperAdmin(@RequestBody DormitoryManager newDorManInfo) {
+        // 检查超级管理员状态
+        verificationService.checkSuperAdminStatus();
+
+        if (newDorManInfo.getId() == null || newDorManInfo.getId() <= 0) {
+            // 密码脱敏
+            newDorManInfo.setPassword(null);
+            logger.error("提交的宿管信息缺少id或者id不合法，newDorManInfo: {}", newDorManInfo);
+            throw new BusinessException(ResultCode.PARAMETER_ERROR);
         }
+
+        int affectRow = dormitoryManagerService.updatePersonalInfoBySuperAdmin(newDorManInfo);
+        if (affectRow <= 0) {
+            logger.error("超级管理员更新宿管信息失败， newDorManInfo: {}", newDorManInfo);
+            throw new SystemException(ResultCode.ERROR);
+        }
+
+        return Result.success();
+    }
+
+    /**
+     * 超级管理员删除宿管
+     */
+    @DeleteMapping("delete/{id}")
+    @ResponseBody
+    @RequirePermission(roles = Constants.SUPER_ADMIN)
+    @LogOperation("超级管理员删除宿管信息")
+    public Result<?> deleteDormitoryManager(@PathVariable Integer id) {
+        // 校验超级管理员状态
+        verificationService.checkSuperAdminStatus();
+
+        if (id == null || id <= 0) {
+            logger.error("提交的宿管id不合法，id：{}", id);
+            throw new BusinessException(ResultCode.PARAMETER_ERROR);
+        }
+
+        dormitoryManagerService.deleteById(id);
+
+        return Result.success();
+    }
+
+    /**
+     * 修改宿管状态
+     */
+    @GetMapping("update-status/{id}/{status}")
+    @ResponseBody
+    @RequirePermission(roles = Constants.SUPER_ADMIN)
+    @LogOperation("超级管理员修改宿管状态")
+    public Result<Void> updateStatus(@PathVariable Integer id, @PathVariable String status) {
+        // 校验超级管理员状态
+        verificationService.checkSuperAdminStatus();
+
+        if (id == null || id <= 0) {
+            logger.error("提交的宿管id不合法，id：{}", id);
+            throw new BusinessException(ResultCode.PARAMETER_ERROR);
+        }
+        if (StringUtils.isBlank(status) || !(status.equals("ON_DUTY") || status.equals("OFF_DUTY"))) {
+            logger.error("状态不合规, status: {}", status);
+            throw new BusinessException(ResultCode.PARAMETER_ERROR);
+        }
+
+        DormitoryManager dormitoryManager = DormitoryManager.builder().id(id).status(status).build();
+        dormitoryManagerService.updateStatus(dormitoryManager);
+
+        return Result.success();
+    }
+
+    /**
+     * 获取所有宿管分页列表
+     */
+    @GetMapping("/page-list")
+    @ResponseBody
+    @RequirePermission(roles = Constants.SUPER_ADMIN)
+    @LogOperation("超级管理员分页查询宿管信息")
+    public Result<PageResult<DormitoryManager>> getDorManListPage(DormitoryManagerQuery query) {
+        if (query == null) {
+            logger.error("查询条件不合规， query: {}", query);
+            throw new BusinessException(ResultCode.PARAMETER_ERROR);
+        }
+
+        // 分页参数校验
+        if (query.getPageNum() == null || query.getPageNum() < 1) {
+            query.setPageNum(Constants.DEFAULT_PAGE_NUM);
+        }
+        if (query.getPageSize() == null || query.getPageSize() < 1) {
+            query.setPageSize(Constants.DEFAULT_PAGE_SIZE);
+        }
+
+        PageResult<DormitoryManager> dorManList = dormitoryManagerService.selectByPageQuery(query);
+        // 没有结果时返回空列表
+        if (dorManList == null || dorManList.getData() == null
+                || dorManList.getData().isEmpty()) {
+            return Result.success(new PageResult<>());
+        }
+
+        return Result.success(dorManList);
     }
 
     /**
@@ -143,17 +197,15 @@ public class DormitoryManagerController {
      */
     @PostMapping("/search")
     @ResponseBody
+    @RequirePermission(roles = {Constants.SUPER_ADMIN, Constants.DORMITORY_MANAGER})
+    @LogOperation("根据条件查询宿管信息")
     public List<DormitoryManager> search(@RequestBody DormitoryManager manager) {
-        return dormitoryManagerService.selectByCondition(manager);
-    }
+        if (manager == null) {
+            logger.error("查询条件不合规, manager: {}", manager);
+            throw new BusinessException(ResultCode.PARAMETER_ERROR);
+        }
 
-    /**
-     * 根据宿舍楼查询宿管
-     */
-    @GetMapping("/building/{building}")
-    @ResponseBody
-    public List<DormitoryManager> getByBuilding(@PathVariable String building) {
-        return dormitoryManagerService.selectByBuilding(building);
+        return dormitoryManagerService.selectByCondition(manager);
     }
 
     /**

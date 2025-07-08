@@ -1,7 +1,8 @@
 package com.tianhai.warn.service;
 
 import com.tianhai.warn.model.DormitoryManager;
-import com.tianhai.warn.utils.Result;
+import com.tianhai.warn.query.DormitoryManagerQuery;
+import com.tianhai.warn.utils.PageResult;
 
 import java.util.List;
 
@@ -58,14 +59,6 @@ public interface DormitoryManagerService {
     int insert(DormitoryManager manager);
 
     /**
-     * 更新宿管信息
-     * 
-     * @param manager 宿管信息
-     * @return 影响行数
-     */
-    int update(DormitoryManager manager);
-
-    /**
      * 删除宿管信息
      * 
      * @param id 宿管ID
@@ -116,4 +109,26 @@ public interface DormitoryManagerService {
      * @return                        插入行数
      */
     int insertBatch(List<DormitoryManager> dormitoryManagerList);
+
+    /**
+     * 分页查询宿管信息
+     *
+     * @param query    宿管查询条件
+     * @return         分页结果
+     */
+    PageResult<DormitoryManager> selectByPageQuery(DormitoryManagerQuery query);
+
+    /**
+     * 超级管理员更新宿管个人信息
+     * @param newDorManInfo    新的宿管信息
+     * @return                 更新行数
+     */
+    int updatePersonalInfoBySuperAdmin(DormitoryManager newDorManInfo);
+
+    /**
+     * 超级管理员更新宿管状态
+     * @param dormitoryManager    宿管信息
+     * @return                    更新行数
+     */
+    int updateStatus(DormitoryManager dormitoryManager);
 }

@@ -119,7 +119,7 @@ public class SysUserServiceImpl implements SysUserService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void deleteSysUserById(Integer id) {
+    public void deleteById(Integer id) {
         // 从班级管理员查找该用户
         SysUser existingSysUser = sysUserMapper.selectById(id);
         if (existingSysUser == null) {

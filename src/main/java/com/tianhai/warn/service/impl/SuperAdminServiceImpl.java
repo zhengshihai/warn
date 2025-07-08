@@ -185,13 +185,14 @@ public class SuperAdminServiceImpl implements SuperAdminService {
     public Integer update(SuperAdmin newSuperAdminInfo) {
         if (newSuperAdminInfo == null || newSuperAdminInfo.getId() == null) {
             logger.error("superAdmin的id不能为空");
-            throw new BusinessException(ResultCode.VALIDATE_FAILED);
+            throw new BusinessException(ResultCode.PARAMETER_ERROR);
         }
 
         // 通过id判断是否存在该超级管理员
         SuperAdmin existingAdmin = superAdminMapper.selectById(newSuperAdminInfo.getId());
         if (existingAdmin == null) {
-            throw new BusinessException("更新失败，该超级管理员账号不存在");
+            logger.error("更新失败，该超级管理员账号不存在");
+            throw new BusinessException(ResultCode.USER_NOT_EXISTS);
         }
 
         // 通过email查询超级管理员
@@ -199,7 +200,7 @@ public class SuperAdminServiceImpl implements SuperAdminService {
         List<SuperAdmin> adminListByEmail = superAdminMapper.selectByCondition(query);
 
         SuperAdmin adminByEmail = new SuperAdmin();
-        if (adminListByEmail != null) {
+        if (!adminListByEmail.isEmpty()) {
             adminByEmail = adminListByEmail.get(0);
         }
 
@@ -208,7 +209,12 @@ public class SuperAdminServiceImpl implements SuperAdminService {
         boolean emailNeedUpdate = newSuperAdminInfo.getEmail() != null &&
                 !newSuperAdminInfo.getEmail().equals(existingAdmin.getEmail());
         if (emailNeedUpdate) {
+            // 校验邮箱格式是否正确
             boolean formatValid = checkEmailFormat(newSuperAdminInfo.getEmail());
+            if (!formatValid) {
+                logger.error("超级管理员新提交的邮箱不合规，email: {}", newSuperAdminInfo.getEmail());
+                throw new BusinessException(ResultCode.PARAMETER_ERROR);
+            }
 
             // emailUsed 新的邮箱是否已被使用
             boolean emailUsed = adminByEmail != null &&
@@ -220,8 +226,7 @@ public class SuperAdminServiceImpl implements SuperAdminService {
         }
 
         if (StringUtils.isNotBlank(newSuperAdminInfo.getPassword())) {
-            newSuperAdminInfo.setPassword(DigestUtils.md5DigestAsHex(
-                    newSuperAdminInfo.getPassword().getBytes()));
+            newSuperAdminInfo.setPassword(DigestUtils.md5DigestAsHex(newSuperAdminInfo.getPassword().getBytes()));
         }
 
         // 因项目未设置单设备登录等原因 故此处使用乐观锁安全并发更新

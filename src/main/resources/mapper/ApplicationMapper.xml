@@ -214,7 +214,6 @@
                 <if test="item.auditPerson != null">audit_person = #{item.auditPerson},</if>
                 <if test="item.auditRemark != null">audit_remark = #{item.auditRemark},</if>
 
-                <!-- 如果你想支持更新学生信息（冗余字段），也可放开注释 -->
                 <if test="item.studentName != null">student_name = #{item.studentName},</if>
                 <if test="item.college != null">college = #{item.college},</if>
                 <if test="item.dormitory != null">dormitory = #{item.dormitory},</if>

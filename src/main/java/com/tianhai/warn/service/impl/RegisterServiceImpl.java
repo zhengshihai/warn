@@ -66,22 +66,6 @@ public class RegisterServiceImpl implements RegisterService {
 
             switch (role) {
                 case STUDENT:
-//                    Student student = Student.builder()
-//                            .name(registerDTO.getName())
-//                            .email(registerDTO.getEmail())
-//                            .password(password)
-//                            .studentNo(registerDTO.getEmail())  // 默认用 email 作为学号
-//                            .college(DEFAULT_PLACEHOLDER)
-//                            .className(DEFAULT_PLACEHOLDER)
-//                            .dormitory(DEFAULT_PLACEHOLDER)
-//                            .phone(DEFAULT_PLACEHOLDER)
-//                            .fatherName(DEFAULT_PLACEHOLDER)
-//                            .fatherPhone(DEFAULT_PLACEHOLDER)
-//                            .motherName(DEFAULT_PLACEHOLDER)
-//                            .motherPhone(DEFAULT_PLACEHOLDER)
-//                            .createTime(now)
-//                            .updateTime(now)
-//                            .build();
                     Student student = new Student();
                     student.setName(registerDTO.getName());
                     student.setEmail(registerDTO.getEmail());
