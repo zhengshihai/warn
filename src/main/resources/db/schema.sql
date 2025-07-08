@@ -44,6 +44,28 @@ CREATE TABLE IF NOT EXISTS late_return (
     -- CONSTRAINT fk_late_return_student FOREIGN KEY (student_no) REFERENCES student (student_no)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='晚归记录表';
 
+-- 晚归申请表
+CREATE TABLE `application` (
+   `id` bigint unsigned NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+   `application_id` varchar(20) NOT NULL COMMENT '晚归报备申请唯一ID',
+   `student_no` varchar(20) NOT NULL COMMENT '学号',
+   `expected_return_time` datetime DEFAULT NULL,
+   `reason` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL COMMENT '外出简要原因',
+   `destination` varchar(255) DEFAULT NULL COMMENT '外出地点',
+   `attachment_url` varchar(500) DEFAULT NULL COMMENT '附件URL',
+   `apply_time` datetime DEFAULT NULL,
+   `audit_status` tinyint unsigned NOT NULL DEFAULT '0' COMMENT '审核状态(0待审核,1通过,2驳回)',
+   `audit_time` datetime DEFAULT NULL,
+   `audit_person` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci DEFAULT NULL COMMENT '审核人的工号(宿管 辅导员 班主任等）',
+   `audit_remark` varchar(500) DEFAULT NULL COMMENT '审核备注',
+   `description` varchar(500) DEFAULT NULL COMMENT '外出详细原因',
+   PRIMARY KEY (`id`),
+   UNIQUE KEY `uk_application_id` (`application_id`),
+   KEY `idx_student_id` (`student_no`),
+   KEY `idx_expected_date` (`expected_return_time`),
+   KEY `idx_audit_status` (`audit_status`)
+) ENGINE=InnoDB AUTO_INCREMENT=21 DEFAULT CHARSET=utf8mb4  COMMENT='晚归申请表';
+
 -- 班级管理员表
 CREATE TABLE IF NOT EXISTS sys_user (
     id INT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID',

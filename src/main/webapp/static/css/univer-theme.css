@@ -1,0 +1,27 @@
+:root {
+    /* Gray Scale */
+    --univer-gray-50:  #f9fafb;
+    --univer-gray-100: #f3f4f6;
+    --univer-gray-200: #e5e7eb;
+    --univer-gray-300: #d1d5db;
+    --univer-gray-400: #9ca3af;
+    --univer-gray-500: #6b7280;
+    --univer-gray-600: #4b5563;
+    --univer-gray-700: #374151;
+    --univer-gray-800: #1f2937;
+    --univer-gray-900: #111827;
+
+    /* Primary */
+    --univer-primary: #4f46e5;
+    --univer-primary-hover: #4338ca;
+    --univer-primary-disabled: #a5b4fc;
+
+    /* Status Colors */
+    --univer-success: #10b981;
+    --univer-warning: #f59e0b;
+    --univer-danger:  #ef4444;
+
+    /* Basic UI */
+    --univer-font-color: #1f2937;
+    --univer-bg-color:   #ffffff;
+}

@@ -11,26 +11,29 @@
     <link href="${pageContext.request.contextPath}/static/css/tailwind.min.css" rel="stylesheet">
     <link href="${pageContext.request.contextPath}/static/css/fontawesome.min.css" rel="stylesheet">
     <link href="${pageContext.request.contextPath}/static/css/bootstrap.min.css" rel="stylesheet">
-
-    <!-- 引入 UniverJS 相关本地 CSS 文件 -->
-    <link href="${pageContext.request.contextPath}/static/univer/design.css" />
-    <link href="${pageContext.request.contextPath}/static/univer/ui.css" />
-<%--    <link href="${pageContext.request.contextPath}/static/univer/sheets.css" />--%>
-    <link href="${pageContext.request.contextPath}/static/univer/sheets-ui.css" />
+    <link href="${pageContext.request.contextPath}/static/css/univer-theme.css" rel="stylesheet">
 
     <!-- 引入 JS 文件 -->
     <script src="${pageContext.request.contextPath}/static/js/jquery.min.js"></script>
     <script src="${pageContext.request.contextPath}/static/js/popper.min.js"></script>
     <script src="${pageContext.request.contextPath}/static/js/bootstrap.bundle.min.js"></script>
 
-    <!-- 引入 UniverJS 相关本地 JS 文件 -->
-    <script src="${pageContext.request.contextPath}/static/univer/core.js"></script>
-    <script src="${pageContext.request.contextPath}/static/univer/design.js"></script>
-    <script src="${pageContext.request.contextPath}/static/univer/ui.js"></script>
-    <script src="${pageContext.request.contextPath}/static/univer/sheets.js"></script>
-    <script src="${pageContext.request.contextPath}/static/univer/sheets-ui.js"></script>
+    <!-- Core 库 -->
+    <script src="https://unpkg.com/@univerjs/core@0.9.1/lib/umd/index.js"></script>
 
-    
+    <!-- 样式系统和设计库 -->
+    <script src="https://unpkg.com/@univerjs/design@0.9.1/lib/umd/index.js"></script>
+    <script src="https://unpkg.com/@univerjs/ui@0.9.1/lib/umd/index.js"></script>
+
+    <!-- 表格功能 -->
+    <script src="https://unpkg.com/@univerjs/sheets@0.9.1/lib/umd/index.js"></script>
+    <script src="https://unpkg.com/@univerjs/sheets-ui@0.1.14/lib/umd/index.js"></script>
+
+    <!-- 样式库 -->
+    <link rel="stylesheet" href="https://unpkg.com/@univerjs/design@0.9.1/lib/index.css" />
+    <link rel="stylesheet" href="https://unpkg.com/@univerjs/ui@0.9.1/lib/index.css" />
+    <link rel="stylesheet" href="https://unpkg.com/@univerjs/sheets-ui@0.1.14/lib/index.css" />
+
 
     <style>
         .dashboard-container {
@@ -255,9 +258,6 @@
                     </div>
     </div>
 
-    
-
-
     <!-- 超级管理员列表内容区域 -->
     <div class="card p-6 mb-6">
         <div class="mb-4 flex justify-between items-center">
@@ -299,8 +299,6 @@
         </div>
     </div>
 
-    <div>88888888888888888888888888888</div>
-
     <!-- 宿管列表内容区域 -->
     <div class="card p-6 mb-6">
         <div class="mb-4 flex justify-between items-center">
@@ -327,7 +325,6 @@
                     <th style="min-width:160px;">操作</th>
                 </tr>
                 </thead>
-                <div>555555555555555555</div>
                 <tbody id="dormManTableBody">
                 <!-- 宿管数据将通过JS动态加载 -->
                 </tbody>

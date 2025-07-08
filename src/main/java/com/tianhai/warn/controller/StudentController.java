@@ -90,14 +90,6 @@ public class StudentController {
 
 
     /**
-     * 跳转到添加学生页面
-     */
-    @GetMapping("/add")
-    public String toAdd() {
-        return "student/add";
-    }
-
-    /**
      * 添加学生
      */
     @PostMapping("/add")
@@ -111,15 +103,6 @@ public class StudentController {
         }
     }
 
-    /**
-     * 跳转到编辑学生页面
-     */
-    @GetMapping("/edit/{id}")
-    public String toEdit(@PathVariable Integer id, Model model) {
-        Student student = studentService.selectById(id);
-        model.addAttribute("student", student);
-        return "student/edit";
-    }
 
     /**
      * 学生更新学生信息

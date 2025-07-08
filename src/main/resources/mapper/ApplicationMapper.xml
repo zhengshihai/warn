@@ -18,7 +18,7 @@
         <result column="audit_person" property="auditPerson"/>
         <result column="audit_remark" property="auditRemark"/>
         
-        <result column="student_name" property="studentName"/>
+        <result column="name" property="name"/>
         <result column="college" property="college"/>
         <result column="dormitory" property="dormitory"/>
     </resultMap>
@@ -26,33 +26,44 @@
     <!-- 通用查询结果列 -->
     <sql id="Base_Column_List">
         id, application_id, student_no, expected_return_time, reason, destination, description, attachment_url, 
-        apply_time, audit_status, audit_time, audit_person, audit_remark,
-        student_name, college, dormitory
+        apply_time, audit_status, audit_time, audit_person, audit_remark
     </sql>
     
     <!-- 根据ID查询 -->
     <select id="selectById" resultMap="BaseResultMap">
         SELECT 
-        <include refid="Base_Column_List"/>
-        FROM application
-        WHERE id = #{id}
+            a.id, a.application_id, a.student_no, a.expected_return_time, a.reason, 
+            a.destination, a.description, a.attachment_url, a.apply_time, a.audit_status, 
+            a.audit_time, a.audit_person, a.audit_remark,
+            s.name, s.college, s.dormitory
+        FROM application a
+        LEFT JOIN student s ON a.student_no = s.student_no
+        WHERE a.id = #{id}
     </select>
     
     <!-- 根据学号查询 -->
     <select id="selectByStudentNo" resultMap="BaseResultMap">
         SELECT 
-        <include refid="Base_Column_List"/>
-        FROM application
-        WHERE student_no = #{studentNo}
-        ORDER BY apply_time DESC
+            a.id, a.application_id, a.student_no, a.expected_return_time, a.reason, 
+            a.destination, a.description, a.attachment_url, a.apply_time, a.audit_status, 
+            a.audit_time, a.audit_person, a.audit_remark,
+            s.name, s.college, s.dormitory
+        FROM application a
+        LEFT JOIN student s ON a.student_no = s.student_no
+        WHERE a.student_no = #{studentNo}
+        ORDER BY a.apply_time DESC
     </select>
     
     <!-- 查询所有 -->
     <select id="selectAll" resultMap="BaseResultMap">
         SELECT 
-        <include refid="Base_Column_List"/>
-        FROM application
-        ORDER BY apply_time DESC
+            a.id, a.application_id, a.student_no, a.expected_return_time, a.reason, 
+            a.destination, a.description, a.attachment_url, a.apply_time, a.audit_status, 
+            a.audit_time, a.audit_person, a.audit_remark,
+            s.name, s.college, s.dormitory
+        FROM application a
+        LEFT JOIN student s ON a.student_no = s.student_no
+        ORDER BY a.apply_time DESC
     </select>
     
     <!-- 根据条件查询 -->
@@ -213,10 +224,6 @@
                 <if test="item.auditTime != null">audit_time = #{item.auditTime},</if>
                 <if test="item.auditPerson != null">audit_person = #{item.auditPerson},</if>
                 <if test="item.auditRemark != null">audit_remark = #{item.auditRemark},</if>
-
-                <if test="item.studentName != null">student_name = #{item.studentName},</if>
-                <if test="item.college != null">college = #{item.college},</if>
-                <if test="item.dormitory != null">dormitory = #{item.dormitory},</if>
             </set>
             WHERE id = #{item.id}
         </foreach>
@@ -231,26 +238,38 @@
     <!-- 根据审核状态查询 -->
     <select id="selectByAuditStatus" resultMap="BaseResultMap">
         SELECT 
-        <include refid="Base_Column_List"/>
-        FROM application
-        WHERE audit_status = #{auditStatus}
-        ORDER BY apply_time DESC
+            a.id, a.application_id, a.student_no, a.expected_return_time, a.reason, 
+            a.destination, a.description, a.attachment_url, a.apply_time, a.audit_status, 
+            a.audit_time, a.audit_person, a.audit_remark,
+            s.name, s.college, s.dormitory
+        FROM application a
+        LEFT JOIN student s ON a.student_no = s.student_no
+        WHERE a.audit_status = #{auditStatus}
+        ORDER BY a.apply_time DESC
     </select>
     
     <!-- 根据预期回校时间范围查询 -->
     <select id="selectByExpectedReturnTimeRange" resultMap="BaseResultMap">
         SELECT 
-        <include refid="Base_Column_List"/>
-        FROM application
-        WHERE expected_return_time BETWEEN #{startTime} AND #{endTime}
-        ORDER BY expected_return_time ASC
+            a.id, a.application_id, a.student_no, a.expected_return_time, a.reason, 
+            a.destination, a.description, a.attachment_url, a.apply_time, a.audit_status, 
+            a.audit_time, a.audit_person, a.audit_remark,
+            s.name, s.college, s.dormitory
+        FROM application a
+        LEFT JOIN student s ON a.student_no = s.student_no
+        WHERE a.expected_return_time BETWEEN #{startTime} AND #{endTime}
+        ORDER BY a.expected_return_time ASC
     </select>
     
     <!-- 根据applicationId查询 -->
     <select id="selectByApplicationId" resultMap="BaseResultMap">
         SELECT 
-        <include refid="Base_Column_List"/>
-        FROM application
-        WHERE application_id = #{applicationId}
+            a.id, a.application_id, a.student_no, a.expected_return_time, a.reason, 
+            a.destination, a.description, a.attachment_url, a.apply_time, a.audit_status, 
+            a.audit_time, a.audit_person, a.audit_remark,
+            s.name, s.college, s.dormitory
+        FROM application a
+        LEFT JOIN student s ON a.student_no = s.student_no
+        WHERE a.application_id = #{applicationId}
     </select>
 </mapper> 

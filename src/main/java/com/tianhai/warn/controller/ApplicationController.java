@@ -66,6 +66,11 @@ public class ApplicationController {
     @RequirePermission
     @LogOperation("查询晚归申请")
     public List<Application> getByStudentNo(@PathVariable String studentNo) {
+        if (StringUtils.isBlank(studentNo)) {
+            logger.error("学生参数不合规, studentNo: {}", studentNo);
+            throw new BusinessException(ResultCode.PARAMETER_ERROR);
+        }
+
         return applicationService.selectByStudentNo(studentNo);
     }
 

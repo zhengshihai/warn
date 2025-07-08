@@ -29,6 +29,11 @@ public class Application implements Serializable {
     private String auditRemark;
     private String applicationId; // 晚归报备申请唯一ID
 
+    // 非数据库字段
+    private String name; // 学生姓名
+    private String college; // 学生所属学院
+    private String dormitory; // 学生宿舍
+
     @Override
     public String toString() {
         return "LateReturnApplication{" +
