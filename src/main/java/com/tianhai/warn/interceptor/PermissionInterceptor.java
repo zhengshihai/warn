@@ -109,7 +109,7 @@ public class PermissionInterceptor implements HandlerInterceptor{
                     if (dormitoryManager == null) {
                         throw new BusinessException(ResultCode.FORBIDDEN);
                     }
-                    //todo  这些热点数据需要放在redis中
+
                     List<String> managedDormitories = dormitoryManagerService.getManagedDormitories(dormitoryManager.getManagerId());
                     dataScope = DataScope.forDormitoryManager(managedDormitories);
                     break;

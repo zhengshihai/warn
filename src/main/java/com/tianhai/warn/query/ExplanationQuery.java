@@ -1,6 +1,7 @@
 package com.tianhai.warn.query;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.tianhai.warn.annotation.AtLeastOneFieldNotNull;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
@@ -11,6 +12,7 @@ import java.util.List;
 @SuperBuilder
 @AllArgsConstructor
 @NoArgsConstructor
+@AtLeastOneFieldNotNull
 public class ExplanationQuery extends BaseQuery{
     private Long id;
     private String lateReturnId; // 晚归记录id

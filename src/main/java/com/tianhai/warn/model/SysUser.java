@@ -20,10 +20,11 @@ public class SysUser implements Serializable {
     private static final long serialVersionUID = 1L;
 
     // 角色常量定义
-    public static final String ROLE_SUPER_ADMIN = "SUPER_ADMIN";  // 超级管理员
     public static final String ROLE_COUNSELOR = "COUNSELOR";      // 辅导员
     public static final String ROLE_TEACHER = "CLASS_TEACHER";          // 班主任
     public static final String ROLE_DORMITORY_MANAGER = "DORMITORY_MANAGER";  // 宿管
+    public static final String ROLE_DEAN = "DEAN";                // 院级领导
+    public static final String ROLE_OTHER = "OTHER";
 
     private Integer id; // 主键ID
     private String password; // 密码

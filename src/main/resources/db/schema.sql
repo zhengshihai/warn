@@ -118,22 +118,56 @@ CREATE TABLE IF NOT EXISTS warning_rule (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='预警规则表';
 
 -- 通知记录表
+# CREATE TABLE IF NOT EXISTS notification (
+#     id INT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID',
+#     notice_id VARCHAR(32) NOT NULL COMMENT '通知ID', -- 额外设计的通知id 格式：NT + 年月日 + 6位随机数
+#     title VARCHAR(200) NOT NULL COMMENT '通知标题',
+#     content TEXT NOT NULL COMMENT '通知内容',
+#     type VARCHAR(50) NOT NULL COMMENT '通知类型（系统通知/晚归通知/预警通知等）',
+#     target_type VARCHAR(20) NOT NULL COMMENT '目标类型（STUDENT/DORM_MANAGER/SYSTEM_USER等）',
+#     target_id VARCHAR(50) DEFAULT NULL COMMENT '目标ID（特定用户的唯一标识，如学号、工号等）',
+#     status VARCHAR(20) NOT NULL DEFAULT 'UNREAD' COMMENT '状态 已读/未读',
+#     create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+#     update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+#     KEY idx_target (target_type, target_id),
+#     UNIQUE KEY uk_notice_id (notice_id),
+#     KEY idx_type (type),
+#     KEY idx_status (status)
+# ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='通知记录表';
+
+-- 通知记录表
 CREATE TABLE IF NOT EXISTS notification (
-    id INT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID',
-    notice_id VARCHAR(32) NOT NULL COMMENT '通知ID', -- 额外设计的通知id 格式：NT + 年月日 + 6位随机数
-    title VARCHAR(200) NOT NULL COMMENT '通知标题',
-    content TEXT NOT NULL COMMENT '通知内容',
-    type VARCHAR(50) NOT NULL COMMENT '通知类型（系统通知/晚归通知/预警通知等）',
-    target_type VARCHAR(20) NOT NULL COMMENT '目标类型（ALL/STUDENT/DORM_MANAGER/SYSTEM_USER等）',
-    target_id VARCHAR(50) DEFAULT NULL COMMENT '目标ID（特定用户的唯一标识，如学号、工号等）',
-    status VARCHAR(20) NOT NULL DEFAULT 'UNREAD' COMMENT '状态 已读/未读',
-    create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-    KEY idx_target (target_type, target_id),
-    UNIQUE KEY uk_notice_id (notice_id),
-    KEY idx_type (type),
-    KEY idx_status (status)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='通知记录表';
+        id INT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID',
+        notice_id VARCHAR(32) NOT NULL COMMENT '通知ID',
+        title VARCHAR(200) NOT NULL COMMENT '通知标题',
+        content TEXT NOT NULL COMMENT '通知内容',
+        notice_type VARCHAR(50) COMMENT '通知类型（系统通知/晚归通知/预警通知等）',
+        target_type VARCHAR(20) COMMENT
+            '目标类型（student, dormitorymanager, counselor, classteacher, dean）',
+        target_id VARCHAR(50) COMMENT '目标ID（特定用户的唯一标识，如学号、工号等）',
+        target_scope VARCHAR(20) NOT NULL DEFAULT 'allUsers'
+            COMMENT '接受通知的对象范围  allUsers, specialRole, specialUser',
+        create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+        update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+        KEY idx_target (target_type, target_id),
+        UNIQUE KEY uk_notice_id (notice_id),
+        KEY idx_type (notice_type)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='通知记录表';
+
+-- 通知接收表
+CREATE TABLE IF NOT EXISTS notification_receiver (
+     id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID',
+     notice_id VARCHAR(32) NOT NULL COMMENT '通知ID',
+     receiver_id VARCHAR(50) NOT NULL COMMENT
+         '接收者业务标识ID（学号、工号等）超级管理员直接用主键ID',
+     receiver_role VARCHAR(30) NOT NULL COMMENT '接收者角色（student、classteacher等）',
+     read_status ENUM('UNREAD', 'READ') NOT NULL DEFAULT 'UNREAD' COMMENT '阅读状态',
+     read_time DATETIME DEFAULT NULL COMMENT '阅读时间',
+     create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+     update_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+     UNIQUE KEY uk_notify_receiver (notice_id, receiver_id),
+     KEY idx_receiver_id (receiver_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='通知接收表';
 
 -- 宿管信息表
 CREATE TABLE IF NOT EXISTS dormitory_manager (

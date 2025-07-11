@@ -1,9 +1,9 @@
 package com.tianhai.warn.scheduler;
 
-import cn.hutool.json.JSONUtil;
 import com.tianhai.warn.constants.Constants;
 import com.tianhai.warn.enums.ResultCode;
 import com.tianhai.warn.exception.SystemException;
+import com.tianhai.warn.model.NotificationReceiver;
 import com.tianhai.warn.model.Student;
 import com.tianhai.warn.model.SuperAdmin;
 import com.tianhai.warn.query.*;
@@ -17,7 +17,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.Trigger;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -58,6 +57,9 @@ public class UpdateScheduler {
 
     @Autowired
     private StudentLateStatsService studentLateStatsService;
+
+    @Autowired
+    private NotificationReceiverService notificationReceiverService;
 
     @Autowired
     private SystemLogService systemLogService;
@@ -253,12 +255,9 @@ public class UpdateScheduler {
                 (list) -> list.forEach(lr -> lr.setStudentNo(newStudentNo)),
                 (list) -> lateReturnService.updateBatch(list));
 
-        // 更新notification表
-        NotificationQuery notificationQuery = NotificationQuery.builder().targetId(oldStudentNo).build();
-        updateTableStudentNo("notification", oldStudentNo, newStudentNo,
-                () -> notificationService.selectByCondition(notificationQuery),
-                (list) -> list.forEach(not -> not.setTargetId(newStudentNo)),
-                (list) -> notificationService.updateBatch(list));
+        // 不更新notification表
+
+        // 不更新notification_receiver表
 
         // 更新student_late_stats表
         StudentLateStatsQuery studentLateStatsQuery = StudentLateStatsQuery.builder().studentNo(oldStudentNo).build();

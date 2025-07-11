@@ -3,26 +3,24 @@ package com.tianhai.warn.controller;
 import com.tianhai.warn.annotation.LogOperation;
 import com.tianhai.warn.annotation.RequirePermission;
 import com.tianhai.warn.constants.Constants;
+import com.tianhai.warn.dto.NotificationDTO;
+import com.tianhai.warn.enums.JobRole;
 import com.tianhai.warn.enums.ResultCode;
+import com.tianhai.warn.enums.TargetScope;
+import com.tianhai.warn.enums.UserRole;
 import com.tianhai.warn.exception.BusinessException;
-import com.tianhai.warn.model.DormitoryManager;
-import com.tianhai.warn.model.Notification;
-import com.tianhai.warn.model.Student;
-import com.tianhai.warn.model.SysUser;
 import com.tianhai.warn.query.NotificationQuery;
-import com.tianhai.warn.utils.IdValidator;
-import com.tianhai.warn.utils.PageResult;
-import com.tianhai.warn.utils.Result;
-import com.tianhai.warn.utils.RoleObjectCaster;
-import jakarta.servlet.http.HttpSession;
+import com.tianhai.warn.service.impl.VerificationServiceImpl;
+import com.tianhai.warn.utils.*;
+import com.tianhai.warn.vo.NotificationVO;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import com.tianhai.warn.service.NotificationService;
 
-import java.sql.Timestamp;
-import java.time.LocalDateTime;
 import java.util.*;
 
 /**
@@ -32,355 +30,114 @@ import java.util.*;
 @RequestMapping("/notification")
 public class NotificationController {
 
+    private static final Logger logger = LoggerFactory.getLogger(NotificationController.class);
+
     @Autowired
     private NotificationService notificationService;
+    @Autowired
+    private VerificationServiceImpl verificationServiceImpl;
 
-    /**
-     * 分页获取当前用户端额未读通知
-     * @param query 查询条件
-     * @param session   会话
-     * @return          通知列表
-     */
-    @PostMapping("/unread-page-list")
+    // 分页获取属于特定用户的通知
+    @PostMapping("/special-user/page")
     @ResponseBody
     @RequirePermission
-    @LogOperation("分页查询通知")
-    public Result<PageResult<Notification>> getUnreadNotificationsPage(@RequestBody NotificationQuery query,
-                                                                       HttpSession session) {
-        if (query == null) {
-            return Result.error(ResultCode.VALIDATE_FAILED);
-        }
+    @LogOperation("分页获取特定用户的通知")
+    public Result<PageResult<NotificationVO>> getSpecialUserPageList(@RequestBody NotificationQuery query) {
+        // 校验查询参数
+        validateNotificationQuery(query);
 
-        // 筛选最近一个月的通知
-        if (query.getStartNoticeTime() == null || query.getEndNoticeTime() == null) {
-            LocalDateTime now = LocalDateTime.now();
-            LocalDateTime startTime = now.minusMonths(Constants.NOTIFICATION_PERIOD_MONTH);
-            query.setStartNoticeTime(Timestamp.valueOf(startTime));
-            query.setEndNoticeTime(Timestamp.valueOf(now));
-        }
+        // 校验分页条件
+        PageUtils.normalizePageNums(query);
 
-        // 分页参数校验
-        if (query.getPageNum() == null || query.getPageNum() < 1) {
-            query.setPageNum(Constants.DEFAULT_PAGE_NUM);
-        }
-        if (query.getPageSize() == null || query.getPageSize() < 1) {
-            query.setPageSize(Constants.DEFAULT_PAGE_SIZE);
-        }
+        PageResult<NotificationVO> notificationPageResult = notificationService.searchSpecialUserPageList(query);
 
-        String userRoleStr = (String) session.getAttribute(Constants.SESSION_ATTRIBUTE_ROLE);
-        Object currentUser = session.getAttribute(Constants.SESSION_ATTRIBUTE_USER);
-        if (userRoleStr == null || currentUser == null) {
-            return Result.error(ResultCode.UNAUTHORIZED);
-        }
 
-        query.setStatus(Constants.UNREAD);
-
-        PageResult<Notification> notificationList =
-                notificationService.selectByPageQuery(userRoleStr, currentUser, query);
-        // 没有数据时返回空列表
-        if (notificationList == null || notificationList.getData() == null
-               || notificationList.getData().isEmpty()) {
-            return Result.success(new PageResult<>());
-        }
-
-        return Result.success(notificationList);
+        return Result.success(notificationPageResult);
     }
 
-    /**
-     * 获取学生的未读通知
-     * @param studentNo
-     * @param session
-     * @return
-     */
-    @GetMapping("/student/unread/{studentNo}")
-    @ResponseBody
-    @RequirePermission(roles = {Constants.STUDENT})
-    @LogOperation("获取学生未读通知")
-    public Result<List<Notification>> getStudentUnreadNotifications(@PathVariable String studentNo,
-                                                            HttpSession session) {
-        // 验证当前登录用户是否为该学生
-        Object currentUser = session.getAttribute(Constants.SESSION_ATTRIBUTE_USER);
-        Student currentStudent = RoleObjectCaster.cast(Constants.STUDENT, currentUser);
-        if (!currentStudent.getStudentNo().equals(studentNo)) {
-            throw new BusinessException(ResultCode.FORBIDDEN);
-        }
-
-        NotificationQuery query = new NotificationQuery();
-        query.setTargetId(studentNo);
-        query.setStatus(Constants.UNREAD);
-        //todo 实现读取all类型的通知
-        List<Notification> notificationList = notificationService.selectByCondition(query);
-
-        return Result.success(notificationList);
-    }
-
-    /**
-     * 获取系统用户（辅导员 班主任等）的未读通知
-     * @param sysUserNo
-     * @param session
-     * @return
-     */
-    @GetMapping("sys-user/unread/{sysUserNo}")
-    @ResponseBody
-    @RequirePermission(roles = {Constants.SYSTEM_USER})
-    @LogOperation("获取学生未读通知")
-    public Result<List<Notification>> getSysUserUnreadNotifications(@PathVariable String sysUserNo,
-                                                                    HttpSession session) {
-        // 验证当前登录用户是否为该系统用户
-        Object currentUser = session.getAttribute(Constants.SESSION_ATTRIBUTE_USER);
-        SysUser currentSysUser = RoleObjectCaster.cast(Constants.SYSTEM_USER, currentUser);
-        if (!currentSysUser.getSysUserNo().equals(sysUserNo)) {
-            throw new BusinessException(ResultCode.FORBIDDEN);
-        }
-
-        NotificationQuery query = new NotificationQuery();
-        query.setTargetId(sysUserNo);
-        query.setStatus(Constants.UNREAD);
-        List<Notification> notificationList = notificationService.selectByCondition(query);
-
-        return Result.success(notificationList);
-    }
-
-    /**
-     * 获取宿管的未读通知
-     * @param managerId
-     * @param session
-     * @return
-     */
-    @GetMapping("/dor-man/unread/{managerId}")
-    @ResponseBody
-    @RequirePermission(roles = {Constants.DORMITORY_MANAGER})
-    @LogOperation("获取宿管未读通知")
-    public Result<List<Notification>> getDormitoryUnreadNotifications(@PathVariable String managerId,
-                                                              HttpSession session) {
-        // 验证当前登录用户是否为该宿管
-        Object currentUser = session.getAttribute(Constants.SESSION_ATTRIBUTE_USER);
-        DormitoryManager curDormitoryManager = RoleObjectCaster.cast(Constants.DORMITORY_MANAGER, currentUser);
-        if (!curDormitoryManager.getManagerId().equals(managerId)) {
-            throw new BusinessException(ResultCode.FORBIDDEN);
-        }
-
-        NotificationQuery query = new NotificationQuery();
-        query.setTargetId(managerId);
-        query.setStatus(Constants.UNREAD);
-        List<Notification> notificationList = notificationService.selectByCondition(query);
-
-        return Result.success(notificationList);
-    }
-
-
-    /**
-     * 标记通知为已读
-     * @param noticeId
-     * @param session
-     * @return
-     */
-    @GetMapping("/mark-read/{noticeId}")
+    // 标记通知为已读
+    @PostMapping("/mark-read")
     @ResponseBody
     @RequirePermission
     @LogOperation("标记通知为已读")
-    public Result<String> markAsRead(@PathVariable String noticeId, HttpSession session) {
-        Object currentUser = session.getAttribute(Constants.SESSION_ATTRIBUTE_USER);
-        String userRoleStr = (String) session.getAttribute(Constants.SESSION_ATTRIBUTE_ROLE);
-
-        System.out.println("currentUser: " + currentUser);
-        System.out.println("userRoleStr: " + userRoleStr);
-
-        // 验证通知id形式是否正确
-        boolean validNoticeId = IdValidator.isValid(noticeId);
-        if (!validNoticeId) {
-            throw new BusinessException(ResultCode.VALIDATE_FAILED);
+    public Result<Void> markRead(@RequestBody NotificationDTO notificationDTO) {
+        if (notificationDTO == null) {
+            logger.error("通知参数为空");
+            throw new BusinessException(ResultCode.PARAMETER_ERROR);
         }
 
-        // 验证用户是否有权限操作这些通知
-        if (!notificationService.hasPermissionToRead(userRoleStr, currentUser, noticeId)) {
-            throw new BusinessException(ResultCode.FORBIDDEN);
+        if (notificationDTO.getNoticeIdList() == null || notificationDTO.getNoticeIdList().isEmpty()) {
+            logger.error("通知列表为空");
+            throw new BusinessException(ResultCode.PARAMETER_ERROR);
         }
 
-        Integer affectRows = notificationService.updateStatus(noticeId, Constants.READ);
-
-        if (affectRows <= 0) {
-            return Result.error(ResultCode.NOTIFICATION_UPDATE_FAILED);
-        } else {
-            return Result.success();
-        }
-    }
-
-    /**
-     * 批量标记通知已读
-     * @param noticeIds
-     * @param httpSession
-     * @return
-     */
-    @PostMapping("/batch-mark-read")
-    @ResponseBody
-    @RequirePermission
-    @LogOperation("批量更新通知为已读")
-    public Result<String> batchMarkAsRead(@RequestBody List<String> noticeIds,
-                                          HttpSession httpSession) {
-        Object currentUser = httpSession.getAttribute(Constants.SESSION_ATTRIBUTE_USER);
-        String userRoleStr = (String) httpSession.getAttribute(Constants.SESSION_ATTRIBUTE_USER);
-
-        // 验证用户是否有权限操作这些通知
-        if (!notificationService.hasPermissionToReadBatch(userRoleStr, currentUser, noticeIds)) {
-            throw new BusinessException(ResultCode.FORBIDDEN);
+        if (StringUtils.isBlank(notificationDTO.getReceiverId())) {
+            logger.error("通知接收对象为空");
+            throw new BusinessException(ResultCode.PARAMETER_ERROR);
         }
 
-        notificationService.batchUpdateStatus(noticeIds, Constants.READ);
+        List<String> noticeIdList = notificationDTO.getNoticeIdList();
+        boolean legal = noticeIdList.stream().allMatch(IdValidator::isValid);
+        if (!legal) {
+            logger.error("存在不合规的通知ID");
+            throw new BusinessException(ResultCode.PARAMETER_ERROR);
+        }
+
+        notificationService.markRead(notificationDTO);
 
         return Result.success();
     }
 
-    /**
-     * 获取通知统计信息
-     */
-    @GetMapping("/stats")
-    @ResponseBody
-    @RequirePermission
-    @LogOperation("获取通知统计信息")
-    public Result<Map<String, Object>> getNotificationsStats(HttpSession session) {
-        Object currentUser = session.getAttribute(Constants.SESSION_ATTRIBUTE_USER);
-        if (currentUser == null) {
-            throw new BusinessException(ResultCode.UNAUTHORIZED);
+
+    // 校验参数是否合规
+    private void validateNotificationQuery(NotificationQuery query) {
+        // 校验参数是否为空
+        if (query == null) {
+            logger.error("通知查询参数不合规, query: {}", query);
+            throw new BusinessException(ResultCode.PARAMETER_ERROR);
         }
 
-        Map<String, Object> statsMap = notificationService.getNotificationStats(currentUser);
+        // 校验角色
+        if (StringUtils.isNotBlank(query.getTargetType())) {
+            boolean validUserRole = UserRole.isValidRole(query.getTargetType().toLowerCase());
+            boolean validJobRole = JobRole.isValidRole(query.getTargetType().toLowerCase());
 
-        return Result.success(statsMap);
-    }
-
-
-    /**
-     * 跳转到通知列表页面
-     */
-    @GetMapping("/list")
-    public String list(Model model) {
-        List<Notification> notifications = notificationService.selectAll();
-        model.addAttribute("notifications", notifications);
-        return "notification/list";
-    }
-
-    /**
-     * 跳转到添加通知页面
-     */
-    @GetMapping("/add")
-    public String toAdd() {
-        return "notification/add";
-    }
-
-    /**
-     * 添加通知
-     */
-    @PostMapping("/add")
-    @ResponseBody
-    public String add(@RequestBody Notification notification) {
-        try {
-            notificationService.insert(notification);
-            return "success";
-        } catch (Exception e) {
-            return "error";
+            if (!(validJobRole || validUserRole)) {
+                logger.error("无效的角色, role: {}", query.getTargetType());
+                throw new BusinessException(ResultCode.PARAMETER_ERROR);
+            }
         }
-    }
 
-    /**
-     * 跳转到编辑通知页面
-     */
-    @GetMapping("/edit/{id}")
-    public String toEdit(@PathVariable Integer id, Model model) {
-        Notification notification = notificationService.selectById(id);
-        model.addAttribute("notification", notification);
-        return "notification/edit";
-    }
+        // 校验通知范围
+        if (StringUtils.isNotBlank(query.getTargetScope())) {
+            boolean validTargetScope = TargetScope.isValidRole(query.getTargetScope().toLowerCase());
+            if (!validTargetScope) {
+                logger.error("无效的通知范围, targetScope: {}", query.getTargetScope());
+                throw new BusinessException(ResultCode.PARAMETER_ERROR);
+            }
+        }
 
-    /**
-     * 更新通知
-     */
-    @PostMapping("/update")
-    @ResponseBody
-    public String update(@RequestBody Notification notification) {
-        try {
-            notificationService.update(notification);
-            return "success";
-        } catch (Exception e) {
-            return "error";
+        // 校验创建时间范围
+        Date createTimeStart = query.getCreateTimeStart();
+        Date createTimeEnd = query.getCreateTimeEnd();
+        if (createTimeStart != null && createTimeEnd != null) {
+            if (createTimeStart.after(createTimeEnd)) {
+                logger.error("无效的创建时间范围，createTimeStart:{}, createTimeEnd:{}", createTimeStart, createTimeEnd);
+                throw new BusinessException(ResultCode.PARAMETER_ERROR);
+            }
+        }
+
+        // 校验阅读状态
+        String readStatus = query.getReadStatus();
+        Set<String> readStatusSet = Set.of("UNREAD", "READ", "ALL");
+        if (StringUtils.isNotBlank(readStatus)) {
+            if(!readStatusSet.contains(readStatus.toUpperCase())) {
+                logger.error("通知的阅读状态不合规, readStatus: {}", readStatus);
+                throw new BusinessException(ResultCode.PARAMETER_ERROR);
+            }
         }
     }
 
-    /**
-     * 删除通知
-     */
-    @PostMapping("/delete/{id}")
-    @ResponseBody
-    public String delete(@PathVariable Integer id) {
-        try {
-            notificationService.deleteById(id);
-            return "success";
-        } catch (Exception e) {
-            return "error";
-        }
-    }
 
-    /**
-     * 根据条件查询通知
-     */
-    @PostMapping("/search")
-    @ResponseBody
-    public List<Notification> search(@RequestBody NotificationQuery notificationQuery) {
-        return notificationService.selectByCondition(notificationQuery);
-    }
 
-    /**
-     * 根据目标类型和目标ID查询通知
-     */
-    @GetMapping("/target")
-    @ResponseBody
-    public List<Notification> getByTarget(@RequestParam String targetType, @RequestParam String targetId) {
-        return notificationService.selectByTarget(targetType, targetId);
-    }
-
-    /**
-     * 根据通知类型查询通知
-     */
-    @GetMapping("/type/{type}")
-    @ResponseBody
-    public List<Notification> getByType(@PathVariable String type) {
-        return notificationService.selectByType(type);
-    }
-
-    /**
-     * 根据状态查询通知
-     */
-    @GetMapping("/status/{status}")
-    @ResponseBody
-    public List<Notification> getByStatus(@PathVariable String status) {
-        return notificationService.selectByStatus(status);
-    }
-
-    /**
-     * 更新通知状态
-     */
-    @PostMapping("/update-status")
-    @ResponseBody
-    public String updateStatus(@RequestParam String notificationId, @RequestParam String status) {
-        try {
-            notificationService.updateStatus(notificationId, status);
-            return "success";
-        } catch (Exception e) {
-            return "error";
-        }
-    }
-
-    /**
-     * 批量更新通知状态
-     */
-    @PostMapping("/batch-update-status")
-    @ResponseBody
-    public String batchUpdateStatus(@RequestParam List<String> notificationIds, @RequestParam String status) {
-        try {
-            notificationService.batchUpdateStatus(notificationIds, status);
-            return "success";
-        } catch (Exception e) {
-            return "error";
-        }
-    }
 }

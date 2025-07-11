@@ -1,6 +1,7 @@
 package com.tianhai.warn.query;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.tianhai.warn.annotation.AtLeastOneFieldNotNull;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
@@ -11,28 +12,69 @@ import java.util.List;
 @SuperBuilder
 @AllArgsConstructor
 @NoArgsConstructor
+@AtLeastOneFieldNotNull
 public class NotificationQuery extends BaseQuery{
+    /**
+     * 精确匹配：通知ID
+     */
+    private String noticeId;
 
-    private String noticeId; // 通知唯一ID
-    private String title; // 通知标题
-    private String content; // 通知内容
-    private String noticeType; // 通知类型：系统通知/晚归通知/预警通知
-    private String targetType; // 目标类型：全部/学生/宿管/管理员
-    private String targetId; // 目标ID（特定用户）
-    private String status; // 状态：已读/未读
+    /**
+     * 阅读状态（UNREAD / READ / UNREAD）
+     */
+    private String readStatus;
 
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private Date startNoticeTime; // 通知创建时间范围-起
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private Date endNoticeTime;
+    /**
+     * 模糊查询：通知标题（支持 LIKE %title%）
+     */
+    private String titleLike;
 
-    private String titleLike;//通知标题模糊查询
-    private String contentLike;//通知内容模糊查询
+    /**
+     * 模糊查询：通知内容（支持 LIKE %content%）
+     */
+    private String contentLike;
 
-    //批量查询字段
-    private List<String> noticeIds;
-    private List<String> noticeTypes;
-    private List<String> targetIds;
+    /**
+     * 精确匹配：通知类型（如系统通知、晚归通知等）
+     */
+    private String noticeType;
 
+    /**
+     * 精确匹配：通知目标角色类型
+     * （如 STUDENT, DORMITORY_MANAGER, COUNSELOR, CLASS_TEACHER, DEAN）
+     *  当targetScope为ALL_USERS时，targetType为null
+     */
+    private String targetType;
+
+    /**
+     * 精确匹配：通知目标ID（业务ID）
+     * 当targetScope为ALL_USERS或SPECIAL_ROLE时，targetId为null
+     */
+    private String targetId;
+
+    /**
+     * 精确匹配：通知范围（ALL_USERS / SPECIAL_ROLE / SPECIAL_USER）
+     */
+    private String targetScope;
+
+    /**
+     * 批量匹配：多个通知ID
+     */
+    private List<String> noticeIdList;
+
+    /**
+     * 批量匹配： 多个通知目标ID
+     */
+    private List<String> targetIdList;
+
+    /**
+     * 创建时间范围 - 开始
+     */
+    private Date createTimeStart;
+
+    /**
+     * 创建时间范围 - 结束
+     */
+    private Date createTimeEnd;
 
 }

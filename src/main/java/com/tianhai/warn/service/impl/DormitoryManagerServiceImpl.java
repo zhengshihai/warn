@@ -353,23 +353,7 @@ public class DormitoryManagerServiceImpl implements DormitoryManagerService {
             logger.info("宿管工号发生变更，在explanation表异步更新 {} 条数据", updatedRow);
         }
 
-        // 使用通用方法更新notification发给该宿管的站内通知
-        String oldManagerId = oldDorMan.getManagerId();
-        String newManagerId = newDorMan.getManagerId();
-
-        int updatedNotificationCount = updateAuditPersonInOtherTable(
-                NotificationQuery.builder().targetId(oldManagerId).build(),
-                notificationService::selectByCondition,
-                (notification, newNotification) -> {
-                    Notification updated = new Notification();
-                    updated.setId(notification.getId());
-                    updated.setTargetId(newManagerId);
-                    return notification;
-                },
-                notificationService::updateBatch,
-                newManagerId
-        );
-        logger.info("宿管工号发生变更，在notification表异步更新 {} 条数据", updatedNotificationCount);
+        // 不更新 notification表 和 notification_receiver表
     }
 
     /**

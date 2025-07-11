@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tianhai.warn.mapper.NotificationReceiverMapper">
+    
+    <!-- 结果映射 -->
+    <resultMap id="BaseResultMap" type="com.tianhai.warn.model.NotificationReceiver">
+        <id column="id" property="id"/>
+        <result column="notice_id" property="noticeId"/>
+        <result column="receiver_id" property="receiverId"/>
+        <result column="receiver_role" property="receiverRole"/>
+        <result column="read_status" property="readStatus"/>
+        <result column="read_time" property="readTime" jdbcType="TIMESTAMP"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+    
+    <!-- 通用查询结果列 -->
+    <sql id="Base_Column_List">
+        id, notice_id, receiver_id, receiver_role, read_status, read_time, create_time, update_time
+    </sql>
+
+    <!-- 根据条件查询 -->
+    <select id="selectByCondition" resultMap="BaseResultMap" parameterType="com.tianhai.warn.query.NotificationReceiverQuery">
+        SELECT <include refid="Base_Column_List"/>
+        FROM notification_receiver
+        <where>
+            <if test="id != null">
+                AND id = #{id}
+            </if>
+            <if test="noticeId != null and noticeId != ''">
+                AND notice_id = #{noticeId}
+            </if>
+
+            <if test="receiverId != null and receiverId != ''">
+                AND receiver_id = #{receiverId}
+            </if>
+            <if test="receiverRole != null and receiverRole != ''">
+                AND receiver_role = #{receiverRole}
+            </if>
+            <if test="readStatus != null and readStatus != ''">
+                AND read_status = #{readStatus}
+            </if>
+
+            <if test="readTimeStart != null">
+                AND read_time &gt;=#{readTimeStart}
+            </if>
+            <if test="readTimeEnd != null">
+                AND read_time &lt;=#{readTimeEnd}
+            </if>
+            <if test="createTimeStart != null">
+                AND create_time &gt;=#{createTimeStart}
+            </if>
+            <if test="createTimeEnd != null">
+                AND create_time &lt;= #{createTimeEnd}
+            </if>
+
+            <if test="noticeIdList != null and noticeIdList.size() > 0">
+                AND notice_id IN <foreach collection="noticeIdList" item="item" open="(" separator="," close=")">#{item}</foreach>
+            </if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+    
+    <!-- 根据ID查询 -->
+    <select id="selectById" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM notification_receiver
+        WHERE id = #{id}
+    </select>
+    
+    <!-- 根据通知ID查询 -->
+    <select id="selectByNoticeId" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM notification_receiver
+        WHERE notice_id = #{noticeId}
+    </select>
+    
+    <!-- 根据接收者ID查询 -->
+    <select id="selectByReceiverId" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM notification_receiver
+        WHERE receiver_id = #{receiverId}
+        ORDER BY create_time DESC
+    </select>
+    
+    <!-- 根据接收者角色查询 -->
+    <select id="selectByReceiverRole" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM notification_receiver
+        WHERE receiver_role = #{receiverRole}
+        ORDER BY create_time DESC
+    </select>
+    
+    <!-- 根据阅读状态查询 -->
+    <select id="selectByReadStatus" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM notification_receiver
+        WHERE read_status = #{readStatus}
+        ORDER BY create_time DESC
+    </select>
+    
+
+    
+    <!-- 查询所有 -->
+    <select id="selectAll" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM notification_receiver
+        ORDER BY create_time DESC
+    </select>
+    
+    <!-- 插入 -->
+    <insert id="insert" parameterType="com.tianhai.warn.model.NotificationReceiver" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO notification_receiver (
+            notice_id, receiver_id, receiver_role,
+             read_status, read_time, create_time, update_time
+        ) VALUES (
+            #{noticeId}, #{receiverId}, #{receiverRole}, 
+            #{readStatus}, #{readTime}, NOW(), NOW()
+        )
+    </insert>
+    
+    <!-- 批量插入 -->
+    <insert id="insertBatch">
+        INSERT INTO notification_receiver (
+            notice_id, receiver_id, receiver_role, read_status, read_time, create_time, update_time
+        ) VALUES
+        <foreach collection="notificationReceiverList" item="item" separator=",">
+            (
+                #{item.noticeId},
+                #{item.receiverId},
+                #{item.receiverRole},
+                #{item.readStatus},
+                #{item.readTime},
+                NOW(),
+                NOW()
+            )
+        </foreach>
+    </insert>
+    
+    <!-- 更新 -->
+    <update id="update" parameterType="com.tianhai.warn.model.NotificationReceiver">
+        UPDATE notification_receiver
+        <set>
+            <if test="noticeId != null">
+                notice_id = #{noticeId},
+            </if>
+            <if test="receiverId != null">
+                receiver_id = #{receiverId},
+            </if>
+            <if test="receiverRole != null">
+                receiver_role = #{receiverRole},
+            </if>
+            <if test="readStatus != null">
+                read_status = #{readStatus},
+            </if>
+            <if test="readTime != null">
+                read_time = #{readTime},
+            </if>
+            update_time = NOW()
+        </set>
+        WHERE id = #{id}
+    </update>
+    
+    <!-- 批量更新 -->
+    <update id="updateBatch">
+        <foreach collection="notificationReceiverList" item="item" separator=";">
+            UPDATE notification_receiver
+            <set>
+                <if test="item.noticeId != null">notice_id = #{item.noticeId},</if>
+                <if test="item.receiverId != null">receiver_id = #{item.receiverId},</if>
+                <if test="item.receiverRole != null">receiver_role = #{item.receiverRole},</if>
+                <if test="item.readStatus != null">read_status = #{item.readStatus},</if>
+                <if test="item.readTime != null">read_time = #{item.readTime},</if>
+                update_time = NOW()
+            </set>
+            WHERE id = #{item.id}
+        </foreach>
+    </update>
+    
+    <!-- 删除 -->
+    <delete id="deleteById">
+        DELETE FROM notification_receiver WHERE id = #{id}
+    </delete>
+    
+    <!-- 根据通知ID删除 -->
+    <delete id="deleteByNoticeId">
+        DELETE FROM notification_receiver WHERE notice_id = #{noticeId}
+    </delete>
+    
+    <!-- 根据接收者ID删除 -->
+    <delete id="deleteByReceiverId">
+        DELETE FROM notification_receiver WHERE receiver_id = #{receiverId}
+    </delete>
+    
+    <!-- 统计未读消息数量 -->
+    <select id="countUnreadByReceiverId" resultType="int">
+        SELECT COUNT(*)
+        FROM notification_receiver
+        WHERE receiver_id = #{receiverId} AND read_status = 'UNREAD'
+    </select>
+    
+    <!-- 统计未读消息数量（按角色） -->
+    <select id="countUnreadByReceiverRole" resultType="int">
+        SELECT COUNT(*)
+        FROM notification_receiver
+        WHERE receiver_role = #{receiverRole} AND read_status = 'UNREAD'
+    </select>
+    
+    <!-- 标记为已读 -->
+    <update id="markAsRead">
+        UPDATE notification_receiver
+        SET read_status = 'READ', read_time = NOW(), update_time = NOW()
+        WHERE id = #{id}
+    </update>
+    
+    <!-- 批量标记为已读 -->
+    <update id="markAsReadBatch">
+        UPDATE notification_receiver
+        SET read_status = 'READ', read_time = NOW(), update_time = NOW()
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+    
+    <!-- 根据接收者ID标记所有为已读 -->
+    <update id="markAllAsReadByReceiverId">
+        UPDATE notification_receiver
+        SET read_status = 'READ', read_time = NOW(), update_time = NOW()
+        WHERE receiver_id = #{receiverId} AND read_status = 'UNREAD'
+    </update>
+    
+</mapper>

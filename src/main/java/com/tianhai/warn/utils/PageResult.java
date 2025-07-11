@@ -62,9 +62,11 @@ public class PageResult<T> implements Serializable {
     public void setTotal(int total) {
         this.total = total;
     }
+
     public int getPageNum() {
         return pageNum;
     }
+
     public void setPageNum(int pageNum) {
         this.pageNum = pageNum;
     }

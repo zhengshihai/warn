@@ -1,5 +1,6 @@
 package com.tianhai.warn.query;
 
+import com.tianhai.warn.annotation.AtLeastOneFieldNotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -12,6 +13,7 @@ import java.util.List;
 @SuperBuilder
 @AllArgsConstructor
 @NoArgsConstructor
+@AtLeastOneFieldNotNull
 public class SuperAdminQuery extends BaseQuery{
     /**
      * 支持根据多个 ID 批量查询

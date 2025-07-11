@@ -2,6 +2,7 @@ package com.tianhai.warn.service;
 
 import com.tianhai.warn.dto.*;
 import com.tianhai.warn.enums.BusinessType;
+import com.tianhai.warn.model.Notification;
 import com.tianhai.warn.model.SuperAdmin;
 import com.tianhai.warn.utils.Result;
 
@@ -46,8 +47,20 @@ public interface VerificationService {
      */
     Result<Boolean> validateEmailCaptcha(String email, String captcha, BusinessType businessType);
 
+    /**
+     * 校验注册频率
+     * @param sessionId     会话id
+     * @param businessType  业务类型
+     * @return              校验结果
+     */
     Result<Boolean> checkRegisterLimit(String sessionId, BusinessType businessType);
 
+    /**
+     * 清除注册验证码
+     * @param sessionId    会话id
+     * @param email         邮箱
+     * @param businessType  业务类型
+     */
     void cleanupRegistrationCodes(String sessionId, String email, BusinessType businessType);
 
     /**
@@ -82,4 +95,10 @@ public interface VerificationService {
      * 校验当前超级管理员的状态
      */
     void checkSuperAdminStatus();
+
+    /**
+     * 校验插入的通知内容是否合规
+     * @param notification    待校验的通知内容
+     */
+    void validateNotification(Notification notification);
 }

@@ -21,27 +21,13 @@
     <script src="${pageContext.request.contextPath}/static/js/bootstrap.bundle.min.js"></script>
 </head>
 <body class="bg-gray-100">
-    <!-- 导航栏 -->
-    <nav class="bg-white shadow-lg">
-        <div class="max-w-7xl mx-auto px-4">
-            <div class="flex justify-between h-16">
-                <div class="flex">
-                    <div class="flex-shrink-0 flex items-center">
-                        <span class="text-xl font-bold text-gray-800">学生晚归预警系统</span>
-                    </div>
-                    <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
-                        <a href="/dashboard" class="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium">首页</a>
-                        <a href="/late-records" class="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium">晚归记录</a>
-                        <a href="/reports" class="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium">报表统计</a>
-                        <a href="/messages" class="border-indigo-500 text-gray-900 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">消息中心</a>
-                    </div>
-                </div>
-                <div class="flex items-center">
-                    <div class="flex-shrink-0">
-                        <span class="text-gray-500 mr-4">管理员</span>
-                        <button class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium">退出</button>
-                    </div>
-                </div>
+    <!-- 顶部导航栏 -->
+    <nav class="bg-white shadow-sm rounded-lg mb-6 p-4">
+        <div class="flex justify-between items-center">
+            <h1 class="text-xl font-semibold text-gray-800">学生晚归预警系统</h1>
+            <div class="flex items-center space-x-4">
+                <a href="${pageContext.request.contextPath}/dean" class="text-gray-600 hover:text-gray-900">返回首页</a>
+                <button class="text-sm text-red-600 hover:text-red-800" onclick="handleLogout()">退出登录</button>
             </div>
         </div>
     </nav>
@@ -225,6 +211,28 @@
             </div>
         </div>
     </div>
+
+
+    <script>
+        $.ajaxSetup({
+            beforeSend: function(xhr) {
+                var loginUUID = localStorage.getItem('loginUUID');
+                if (loginUUID) {
+                    xhr.setRequestHeader('X-Login-UUID', loginUUID);
+                }
+            }
+        });
+
+        function handleLogout() {
+            if (confirm('确定要退出登录吗？')) {
+                localStorage.removeItem('loginUUID');
+                window.location.href = '${pageContext.request.contextPath}/logout';
+            }
+        }
+
+
+    </script>
+
 
     <!-- 非Ajax形式请求的错误弹框提示 -->
     <c:if test="${not empty sessionScope.errorMsg}">

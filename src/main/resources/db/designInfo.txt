@@ -418,3 +418,108 @@ requestLoginUUID
 校验流程
 后端拦截器拿到 requestLoginUUID（来自请求头）和 sessionLoginUUID（来自 session）。
 只有两者一致时，才允许访问业务接口，否则强制下线或重定向登录。
+
+【消息已读和未读 群发和单发 实现思路】
+-- 通知表
+CREATE TABLE IF NOT EXISTS notification (
+        id INT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID',
+        notice_id VARCHAR(32) NOT NULL COMMENT '通知ID',
+        title VARCHAR(200) NOT NULL COMMENT '通知标题',
+        content TEXT NOT NULL COMMENT '通知内容',
+        notice_type VARCHAR(50) COMMENT '通知类型（系统通知/晚归通知/预警通知等）',
+        target_type VARCHAR(20) COMMENT
+        '目标类型（student, dormitorymanager, counselor, classteacher, dean）',
+        target_id VARCHAR(50) COMMENT '目标ID（特定用户的唯一标识，如学号、工号等）',
+        target_scope VARCHAR(20) NOT NULL DEFAULT 'allUsers'
+               COMMENT '接受通知的对象范围  allUsers, specialRole, specialUser',
+        create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+        update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+        KEY idx_target (target_type, target_id),
+        UNIQUE KEY uk_notice_id (notice_id),
+        KEY idx_type (notice_type)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='通知记录表';
+
+-- 通知接收表
+CREATE TABLE IF NOT EXISTS notification_receiver (
+         id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID',
+         notice_id VARCHAR(32) NOT NULL COMMENT '通知ID',
+         receiver_id VARCHAR(50) NOT NULL COMMENT
+             '接收者业务标识ID（学号、工号等）超级管理员直接用主键ID',
+         receiver_role VARCHAR(30) NOT NULL COMMENT '接收者角色（student、classteacher等）',
+         read_status ENUM('UNREAD', 'READ') NOT NULL DEFAULT 'UNREAD' COMMENT '阅读状态',
+         read_time DATETIME DEFAULT NULL COMMENT '阅读时间',
+         create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+         update_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+         UNIQUE KEY uk_notify_receiver (notice_id, receiver_id),
+         KEY idx_receiver_id (receiver_id)
+        -- CONSTRAINT fk_notify_id FOREIGN KEY (notice_id) REFERENCES notification(notice_id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='通知接收表';
+
+以上两张表是我结合你的意见后设计的，我来说下插入消息业务规则：
+   其一：
+         如果是发送给特定某个用户的通知，会在notification表插入id, notice_id,title, content, notice_type,
+   target_type(这里是根据用户的具体角色决定，例如学生就是STUDENT)，
+   target_id(特定某个用户的业务标识id）,
+   target_scope（发给某个特定用户的消息，设为SPECIAL_USER）,
+   create_time(new Date()), update_time(new Date())。
+
+         在notification插入一条数据后，我们还要在notification_receiver插入一条数据，
+   包括id, notice_id(和notification表的notice_id相同，是业务标识id)，
+   receiver_id (该特定用户的业务标识id，例如student_no)，
+   receiver_role(receiver_id对应的用户所属的角色，例如学生STUDENT)，
+   read_status（这里默认设为UNREAD),
+   read_time(null),create_time(new Date())。
+
+
+   其二 如果是发送给特定角色群体的通知，例如发给全体学生的通知，会在notification表插
+   入id, notice_id,title, content, type,
+   target_type(这里是根据用户的具体角色决定，例如学生就是STUDENT)，
+   target_id(这里直接设置为空，和我们是发送给特定角色群体的初衷相呼应）,
+   target_scope（某种特定角色设定为SPECIAL_ROLE）,
+   create_time(new Date()), update_time(new Date())。
+
+       在notification插入一条数据后，我们还要在notification_receiver插入多条数据，
+   id, notice_id(和notification表的notice_id相同，是业务标识id)，
+   receiver_id (该特定角色下所有用户的业务标识id，例如学生角色群体的student_no)，
+   receiver_role(receiver_id对应的用户所属的角色，例如学生STUDENT)，
+   read_status（这里是默认设为UNREAD),
+   read_time(null),create_time(new Date())。
+
+
+   其三 如果是发送全体通知，会在notification表插入id, notice_id,title, content, type,
+   target_type(这里设置为空)，target_id(这里设置为空，这和我们是发送给全体通知的设计初衷相吻合）,
+   target_scope（群体消息就设为ALL_USERS）,create_time, update_time这些时间字段按当前插入。
+
+        在notification插入一条数据后，我们还要在notification_receiver插入多条数据，
+      id, notice_id(和notification表的notice_id相同，是业务标识id)，
+      receiver_id (全体所有用户的业务标识id)，
+      receiver_role(该receiver_id对应的用户所属的角色，例如学生STUDENT)，
+      read_status（这里一般是先设为UNREAD),
+      read_time(null),create_time(new Date())。
+
+   然后再来说下读取消息的业务规则：
+
+
+   ✅ 优化策略一：懒写入（延迟写入 receiver 表）
+   当前方式：
+
+   发送时写入所有人的 notification_receiver 数据。
+
+   可选方式：
+
+   notification_receiver 仅在用户第一次读取该通知时再生成该条记录（并设为 UNREAD 或 READ）。
+
+   优点：
+
+   减少 insert 写入压力，尤其是 ALL_USERS 群发场景。
+
+   对消息总量大的系统更友好。
+
+   缺点：
+
+   查询逻辑更复杂，需要判断某用户是否“应该收到”该通知。
+
+   ✅ 优化策略二：通知下发任务异步化
+   对于群发和全发场景，发送通知后立即推送异步任务（如 MQ、定时器）来逐批插入 notification_receiver，
+   避免长时间阻塞主线程。
+

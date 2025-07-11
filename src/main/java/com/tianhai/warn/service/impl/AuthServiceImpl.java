@@ -67,9 +67,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         // 2. 根据角色验证用户
-//        System.out.println("登录明文密码: [" + password + "] 长度: " + password.length());
         String encryptedPassword = DigestUtils.md5DigestAsHex(password.getBytes(StandardCharsets.UTF_8));
-//        System.out.println("登录加密密码: " + encryptedPassword);
         Map<String, Object> infoMap = new HashMap<>();
         Object userObject = null; // 用于存储具体的用户对象
         Long userId = null; // 用户存储用户的主键ID
@@ -125,13 +123,11 @@ public class AuthServiceImpl implements AuthService {
                 break;
 
             // 超级管理员
-            case SUPER_ADMIN: // 数据库原加密密码 1badb1de368b07ab6521149f4bdaac30
+            case SUPER_ADMIN:
                 SuperAdmin superAdmin = superAdminService.getByEmail(email);
                 if (superAdmin == null || !superAdmin.getPassword().equals(encryptedPassword)) {
                     throw new BusinessException(ResultCode.USER_NAME_PWD_FALSE);
                 }
-//                System.out.println("数据库密码: " +
-//                (superAdmin != null ? superAdmin.getPassword() : "null"));
                 superAdmin.setPassword(null);
                 userObject = superAdmin;
                 userId = superAdmin.getId().longValue();

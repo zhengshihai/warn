@@ -211,9 +211,15 @@
             <div class="portal-card p-6 mb-6">
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="text-lg font-medium text-gray-900">通知消息</h3>
-                    <span id="unreadNotificationCount" class="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs">
-                        0
-                    </span>
+                    <div class="flex items-center space-x-3">
+                        <select id="notificationStatusFilter" class="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
+                            <option value="ALL">全部</option>
+                            <option value="UNREAD">未读</option>
+                            <option value="READ">已读</option>
+                        </select>
+                        
+                    </div>
+                
                 </div>
                 <div class="space-y-4" id="notificationList">
                     <!-- 通知内容将通过 JavaScript 动态加载 -->
@@ -249,10 +255,10 @@
             <div class="border-b border-gray-200 mb-6">
                 <nav class="-mb-px flex space-x-8">
                     <a href="#" class="tab-active py-4 px-1 font-medium text-sm">
-                        我的晚归记录
+                        
                     </a>
                     <a href="#" class="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 py-4 px-1 font-medium text-sm">
-                        提交说明申请
+                        
                     </a>
                     <a href="#" class="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 py-4 px-1 font-medium text-sm">
                         通知消息
@@ -1212,27 +1218,34 @@
         let notificationCurrentPage = 1;
         const notificationPageSize = 3; // 每页显示3条通知
 
-
+        $(document).ready(function() {
+            $('#notificationStatusFilter').on('change', function() {
+                loadNotifications();
+            });
+        });
+        
         // 加载通知消息
         function loadNotifications() {
             // 显示加载状态
             $('#notificationLoading').removeClass('hidden');
 
+             // 获取状态筛选值
+             var readStatus = $('#notificationStatusFilter').val();
+
             $.ajax({
-                url: '${pageContext.request.contextPath}/notification/unread-page-list',
+                url: '${pageContext.request.contextPath}/notification/special-user/page',
                 type: 'POST',
                 contentType: 'application/json',
                 data: JSON.stringify({
                     pageNum: notificationCurrentPage,
                     pageSize: notificationPageSize,
-                    status: 'UNREAD',
-                    targetId: '${sessionScope.user.studentNo}'
+                    readStatus: readStatus,
+                    targetId: '${sessionScope.user.studentNo}',
+                    targetType: 'STUDENT'
                 }),
                 success: function(response) {
                     if (response.success) {
                         const pageResult = response.data;
-                         // 动态更新未读通知数量
-                        $('#unreadNotificationCount').text(pageResult.total || 0);
                     
                         // 保存总数到 notificationList 元素
                         $('#notificationList').data('total', pageResult.total);
@@ -1267,35 +1280,47 @@
         }
 
         // 更新通知列表
-        function updateNotificationList(notifications) {
+        function updateNotificationList(notificationVOs) {
             const notificationList = $('#notificationList');
             notificationList.empty();
             
-            if (!notifications || notifications.length === 0) {
+            if (!notificationVOs || notificationVOs.length === 0) {
                 notificationList.append(`
                     <div class="text-center text-gray-500 py-4">
-                        暂无未读通知
+                        暂无通知
                     </div>
                 `);
                 return;
             }
 
-            notifications.forEach(function(notification) {
+            notificationVOs.forEach(function(notificationVO) {
                 // 格式化日期时间
-                var createTime = formatDateTime(notification.createTime);
+                var createTime = formatDateTime(notificationVO.createTime);
+                
+                // 根据阅读状态决定按钮显示
+                var buttonHtml = '';
+                if (notificationVO.readStatus === 'READ') {
+                    // 已读状态：显示"已读"文本，不可点击
+                    buttonHtml = '<span class="text-xs text-gray-400">已读</span>';
+                } else {
+                    // 未读状态：显示"标记已读"按钮，可点击
+                    buttonHtml = '<button onclick="markAsRead(\'' + notificationVO.noticeId + '\')" ' +
+                                'class="text-xs text-blue-600 hover:text-blue-800">' +
+                                '标记已读' +
+                                '</button>';
+                }
 
                 var notificationHtml = 
-                    '<div class="border-l-4 pl-4 py-2 mb-4 hover:bg-gray-50" data-type="' + notification.noticeType + '">' +
+                    '<div class="border-l-4 pl-4 py-2 mb-4 hover:bg-gray-50" data-type="' + notificationVO.noticeType + '">' +
                         '<div class="flex justify-between items-start">' +
                             '<div>' +
-                                '<p class="text-sm font-medium text-gray-900">' + (notification.title || '-') + '</p>' +
-                                '<p class="text-sm text-gray-500 mt-1">' + (notification.content || '-') + '</p>' +
+                                '<p class="text-sm font-medium text-gray-900">' + (notificationVO.title || '-') + '</p>' +
+                                '<p class="text-sm text-gray-500 mt-1">' + (notificationVO.content || '-') + '</p>' +
                                 '<p class="text-xs text-gray-400 mt-1">' + createTime + '</p>' +
                             '</div>' +
-                            '<button onclick="markAsRead(\'' + notification.noticeId + '\')" ' +
-                                    'class="text-xs text-blue-600 hover:text-blue-800">' +
-                                '标记已读' +
-                            '</button>' +
+                            '<div>' +
+                                buttonHtml +
+                            '</div>' +
                         '</div>' +
                     '</div>';
                 notificationList.append(notificationHtml);
@@ -1391,15 +1416,26 @@
 
         // 标记通知为已读
         function markAsRead(noticeId) {
+            // 获取当前学生学号
+            const studentNo = '${sessionScope.user.studentNo}';
+            
+            // 构造请求数据
+            const requestData = {
+                noticeIdList: [noticeId],  // 将单个noticeId封装成List
+                receiverId: studentNo,     // 从session获取的studentNo
+                targetType: 'STUDENT',     // 目标类型为STUDENT
+                readStatus: 'READ'         // 阅读状态为READ
+            };
+            
             $.ajax({
-                url: '${pageContext.request.contextPath}/notification/mark-read/' + noticeId,
-                type: 'GET',
+                url: '${pageContext.request.contextPath}/notification/mark-read',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(requestData),
                 success: function(response) {
                     if (response.success) {
                         // 重新加载通知列表
                         loadNotifications();
-                        // 更新未读通知数量
-                        updateUnreadCount();
                     } else {
                         alert('标记已读失败：' + response.message);
                     }
@@ -1432,10 +1468,7 @@
             });
         }
 
-        // 更新未读通知数量 todo 暂时不用实现
-        function updateUnreadCount() {
     
-        }
 
         // 页面加载完成后初始化
         $(document).ready(function() {

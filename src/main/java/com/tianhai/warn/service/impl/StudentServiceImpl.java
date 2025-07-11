@@ -2,11 +2,14 @@ package com.tianhai.warn.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.json.JSONUtil;
+import com.github.pagehelper.Constant;
 import com.github.pagehelper.Page;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
+import com.tianhai.warn.constants.Constants;
 import com.tianhai.warn.enums.AlarmStatus;
 import com.tianhai.warn.enums.ResultCode;
+import com.tianhai.warn.enums.TargetScope;
 import com.tianhai.warn.exception.BusinessException;
 import com.tianhai.warn.exception.SystemException;
 import com.tianhai.warn.mapper.StudentLateStatsMapper;
@@ -365,128 +368,15 @@ public class StudentServiceImpl implements StudentService {
         notification.setNoticeId(NoticeIdGenerator.generate());
         notification.setTitle("学号更新通知");
         notification.setNoticeType("系统通知");
-        notification.setTargetType("STUDENT");
+        notification.setTargetType(Constants.STUDENT);
+        notification.setTargetScope(TargetScope.SPECIAL_USER.getCode());
         notification.setTargetId(oldStudentNo);
-        notification.setStatus("UNREAD");
-        notification.setCreateTime(new Date());// todo 写项目最好优先使用LocalDateTime,LocalDate
+        notification.setCreateTime(new Date());
         notification.setUpdateTime(new Date());
         notification.setContent(content);
 
         return notificationService.insert(notification);
     }
-
-    // 更新学生表之外其他表的学生信息
-    @Deprecated
-    private void updateStudentInfoInOtherTables(Student newStudentInfo, Student oldStudentInfo) {
-
-        String oldStudentNo = oldStudentInfo.getStudentNo();
-        String newStudentNo = newStudentInfo.getStudentNo();
-
-        // 更新alarm_process_record表中的学生信息
-        AlarmRecordQuery alarmRecordQuery = AlarmRecordQuery.builder()
-                .studentNo(oldStudentNo)
-                .build();
-        List<AlarmRecord> oldAlarmRecordList = alarmRecordService.selectList(alarmRecordQuery);
-        if (oldAlarmRecordList != null && !oldAlarmRecordList.isEmpty()) {
-            oldAlarmRecordList.forEach(alarmRecord -> alarmRecord.setStudentNo(newStudentNo));
-
-            try {
-                int updateRows = alarmRecordService.updateBatch(oldAlarmRecordList);
-                logger.info("成功更新alarm_record表，一共更新 {} 条数据", updateRows);
-            } catch (Exception e) {
-                logger.error("更新 alarm_record 表的 studentNo 出现异常");
-                throw new SystemException(ResultCode.ERROR);
-            }
-        }
-
-        // 更新application表中的学生信息
-        ApplicationQuery applicationQuery = ApplicationQuery.builder()
-                .studentNo(oldStudentNo)
-                .build();
-        List<Application> oldApplicationList = applicationService.selectByCondition(applicationQuery);
-        if (oldApplicationList != null && !oldApplicationList.isEmpty()) {
-            oldApplicationList.forEach(application -> application.setStudentNo(newStudentNo));
-
-            try {
-                int updateRows = applicationService.updateBatch(oldApplicationList);
-                logger.info("成功更新 application 表，一共更新 {} 条数据", updateRows);
-            } catch (Exception e) {
-                logger.error("更新 application 表的studentNo 出现异常");
-                throw new SystemException(ResultCode.ERROR);
-            }
-        }
-
-        // 更新explanation表中的学生信息
-        ExplanationQuery explanationQuery = ExplanationQuery.builder()
-                .studentNo(oldStudentNo)
-                .build();
-        List<Explanation> oldExplanationList = explanationService.selectByCondition(explanationQuery);
-        if (oldExplanationList != null && !oldExplanationList.isEmpty()) {
-            oldExplanationList.forEach(explanation -> explanation.setStudentNo(newStudentNo));
-
-            try {
-                int updateRows = explanationService.updateBatch(oldExplanationList);
-                logger.info("成功更新 explanation 表，一共更新 {} 条数据", updateRows);
-            } catch (Exception e) {
-                logger.error("更新 explanation 表的studentNo 出现异常");
-                throw new SystemException(ResultCode.ERROR);
-            }
-        }
-
-        // 更新late_return表中的学生信息
-        LateReturnQuery lateReturnQuery = LateReturnQuery.builder()
-                .studentNo(oldStudentNo)
-                .build();
-        List<LateReturn> oldLateReturnList = lateReturnService.selectByCondition(lateReturnQuery);
-        if (oldLateReturnList != null && !oldLateReturnList.isEmpty()) {
-            oldLateReturnList.forEach(lateReturn -> lateReturn.setStudentNo(newStudentNo));
-
-            try {
-                int updateRows = lateReturnService.updateBatch(oldLateReturnList);
-                logger.info("成功更新 late_return 表，一共更新 {} 条数据", updateRows);
-            } catch (Exception e) {
-                logger.error("更新 late_return 表的studentNo 出现异常");
-                throw new SystemException(ResultCode.ERROR);
-            }
-        }
-
-        // 更新notification表中的学生信息
-        NotificationQuery notificationQuery = NotificationQuery.builder()
-                .targetId(oldStudentNo)
-                .build();
-        List<Notification> oldNotificationList = notificationService.selectByCondition(notificationQuery);
-        if (oldNotificationList != null && !oldNotificationList.isEmpty()) {
-            oldNotificationList.forEach(notification -> notification.setTargetId(newStudentNo));
-
-            try {
-                int updateRows = notificationService.updateBatch(oldNotificationList);
-                logger.info("成功更新 notification 表，一共更新 {} 条数据", updateRows);
-            } catch (Exception e) {
-                logger.error("更新 notification 表的targetId 出现异常");
-                throw new SystemException(ResultCode.ERROR);
-            }
-        }
-
-        // 更新 student_late_stats 表中的学生信息
-        StudentLateStatsQuery statsQuery = StudentLateStatsQuery.builder()
-                .studentNo(oldStudentNo)
-                .build();
-        List<StudentLateStats> oldStatsList = studentLateStatsService.selectList(statsQuery);
-        if (oldStatsList != null && !oldStatsList.isEmpty()) {
-            oldStatsList.forEach(stats -> stats.setStudentNo(newStudentNo));
-            try {
-                int updateRows = studentLateStatsService.updateBatch(oldStatsList);
-                logger.info("成功更新 student_late_stats 表，一共更新 {} 条数据", updateRows);
-            } catch (Exception e) {
-                logger.error("更新 student_late_stats 表的 studentNo 出现异常");
-                throw new SystemException(ResultCode.ERROR);
-            }
-        }
-
-    }
-
-
-
 
 
     @Override // todo

@@ -1,23 +1,20 @@
 package com.tianhai.warn.enums;
 
-import lombok.Getter;
-
 import java.util.Objects;
 
 /**
- * 用户角色枚举
+ * 通知范围枚举
  */
+public enum TargetScope {
+    ALL_USERS("allusers", "全体用户"),
+    SPECIAL_ROLE("specialrole", "特定角色"), // 如果是班级管理员 则会具体到职位角色
+    SPECIAL_USER("specialuser", "特定用户");
 
-public enum UserRole {
-    STUDENT("student", "学生"),
-    SYSTEM_USER("systemuser", "班级管理员"), // 辅导员 班主任 院级领导等
-    DORMITORY_MANAGER("dormitorymanager", "宿管"),
-    SUPER_ADMIN("superadmin","超级管理员");
 
     private final String code;
     private final String description;
 
-    UserRole(String code, String description) {
+    TargetScope(String code, String description) {
         this.code = code;
         this.description = description;
     }
@@ -33,9 +30,9 @@ public enum UserRole {
     /**
      * 根据code获取枚举值
      */
-    public static UserRole getByCode(String code) {
-        for (UserRole role : values()) {
-            if (role.getCode().equalsIgnoreCase(code)) {
+    public static TargetScope getByCode(String code) {
+        for (TargetScope role : values()) {
+            if (Objects.equals(role.getCode(), code)) {
                 return role;
             }
         }
@@ -43,7 +40,7 @@ public enum UserRole {
     }
 
     /**
-     * 判断是否是有效的角色代码
+     * 判断是否是有效的通知范围代码
      */
     public static boolean isValidRole(String code) {
         return getByCode(code) != null;

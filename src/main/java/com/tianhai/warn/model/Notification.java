@@ -3,6 +3,7 @@ package com.tianhai.warn.model;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.Date;
 
@@ -11,20 +12,60 @@ import java.util.Date;
  */
 @Data
 public class Notification implements Serializable {
+    @Serial
     private static final long serialVersionUID = 1L;
 
-    private Integer id; // 主键ID
-    private String noticeId; // 通知唯一ID
-    private String title; // 通知标题
-    private String content; // 通知内容
-    private String noticeType; // 通知类型：系统通知/晚归通知/预警通知
-    private String targetType; // 目标类型：全部/学生/宿管/管理员
-    private String targetId; // 目标ID（特定用户）
-    private String status; // 状态：已读/未读
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private Date createTime; // 创建时间
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private Date updateTime; // 更新时间
+   
+    /**
+     * 主键ID，自增
+     */
+    private Integer id;
+
+    /**
+     * 通知ID，业务唯一标识
+     */
+    private String noticeId;
+
+    /**
+     * 通知标题
+     */
+    private String title;
+
+    /**
+     * 通知内容
+     */
+    private String content;
+
+    /**
+     * 通知类型（如系统通知、晚归通知、预警通知等）
+     */
+    private String noticeType;
+
+    /**
+     * 通知目标用户的角色类型
+     * （如 STUDENT, DORMITORY_MANAGER, COUNSELOR, CLASS_TEACHER, DEAN, SUPER_ADMIN）
+     */
+    private String targetType;
+
+    /**
+     * 通知目标用户的业务ID（如学号、工号等）
+     */
+    private String targetId;
+
+    /**
+     * 通知对象范围（ALL_USERS: 全体用户；SPECIAL_ROLE: 特定角色；SPECIAL_USER: 特定用户）
+     */
+    private String targetScope;
+
+    /**
+     * 创建时间
+     */
+    private Date createTime;
+
+    /**
+     * 更新时间
+     */
+    private Date updateTime;
 
     @Override
     public String toString() {
@@ -36,9 +77,10 @@ public class Notification implements Serializable {
                 ", noticeType='" + noticeType + '\'' +
                 ", targetType='" + targetType + '\'' +
                 ", targetId='" + targetId + '\'' +
-                ", status='" + status + '\'' +
+                ", targetScope='" + targetScope + '\'' +
                 ", createTime=" + createTime +
                 ", updateTime=" + updateTime +
                 '}';
     }
+
 }

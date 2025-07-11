@@ -1,5 +1,6 @@
 package com.tianhai.warn.query;
 
+import com.tianhai.warn.annotation.AtLeastOneFieldNotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,6 +15,7 @@ import java.util.List;
 @SuperBuilder
 @AllArgsConstructor
 @NoArgsConstructor
+@AtLeastOneFieldNotNull
 public class SysUserQuery extends BaseQuery {
 
     private Integer id;

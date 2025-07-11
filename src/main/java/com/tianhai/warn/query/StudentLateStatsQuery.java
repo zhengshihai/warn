@@ -1,6 +1,7 @@
 package com.tianhai.warn.query;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.tianhai.warn.annotation.AtLeastOneFieldNotNull;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
@@ -11,6 +12,7 @@ import java.util.List;
 @SuperBuilder
 @AllArgsConstructor
 @NoArgsConstructor
+@AtLeastOneFieldNotNull
 public class StudentLateStatsQuery extends BaseQuery{
     private Integer id; // 主键
     private String statsId; // 统计编号

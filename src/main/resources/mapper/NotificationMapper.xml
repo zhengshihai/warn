@@ -11,223 +11,116 @@
         <result column="notice_type" property="noticeType"/>
         <result column="target_type" property="targetType"/>
         <result column="target_id" property="targetId"/>
-        <result column="status" property="status"/>
-        <result column="create_time" property="createTime"/>
-        <result column="update_time" property="updateTime"/>
+        <result column="target_scope" property="targetScope"/>
+        <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
     </resultMap>
     
     <!-- 通用查询结果列 -->
     <sql id="Base_Column_List">
-        id, notice_id, title, content, notice_type, target_type, target_id, status,
-        create_time, update_time
+        id, notice_id, title, content, notice_type, target_type, target_id, target_scope, create_time, update_time
     </sql>
     
-    <!-- 根据ID查询 -->
-    <select id="selectById" resultMap="BaseResultMap">
-        SELECT 
-        <include refid="Base_Column_List"/>
-        FROM notification
-        WHERE id = #{id}
-    </select>
-    
-    <!-- 查询所有 -->
-    <select id="selectAll" resultMap="BaseResultMap">
-        SELECT 
-        <include refid="Base_Column_List"/>
-        FROM notification
-        ORDER BY create_time DESC
-    </select>
-    
-    <!-- 根据条件查询 -->
-    <select id="selectByCondition" resultMap="BaseResultMap" parameterType="com.tianhai.warn.query.NotificationQuery">
-        SELECT 
-        <include refid="Base_Column_List"/>
+    <!-- 根据查询条件查询通知信息列表 -->
+    <select id="selectByQuery" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
         FROM notification
         <where>
-            <!-- 单条件查询 -->
-            <if test="title != null and title != ''">
-                AND title LIKE CONCAT('%', #{title}, '%')
+            <!-- 精确匹配：通知ID -->
+            <if test="noticeId != null and noticeId != ''">
+                AND notice_id = #{noticeId}
             </if>
+            
+            <!-- 精确匹配：通知类型 -->
             <if test="noticeType != null and noticeType != ''">
                 AND notice_type = #{noticeType}
             </if>
+            
+            <!-- 精确匹配：通知目标角色类型 -->
             <if test="targetType != null and targetType != ''">
                 AND target_type = #{targetType}
             </if>
+            
+            <!-- 精确匹配：通知目标ID -->
             <if test="targetId != null and targetId != ''">
                 AND target_id = #{targetId}
             </if>
-            <if test="status != null and status != ''">
-                AND status = #{status}
+            
+            <!-- 精确匹配：通知范围 -->
+            <if test="targetScope != null and targetScope != ''">
+                AND target_scope = #{targetScope}
             </if>
-            <if test="startNoticeTime != null">
-                AND create_time &gt;= #{startNoticeTime}
+            
+            <!-- 模糊查询：通知标题 -->
+            <if test="titleLike != null and titleLike != ''">
+                AND title LIKE CONCAT('%', #{titleLike}, '%')
             </if>
-            <if test="endNoticeTime != null">
-                AND create_time &lt;= #{endNoticeTime}
+            
+            <!-- 模糊查询：通知内容 -->
+            <if test="contentLike != null and contentLike != ''">
+                AND content LIKE CONCAT('%', #{contentLike}, '%')
             </if>
-
-            <!-- 批量查询条件 -->
-            <if test="noticeIds != null and noticeIds.size() > 0">
+            
+            <!-- 批量匹配：多个通知ID -->
+            <if test="noticeIdList != null and noticeIdList.size() > 0">
                 AND notice_id IN
-                <foreach collection="noticeIds" item="noticeId" open="(" separator="," close=")">
-                    #{noticeId}
+                <foreach collection="noticeIdList" item="item" open="(" separator="," close=")">
+                    #{item}
                 </foreach>
             </if>
 
-            <if test="noticeTypes != null and noticeTypes.size() > 0">
-                AND notice_type IN
-                <foreach collection="noticeTypes" item="noticeType" open="(" separator="," close=")">
-                    #{noticeType}
-                </foreach>
-            </if>
-
-            <if test="targetIds != null and targetIds.size() > 0">
+            <!-- 批量匹配： 多个通知目标ID -->
+            <if test="targetIdList != null and targetIdList.size() > 0">
                 AND target_id IN
-                <foreach collection="targetIds" item="targetId" open="(" separator="," close=")">
-                    #{targetId}
+                <foreach collection="targetIdList" item="item" open="(" separator="," close=")">
+                    #{item}
                 </foreach>
+            </if>
+            
+            <!-- 创建时间范围查询 -->
+            <if test="createTimeStart != null">
+                AND create_time >= #{createTimeStart}
+            </if>
+            <if test="createTimeEnd != null">
+                AND create_time &lt;= #{createTimeEnd}
             </if>
         </where>
-        ORDER BY create_time DESC
+        
+        <!-- 排序 -->
+        <choose>
+            <when test="sortField != null and sortField != '' and sortOrder != null and sortOrder != ''">
+                ORDER BY ${sortField} ${sortOrder}
+            </when>
+            <otherwise>
+                ORDER BY create_time DESC
+            </otherwise>
+        </choose>
+    
     </select>
     
-    <!-- 根据目标类型和目标ID查询 -->
-    <select id="selectByTarget" resultMap="BaseResultMap">
-        SELECT 
-        <include refid="Base_Column_List"/>
-        FROM notification
-        WHERE (target_type = #{targetType} AND target_id = #{targetId})
-           OR target_type = 'ALL'
-        ORDER BY create_time DESC
-    </select>
-    
-    <!-- 根据通知类型查询 -->
-    <select id="selectByType" resultMap="BaseResultMap">
-        SELECT 
-        <include refid="Base_Column_List"/>
-        FROM notification
-        WHERE notice_type = #{noticeType}
-        ORDER BY create_time DESC
-    </select>
-    
-    <!-- 根据状态查询 -->
-    <select id="selectByStatus" resultMap="BaseResultMap">
-        SELECT 
-        <include refid="Base_Column_List"/>
-        FROM notification
-        WHERE status = #{status}
-        ORDER BY create_time DESC
-    </select>
-    
-    <!-- 根据noticeId查询 -->
-    <select id="selectByNoticeId" resultMap="BaseResultMap">
-        SELECT * FROM notification WHERE notice_id = #{noticeId}
-    </select>
-    
-    <!-- 插入 -->
-    <insert id="insert" parameterType="com.tianhai.warn.model.Notification" useGeneratedKeys="true" keyProperty="id">
+    <!-- 插入通知信息 -->
+    <insert id="insert" parameterType="com.tianhai.warn.model.Notification">
         INSERT INTO notification (
-            notice_id, title, content, notice_type, target_type, target_id, status,
-            create_time, update_time
+            notice_id,
+            title,
+            content,
+            notice_type,
+            target_type,
+            target_id,
+            target_scope,
+            create_time,
+            update_time
         ) VALUES (
-            #{noticeId}, #{title}, #{content}, #{noticeType}, #{targetType}, #{targetId}, #{status},
-            NOW(), NOW()
+            #{noticeId},
+            #{title},
+            #{content},
+            #{noticeType},
+            #{targetType},
+            #{targetId},
+            #{targetScope},
+            #{createTime},
+            #{updateTime}
         )
     </insert>
-    
-    <!-- 更新 -->
-    <update id="update" parameterType="com.tianhai.warn.model.Notification">
-        UPDATE notification
-        <set>
-            <if test="title != null">title = #{title},</if>
-            <if test="content != null">content = #{content},</if>
-            <if test="noticeType != null">notice_type = #{noticeType},</if>
-            <if test="targetType != null">target_type = #{targetType},</if>
-            <if test="targetId != null">target_id = #{targetId},</if>
-            <if test="status != null">status = #{status},</if>
-            update_time = NOW()
-        </set>
-        WHERE id = #{id}
-    </update>
-    
-    <!-- 删除 -->
-    <delete id="deleteById">
-        DELETE FROM notification WHERE id = #{id}
-    </delete>
-    
-    <!-- 更新状态 -->
-    <update id="updateStatus">
-        UPDATE notification
-        SET status = #{status},
-            update_time = NOW()
-        WHERE notice_id = #{noticeId}
-    </update>
-    
-    <!-- 批量更新状态 -->
-    <update id="batchUpdateStatus">
-        UPDATE notification
-        SET status = #{status},
-            update_time = NOW()
-        WHERE id IN
-        <foreach collection="ids" item="id" open="(" separator="," close=")">
-            #{id}
-        </foreach>
-    </update>
-
-    <!-- 批量更新（CASE WHEN方式） -->
-    <update id="updateBatch" parameterType="map">
-        UPDATE notification
-        <set>
-            <trim suffixOverrides=",">
-                title = CASE id
-                <foreach collection="notificationList" item="item">
-                    WHEN #{item.id} THEN #{item.title}
-                </foreach>
-                ELSE title END,
-
-                content = CASE id
-                <foreach collection="notificationList" item="item">
-                    WHEN #{item.id} THEN #{item.content}
-                </foreach>
-                ELSE content END,
-
-                notice_type = CASE id
-                <foreach collection="notificationList" item="item">
-                    WHEN #{item.id} THEN #{item.noticeType}
-                </foreach>
-                ELSE notice_type END,
-
-                target_type = CASE id
-                <foreach collection="notificationList" item="item">
-                    WHEN #{item.id} THEN #{item.targetType}
-                </foreach>
-                ELSE target_type END,
-
-                target_id = CASE id
-                <foreach collection="notificationList" item="item">
-                    WHEN #{item.id} THEN #{item.targetId}
-                </foreach>
-                ELSE target_id END,
-
-                status = CASE id
-                <foreach collection="notificationList" item="item">
-                    WHEN #{item.id} THEN #{item.status}
-                </foreach>
-                ELSE status END,
-
-                update_time = CASE id
-                <foreach collection="notificationList" item="item">
-                    WHEN #{item.id} THEN #{item.updateTime}
-                </foreach>
-                ELSE update_time END
-            </trim>
-        </set>
-
-        WHERE id IN
-        <foreach collection="notificationList" item="item" open="(" separator="," close=")">
-            #{item.id}
-        </foreach>
-    </update>
 
 </mapper> 

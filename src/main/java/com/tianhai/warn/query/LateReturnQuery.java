@@ -1,6 +1,7 @@
 package com.tianhai.warn.query;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.tianhai.warn.annotation.AtLeastOneFieldNotNull;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -12,6 +13,7 @@ import java.util.List;
 @SuperBuilder
 @AllArgsConstructor
 @NoArgsConstructor
+@AtLeastOneFieldNotNull
 public class LateReturnQuery extends BaseQuery {
     private Long id; // 晚归主键id
     private String lateReturnId; // 晚归记录id

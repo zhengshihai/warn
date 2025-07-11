@@ -14,7 +14,7 @@ public class Constants {
     public static final String SUPER_ADMIN = "superadmin";
 
     public static final String JOB_ROLE_COUNSELOR = "COUNSELOR"; // 辅导员
-    public static final String JOB_ROLE_CLASS_TEACHER = "CLASS_TEACHER"; // 班主任
+    public static final String JOB_ROLE_CLASS_TEACHER = "CLASSTEACHER"; // 班主任
     public static final String JOB_ROLE_DEAN = "DEAN"; // 院系领导
     public static final String JOB_ROLE_OTHER = "OTHER"; // 其他角色
 
@@ -25,13 +25,13 @@ public class Constants {
     public static final String ON_DUTY = "ON_DUTY"; // 在职
     public static final String OFF_DUTY = "OFF_DUTY"; // 离职
 
-    public static final String ALL = "all";
-
     public static final Integer DEFAULT_PAGE_SIZE = 10;
     public static final Integer DEFAULT_PAGE_NUM = 1;
+    public static final Integer DEFAULT_PAGE_SIZE_MAX = 1000;
 
     public static final String READ = "READ";
     public static final String UNREAD = "UNREAD";
+    public static final String ALL = "ALL";
 
     public static final String SYSTEM_NOTIFICATION = "系统通知"; // 系统通知
     public static final String LATE_RETURN_NOTIFICATION = "晚归通知"; // 晚归通知
@@ -103,6 +103,8 @@ public class Constants {
     public static final String CACHE_REPORT_COLLEGE = CACHE_REPORT_PREFIX + "college:";
     public static final String CACHE_REPORT_DORMITORY = CACHE_REPORT_PREFIX + "dormitory:";
     public static final long CACHE_REPORT_EXPIRE_TIME = 7200; // 2小时过期
+
+
 
 
 }

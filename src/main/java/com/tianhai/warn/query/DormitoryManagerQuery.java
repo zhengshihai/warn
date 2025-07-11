@@ -1,6 +1,7 @@
 package com.tianhai.warn.query;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.tianhai.warn.annotation.AtLeastOneFieldNotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -13,6 +14,7 @@ import java.util.List;
 @SuperBuilder
 @AllArgsConstructor
 @NoArgsConstructor
+@AtLeastOneFieldNotNull
 public class DormitoryManagerQuery extends BaseQuery{
     // 精确匹配字段
     private String managerId;       // 工号

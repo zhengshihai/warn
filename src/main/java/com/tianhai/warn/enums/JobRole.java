@@ -1,23 +1,20 @@
 package com.tianhai.warn.enums;
 
-import lombok.Getter;
-
 import java.util.Objects;
 
 /**
- * 用户角色枚举
+ * SYSTEM_USER用户角色下的职位角色
  */
-
-public enum UserRole {
-    STUDENT("student", "学生"),
-    SYSTEM_USER("systemuser", "班级管理员"), // 辅导员 班主任 院级领导等
-    DORMITORY_MANAGER("dormitorymanager", "宿管"),
-    SUPER_ADMIN("superadmin","超级管理员");
+public enum JobRole {
+    COUNSELOR("COUNSELOR", "辅导员"),
+    CLASS_TEACHER("CLASSTEACHER", "班主任"),
+    DEAN("DEAN", "院系领导"),
+    OTHER("OTHER", "其他");
 
     private final String code;
     private final String description;
 
-    UserRole(String code, String description) {
+    JobRole(String code, String description) {
         this.code = code;
         this.description = description;
     }
@@ -33,8 +30,8 @@ public enum UserRole {
     /**
      * 根据code获取枚举值
      */
-    public static UserRole getByCode(String code) {
-        for (UserRole role : values()) {
+    public static JobRole getByCode(String code) {
+        for (JobRole role : values()) {
             if (role.getCode().equalsIgnoreCase(code)) {
                 return role;
             }
@@ -43,9 +40,10 @@ public enum UserRole {
     }
 
     /**
-     * 判断是否是有效的角色代码
+     * 判断是否是有效的职位角色代码
      */
     public static boolean isValidRole(String code) {
         return getByCode(code) != null;
     }
+
 }

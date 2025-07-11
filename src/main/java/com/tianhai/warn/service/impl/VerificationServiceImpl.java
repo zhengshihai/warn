@@ -1,12 +1,16 @@
 package com.tianhai.warn.service.impl;
 
+import com.tianhai.warn.annotation.AtLeastOneFieldNotNull;
 import com.tianhai.warn.constants.Constants;
 import com.tianhai.warn.constants.ValidationMessages;
 import com.tianhai.warn.dto.*;
 import com.tianhai.warn.enums.BusinessType;
+import com.tianhai.warn.enums.JobRole;
 import com.tianhai.warn.enums.ResultCode;
+import com.tianhai.warn.enums.TargetScope;
 import com.tianhai.warn.exception.BusinessException;
 import com.tianhai.warn.model.DormitoryManager;
+import com.tianhai.warn.model.Notification;
 import com.tianhai.warn.model.SuperAdmin;
 import com.tianhai.warn.model.SysUser;
 import com.tianhai.warn.service.*;
@@ -15,6 +19,9 @@ import com.tianhai.warn.utils.Result;
 import com.tianhai.warn.utils.RoleObjectCaster;
 import com.tianhai.warn.utils.SessionUtils;
 import jakarta.servlet.http.HttpSession;
+import jakarta.validation.ConstraintValidator;
+import jakarta.validation.ConstraintValidatorContext;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,7 +35,8 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
-public class VerificationServiceImpl implements VerificationService {
+public class VerificationServiceImpl implements VerificationService,
+        ConstraintValidator<AtLeastOneFieldNotNull, Object> {
 
     private static final Logger logger = LoggerFactory.getLogger(VerificationServiceImpl.class);
 
@@ -56,6 +64,25 @@ public class VerificationServiceImpl implements VerificationService {
     private static final long LIMIT_EXPIRE = 60; // 60秒
     private static final Pattern PHONE_PATTERN = Pattern.compile("^[\\w.-]+@[\\w.-]+\\.[a-zA-Z]{2,}$");
     private static final Pattern EMAIL_PATTERN = Pattern.compile("^\\d{6,20}$");
+
+    /**
+     * 要求查询类所有属性不能都为空
+     * @param value                        查询类对象
+     * @param constraintValidatorContext   验证器上下文
+     * @return                             校验结果
+     */
+    @Override
+    public boolean isValid(Object value, ConstraintValidatorContext constraintValidatorContext) {
+        return Arrays.stream(value.getClass().getDeclaredFields())
+                .peek(field -> field.setAccessible(true))
+                .anyMatch(field -> {
+                    try {
+                        return field.get(value) != null;
+                    } catch (IllegalAccessException e) {
+                        return false;
+                    }
+                });
+    }
 
     /**
      * 生成图形验证码
@@ -327,6 +354,42 @@ public class VerificationServiceImpl implements VerificationService {
             logger.error("该超级管理员已被禁用");
             throw new BusinessException(ResultCode.SUPER_ADMIN_DISABLE);
         }
+    }
+
+    @Override
+    public void validateNotification(Notification notification) {
+        // 校验通知对象业务id是否合规
+        if (StringUtils.isBlank(notification.getTargetId())) {
+            logger.error("缺少通知对象的业务标识id, notification: {}", notification);
+            throw new BusinessException(ResultCode.PARAMETER_ERROR);
+        }
+        // 校验通知对象角色（具体到职位角色）是否合规
+        if (StringUtils.isBlank(notification.getTargetType())) {
+            logger.error("缺少通知对象的用户角色或职位角色, notification: {}", notification);
+            throw new BusinessException(ResultCode.PARAMETER_ERROR);
+        }
+        if (!JobRole.isValidRole(notification.getTargetType())) {
+            logger.error("通知对象的职位角色不合规, notification: {}", notification);
+            throw new BusinessException(ResultCode.PARAMETER_ERROR);
+        }
+
+        // 校验其他通知属性是否合规
+        if (StringUtils.isBlank(notification.getTitle())) {
+            logger.error("缺少通知标题title");
+            throw new BusinessException(ResultCode.PARAMETER_ERROR);
+        }
+        if (StringUtils.isBlank(notification.getContent())) {
+            logger.error("缺少通知内容content");
+            throw new BusinessException(ResultCode.PARAMETER_ERROR);
+        }
+        if (StringUtils.isBlank(notification.getTargetScope())) {
+            logger.error("缺少接收通知的对象范围targetScope");
+            throw new BusinessException(ResultCode.PARAMETER_ERROR);
+        }
+        if (!TargetScope.isValidRole(notification.getTargetScope())) {
+            logger.error("接受通知的对象范围不合规, targetScope:{}", notification.getTargetScope());
+        }
+
     }
 
     /**

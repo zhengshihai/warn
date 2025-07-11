@@ -1,5 +1,6 @@
 package com.tianhai.warn.query;
 
+import com.tianhai.warn.annotation.AtLeastOneFieldNotNull;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
@@ -9,6 +10,7 @@ import java.util.List;
 @SuperBuilder
 @AllArgsConstructor
 @NoArgsConstructor
+@AtLeastOneFieldNotNull
 public class StudentQuery extends BaseQuery{
     private Integer id; // 主键ID
     private String studentNo; // 学号

@@ -77,10 +77,10 @@ public class ApplicationController {
     @LogOperation("分页查询晚归申请")
     public Result<PageResult<Application>> searchPageList(@RequestBody ApplicationQuery query) {
         if (query.getPageNum() == null || query.getPageNum() <= 0) {
-            query.setPageNum(1);
+            query.setPageNum(Constants.DEFAULT_PAGE_NUM);
         }
         if (query.getPageSize() == null || query.getPageSize() <= 0) {
-            query.setPageSize(10);
+            query.setPageSize(Constants.DEFAULT_PAGE_SIZE);
         }
 
         PageResult<Application> applications = applicationService.selectByPageQuery(query);

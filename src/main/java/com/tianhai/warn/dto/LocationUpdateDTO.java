@@ -1,5 +1,6 @@
 package com.tianhai.warn.dto;
 
+import com.tianhai.warn.annotation.AtLeastOneFieldNotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,6 +12,7 @@ import java.util.Date;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@AtLeastOneFieldNotNull
 public class LocationUpdateDTO {
     /**
      * 纬度

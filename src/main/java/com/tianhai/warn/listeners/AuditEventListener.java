@@ -3,6 +3,7 @@ package com.tianhai.warn.listeners;
 import com.tianhai.warn.constants.Constants;
 import com.tianhai.warn.dto.AuditActionDTO;
 import com.tianhai.warn.enums.ResultCode;
+import com.tianhai.warn.enums.TargetScope;
 import com.tianhai.warn.events.AuditEvent;
 import com.tianhai.warn.exception.BusinessException;
 import com.tianhai.warn.model.Notification;
@@ -224,10 +225,10 @@ public class AuditEventListener implements ApplicationListener<AuditEvent> {
         notification.setNoticeType(Constants.NOTIFICATION_TYPE_AUDIT);
         notification.setContent(buildNotificationContent(student));
         notification.setTargetId(nextAuditor.getSysUserNo());
-        notification.setStatus(Constants.UNREAD);
+        notification.setTargetType(nextAuditor.getJobRole());
+        notification.setTargetScope(TargetScope.SPECIAL_USER.getCode());
         notification.setCreateTime(new Date());
         notification.setUpdateTime(new Date());
-        notification.setTargetType(nextAuditor.getJobRole());
 
         int affectedRow = notificationService.insert(notification);
         if (affectedRow <= 0) {
