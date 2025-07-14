@@ -4,12 +4,10 @@ import com.tianhai.warn.annotation.LogOperation;
 import com.tianhai.warn.annotation.RequirePermission;
 import com.tianhai.warn.constants.Constants;
 import com.tianhai.warn.dto.NotificationDTO;
-import com.tianhai.warn.enums.JobRole;
-import com.tianhai.warn.enums.ResultCode;
-import com.tianhai.warn.enums.TargetScope;
-import com.tianhai.warn.enums.UserRole;
+import com.tianhai.warn.enums.*;
 import com.tianhai.warn.exception.BusinessException;
 import com.tianhai.warn.query.NotificationQuery;
+import com.tianhai.warn.service.VerificationService;
 import com.tianhai.warn.service.impl.VerificationServiceImpl;
 import com.tianhai.warn.utils.*;
 import com.tianhai.warn.vo.NotificationVO;
@@ -31,6 +29,7 @@ import java.util.*;
 public class NotificationController {
 
     private static final Logger logger = LoggerFactory.getLogger(NotificationController.class);
+
 
     @Autowired
     private NotificationService notificationService;
@@ -65,12 +64,10 @@ public class NotificationController {
             logger.error("通知参数为空");
             throw new BusinessException(ResultCode.PARAMETER_ERROR);
         }
-
         if (notificationDTO.getNoticeIdList() == null || notificationDTO.getNoticeIdList().isEmpty()) {
             logger.error("通知列表为空");
             throw new BusinessException(ResultCode.PARAMETER_ERROR);
         }
-
         if (StringUtils.isBlank(notificationDTO.getReceiverId())) {
             logger.error("通知接收对象为空");
             throw new BusinessException(ResultCode.PARAMETER_ERROR);
@@ -84,6 +81,60 @@ public class NotificationController {
         }
 
         notificationService.markRead(notificationDTO);
+
+        return Result.success();
+    }
+
+    @Autowired
+    private VerificationService verificationService;
+
+    // 发送通知
+    @PostMapping("/send")
+    @ResponseBody
+    @RequirePermission(roles = {Constants.SYSTEM_USER, Constants.SUPER_ADMIN})
+    @LogOperation("发送站内通知")
+    public Result<?> send(@RequestBody NotificationDTO notificationDTO) {
+        // 校验通知标题和通知和内容
+        if (StringUtils.isBlank(notificationDTO.getTitle()) || StringUtils.isBlank(notificationDTO.getContent())) {
+            logger.error("通知标题或内容不能为空");
+            throw new BusinessException(ResultCode.PARAMETER_ERROR);
+        }
+
+        // 校验发送模式：receiverIdList 和 targetType 不能同时存在
+        boolean hasReceiverIdList = notificationDTO.getReceiverIdList() != null &&
+                !notificationDTO.getReceiverIdList().isEmpty();
+        boolean hasTargetType = StringUtils.isNotBlank(notificationDTO.getTargetType());
+        NotificationSendMode sendMode = hasReceiverIdList ?
+                NotificationSendMode.RECEIVER_ID_LIST : NotificationSendMode.TARGET_TYPE;
+
+        if (hasReceiverIdList && hasTargetType) {
+            logger.error("receiverIdList和targetType同时存在，存在冲突");
+            throw new BusinessException(ResultCode.PARAMETER_ERROR);
+        }
+
+        if (!hasReceiverIdList && !hasTargetType) {
+            logger.error("receiverIdList和targetType不能同时为空");
+            throw new BusinessException(ResultCode.PARAMETER_ERROR);
+        }
+
+        // 如果使用targetType，则校验器合法性
+        if (hasTargetType) {
+            String role = notificationDTO.getTargetType();
+            boolean validTargetType = !(UserRole.isValidRole(role) || JobRole.isValidRole(role));
+            if (!validTargetType) {
+                logger.error("通知接收人角色无不合规, targetType: {}", role);
+                throw new BusinessException(ResultCode.PARAMETER_ERROR);
+            }
+        }
+
+        // 校验用户是否有权限发通知 todo 此处有bug 无法从session获取信息
+        verificationService.checkSysUserStatus();
+
+        // 生成通知业务标识id
+        notificationDTO.setNoticeId(NoticeIdGenerator.generate());
+
+        // 发送通知
+        notificationService.sendNotification(notificationDTO, sendMode);
 
         return Result.success();
     }

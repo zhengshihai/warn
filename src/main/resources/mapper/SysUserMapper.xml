@@ -55,6 +55,12 @@
         from sys_user
     </select>
 
+    <select id="selectAllSysUserNoAndJobRole" resultType="string">
+        SELECT sys_user_no, job_role
+        FROM sys_user
+    </select>
+
+
     <select id="selectByCondition" parameterType="com.tianhai.warn.query.SysUserQuery" resultMap="BaseResultMap">
         select 
         <include refid="Base_Column_List" />

@@ -22,4 +22,11 @@ public interface NotificationMapper {
      * @return             插入行数
      */
     int insert(Notification notification);
+
+    /**
+     * 批量插入通知信息
+     * @param notificationList    通知信息
+     * @return                           插入行数
+     */
+    int insertBatch(@Param("notificationList") List<Notification> notificationList);
 }

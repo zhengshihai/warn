@@ -5,6 +5,7 @@ import com.tianhai.warn.query.DormitoryManagerQuery;
 import com.tianhai.warn.utils.PageResult;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * 宿管信息服务接口
@@ -87,7 +88,7 @@ public interface DormitoryManagerService {
      */
     void updatePersonalInfo(DormitoryManager manager, String currentEmail);
 
-    DormitoryManager getDormanByEmail(String email);
+    DormitoryManager getDorManByEmail(String email);
 
     /**
      * 获取管理的宿舍
@@ -131,4 +132,10 @@ public interface DormitoryManagerService {
      * @return                    更新行数
      */
     int updateStatus(DormitoryManager dormitoryManager);
+
+    /**
+     * 获取所有宿管的工号
+     * @return     宿管工号集合
+     */
+    Set<String> selectAllManagerId();
 }

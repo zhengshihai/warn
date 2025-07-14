@@ -54,7 +54,14 @@
         <include refid="Base_Column_List"/>
         FROM dormitory_manager
     </select>
-    
+
+    <select id="selectAllManagerId" resultType="string">
+        SELECT DISTINCT  manager_id
+        FROM dormitory_manager
+        WHERE manager_id IS NOT NULL
+    </select>
+
+
     <!-- 根据条件查询 -->
     <select id="selectByCondition" resultMap="BaseResultMap" parameterType="com.tianhai.warn.model.DormitoryManager">
         SELECT 

@@ -1,6 +1,8 @@
 package com.tianhai.warn.service;
 
+import com.tianhai.warn.controller.NotificationController;
 import com.tianhai.warn.dto.NotificationDTO;
+import com.tianhai.warn.enums.NotificationSendMode;
 import com.tianhai.warn.model.Notification;
 import com.tianhai.warn.query.NotificationQuery;
 import com.tianhai.warn.utils.PageResult;
@@ -9,7 +11,7 @@ import com.tianhai.warn.vo.NotificationVO;
 import java.util.List;
 
 /**
- * 通知信息服务接口
+ * 站内通知信息服务接口
  */
 public interface NotificationService {
     /**
@@ -42,4 +44,11 @@ public interface NotificationService {
      * @return                   标记行数
      */
     int markRead(NotificationDTO notificationDTO);
+
+    /**
+     * 发送通知
+     * @param notificationDTO    通知数据传输对象
+     * @param sendMode           发送模式  （表示通过List<String> receiverIdList发送，还是通过String targetType发送）
+     */
+    void sendNotification(NotificationDTO notificationDTO, NotificationSendMode sendMode);
 }

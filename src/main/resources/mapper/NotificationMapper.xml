@@ -123,4 +123,33 @@
         )
     </insert>
 
+    <!-- 批量插入通知信息 -->
+    <insert id="insertBatch" parameterType="java.util.List">
+        INSERT INTO notification (
+        notice_id,
+        title,
+        content,
+        notice_type,
+        target_type,
+        target_id,
+        target_scope,
+        create_time,
+        update_time
+        )
+        VALUES
+        <foreach collection="notificationList" item="item" separator=",">
+            (
+            #{item.noticeId},
+            #{item.title},
+            #{item.content},
+            #{item.noticeType},
+            #{item.targetType},
+            #{item.targetId},
+            #{item.targetScope},
+            #{item.createTime},
+            #{item.updateTime}
+            )
+        </foreach>
+    </insert>
+
 </mapper> 

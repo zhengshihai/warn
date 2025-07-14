@@ -68,7 +68,8 @@ public enum ResultCode implements IResultCode {
     ALARM_AMAP_API_ERROR(10011, "调用高低地图API失败"),
     ALARM_CONFIG_STATUS_INVALID(10012, "该报警配置状态无效" ),
 
-    SYS_USER_NO_LOCKED_FAIL(12000, "获取SysUserNo锁失败");
+    SYS_USER_NO_LOCKED_FAIL(12000, "获取SysUserNo锁失败"),
+    SYS_USER_DISABLE(12001, "该班级管理员已被禁用");
 
     private final Integer code;
     private final String message;

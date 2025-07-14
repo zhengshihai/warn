@@ -150,7 +150,7 @@ CREATE TABLE IF NOT EXISTS notification (
         create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
         update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
         KEY idx_target (target_type, target_id),
-        UNIQUE KEY uk_notice_id (notice_id),
+        KEY idx_notice_id (notice_id),
         KEY idx_type (notice_type)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='通知记录表';
 

@@ -96,4 +96,10 @@ public interface SysUserMapper {
      * @return 插入行数
      */
     int insertBatch(@Param("sysUserList") List<SysUser> sysUserList);
+
+    /**
+     * 获取班级管理员的工号和职位角色
+     * @return    班级管理员集合
+     */
+    List<SysUser> selectAllSysUserNoAndJobRole();
 }

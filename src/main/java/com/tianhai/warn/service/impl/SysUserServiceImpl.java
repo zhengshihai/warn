@@ -376,6 +376,17 @@ public class SysUserServiceImpl implements SysUserService {
         return result;
     }
 
+    @Override
+    public List<SysUser> selectAllSysUserNoAndJobRole() {
+        List<SysUser> sysUserList = sysUserMapper.selectAllSysUserNoAndJobRole();
+
+        if (sysUserList.isEmpty()) {
+            logger.info("班级管理员表中找不到任何班级管理员信息");
+        }
+
+        return sysUserList;
+    }
+
     // 构建分页结果
     private PageResult<SysUser> buildPageResult(List<SysUser> sysUserList) {
         PageInfo<SysUser> pageInfo = new PageInfo<>(sysUserList);
@@ -388,4 +399,6 @@ public class SysUserServiceImpl implements SysUserService {
 
         return result;
     }
+
+
 }

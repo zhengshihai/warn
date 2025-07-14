@@ -357,6 +357,25 @@ public class VerificationServiceImpl implements VerificationService,
     }
 
     @Override
+    public void checkSysUserStatus() {
+        // 获取当前登录的班级管理员信息
+        HttpSession session = SessionUtils.getSession(false);
+        if (session == null) {
+            throw new BusinessException(ResultCode.UNAUTHORIZED);
+        }
+
+        // 检查当前班级管理员是否被禁用
+        Object sysUserObject = session.getAttribute(Constants.SESSION_ATTRIBUTE_USER);
+        SysUser sysUser = RoleObjectCaster.cast(Constants.SYSTEM_USER, sysUserObject);
+
+        SysUser sysUserDB = sysUserService.getSysUserByEmail(sysUser.getEmail());
+        if (sysUserDB.getStatus().equalsIgnoreCase(Constants.DISABLE_STR)) {
+            logger.error("该班级管理员已经被禁用");
+            throw new BusinessException(ResultCode.SYS_USER_DISABLE);
+        }
+    }
+
+    @Override
     public void validateNotification(Notification notification) {
         // 校验通知对象业务id是否合规
         if (StringUtils.isBlank(notification.getTargetId())) {

@@ -12,15 +12,12 @@ import com.tianhai.warn.model.*;
 import com.tianhai.warn.query.ApplicationQuery;
 import com.tianhai.warn.query.DormitoryManagerQuery;
 import com.tianhai.warn.query.ExplanationQuery;
-import com.tianhai.warn.query.NotificationQuery;
 import com.tianhai.warn.service.ApplicationService;
 import com.tianhai.warn.service.DormitoryManagerService;
 import com.tianhai.warn.service.ExplanationService;
 import com.tianhai.warn.service.NotificationService;
 import com.tianhai.warn.utils.EmailValidator;
 import com.tianhai.warn.utils.PageResult;
-import com.tianhai.warn.utils.Result;
-import lombok.extern.flogger.Flogger;
 import org.apache.commons.lang3.StringUtils;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
@@ -29,20 +26,16 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.task.AsyncTaskExecutor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.DigestUtils;
 
-import java.util.ConcurrentModificationException;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
-import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 /**
  * 宿管信息服务实现类
@@ -120,7 +113,7 @@ public class DormitoryManagerServiceImpl implements DormitoryManagerService {
     }
 
     @Override
-    public DormitoryManager getDormanByEmail(String email) {
+    public DormitoryManager getDorManByEmail(String email) {
         return dormitoryManagerMapper.selectByEmail(email);
     }
 
@@ -131,10 +124,20 @@ public class DormitoryManagerServiceImpl implements DormitoryManagerService {
     }
 
     @Override
+    public Set<String> selectAllManagerId() {
+        Set<String> managerIdSet = dormitoryManagerMapper.selectAllManagerId();
+        if (managerIdSet.isEmpty()) {
+            logger.info("宿管表找不到任何宿管信息");
+        }
+
+        return managerIdSet;
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public void updatePersonalInfo(DormitoryManager manager, String currentEmail) {
         // 检查数据是否被修改
-        DormitoryManager currentManager = getDormanByEmail(currentEmail);
+        DormitoryManager currentManager = getDorManByEmail(currentEmail);
         if (currentManager == null) {
             throw new BusinessException(ResultCode.USER_NOT_EXISTS);
         }

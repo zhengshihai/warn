@@ -4,6 +4,7 @@ import com.tianhai.warn.model.DormitoryManager;
 import com.tianhai.warn.query.DormitoryManagerQuery;
 import org.apache.ibatis.annotations.Param;
 import java.util.List;
+import java.util.Set;
 
 /**
  * 宿管信息Mapper接口
@@ -117,4 +118,10 @@ public interface DormitoryManagerMapper {
      * @return                    更新行数
      */
     int updateStatus(DormitoryManager dormitoryManager);
+
+    /**
+     * 获取所有宿管工号
+     * @return    宿管工号集合
+     */
+    Set<String> selectAllManagerId();
 }

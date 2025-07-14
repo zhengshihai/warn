@@ -179,7 +179,7 @@ public class AuthServiceImpl implements AuthService {
 
                 // 创建 Cookie
                 Cookie cookie = new Cookie("rememberMe", jwt);
-                cookie.setHttpOnly(true); // 房子XSS攻击获取Cookie
+                cookie.setHttpOnly(true); // 防止XSS攻击获取Cookie
                 cookie.setMaxAge((int) (expirationTime / 1000)); // 设置Cookie过期时间和JWT以致
                 cookie.setPath("/"); // 所有路径都可访问此Cookie
                 // TODO: 如果是HTTPS，设置cookie.setSecure(true);

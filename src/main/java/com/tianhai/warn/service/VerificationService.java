@@ -96,6 +96,8 @@ public interface VerificationService {
      */
     void checkSuperAdminStatus();
 
+    void checkSysUserStatus();
+
     /**
      * 校验插入的通知内容是否合规
      * @param notification    待校验的通知内容

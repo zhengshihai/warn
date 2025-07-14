@@ -43,7 +43,7 @@ public class AuthController {
     private static final Logger logger = org.slf4j.LoggerFactory.getLogger(AuthController.class);
 
 
-    @RequestMapping("/login")
+    @RequestMapping("/login") // 院系主任密码 zhengZSH
     public String login(HttpServletRequest request) {
         return "login";
     }
