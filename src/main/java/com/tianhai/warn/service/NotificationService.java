@@ -9,6 +9,8 @@ import com.tianhai.warn.utils.PageResult;
 import com.tianhai.warn.vo.NotificationVO;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * 站内通知信息服务接口
@@ -49,6 +51,7 @@ public interface NotificationService {
      * 发送通知
      * @param notificationDTO    通知数据传输对象
      * @param sendMode           发送模式  （表示通过List<String> receiverIdList发送，还是通过String targetType发送）
+     * @return                   无效的接收者ID列表
      */
-    void sendNotification(NotificationDTO notificationDTO, NotificationSendMode sendMode);
+    Map<String, Set<String>> sendNotification(NotificationDTO notificationDTO, NotificationSendMode sendMode);
 }

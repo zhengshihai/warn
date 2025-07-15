@@ -228,7 +228,7 @@ public class StatsEventListener implements ApplicationListener<StatsEvent> {
     private static final String STUDENT = "STUDENT";
     private static final String COUNSELOR = "COUNSELOR";
     private static final String PARENT = "PARENT";
-    private static final String CLASS_TEACHER = "CLASS_TEACHER";
+    private static final String CLASS_TEACHER = "CLASSTEACHER";
 
     /**
      * 生成预警消息

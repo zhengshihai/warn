@@ -14,11 +14,12 @@ public enum RoleMatcher {
 
     STUDENT("STUDENT", Pattern.compile(".*XS.*")),                  // 包含 XS
     DORMITORY_MANAGER("DORMITORYMANAGER", Pattern.compile(".*SG.*")), // 包含 SG
-    SYS_USER("SYSUSER", Pattern.compile("^(?!.*XS)(?!.*SG).*$"));     // 不包含 XS 或 SG
+    SYS_USER("SYSUSER", Pattern.compile(".*(FDY|zsh|BZR).*")),
+    ILLEGAL("ILLEGAL", Pattern.compile("^a.*")); // 此处的ILLEGAL是用于开发测试
 
 
-    private final String role;
-    private final Predicate<String> matcher;
+    public final String role;
+    public final Predicate<String> matcher;
 
     RoleMatcher(String role, Pattern pattern) {
         this.role = role;

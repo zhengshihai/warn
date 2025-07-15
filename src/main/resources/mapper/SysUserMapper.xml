@@ -55,7 +55,7 @@
         from sys_user
     </select>
 
-    <select id="selectAllSysUserNoAndJobRole" resultType="string">
+    <select id="selectAllSysUserNoAndJobRole" resultType="map">
         SELECT sys_user_no, job_role
         FROM sys_user
     </select>

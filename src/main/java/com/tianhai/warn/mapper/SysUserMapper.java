@@ -4,6 +4,7 @@ import com.tianhai.warn.model.SysUser;
 import com.tianhai.warn.query.SysUserQuery;
 import org.apache.ibatis.annotations.Param;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 班级管理员信息Mapper接口
@@ -99,7 +100,7 @@ public interface SysUserMapper {
 
     /**
      * 获取班级管理员的工号和职位角色
-     * @return    班级管理员集合
+     * @return    属性Map
      */
-    List<SysUser> selectAllSysUserNoAndJobRole();
+    List<Map<String, Object>> selectAllSysUserNoAndJobRole();
 }

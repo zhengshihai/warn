@@ -1,5 +1,6 @@
 package com.tianhai.warn.exception;
 
+import com.tianhai.warn.enums.IResultCode;
 import com.tianhai.warn.enums.ResultCode;
 import com.tianhai.warn.utils.Result;
 import jakarta.servlet.http.HttpServletRequest;
@@ -21,17 +22,15 @@ public class GlobalExceptionHandler {
     private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ExceptionHandler(BusinessException.class)
-    // @ResponseBody
-     /**
-     * 修改：加@ResponseBody，确保AJAX请求时返回JSON，防止返回视图名导致404
-     */
-    @ResponseBody
+    @ResponseBody  // 加@ResponseBody，确保AJAX请求时返回JSON，防止返回视图名导致404
     public Object handleBusinessException(BusinessException e,
                                           HttpServletRequest request,
                                           HttpServletResponse response) {
         logger.error("业务异常：{}", e.getMessage());
 
         request.setAttribute("errorMsg", e.getMessage());
+        
+        response.setStatus(mapResultCodeToHttpStatus(e.getResultCode()));
 
         if (isAjaxRequest(request)) {
             return Result.error(e.getResultCode());
@@ -41,10 +40,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(SystemException.class)
-    // @ResponseBody
-     /**
-     * 修改：加@ResponseBody，确保AJAX请求时返回JSON，防止返回视图名导致404
-     */
+    //  加@ResponseBody，确保AJAX请求时返回JSON，防止返回视图名导致404
     @ResponseBody
     public Object handleSystemException(SystemException e,
                                         HttpServletRequest request,
@@ -89,6 +85,21 @@ public class GlobalExceptionHandler {
         }
     }
 
+    private int mapResultCodeToHttpStatus(IResultCode resultCode) {
+        if (resultCode == ResultCode.UNAUTHORIZED) {
+            return HttpServletResponse.SC_UNAUTHORIZED; // 401
+        } else if (resultCode == ResultCode.FORBIDDEN) {
+            return HttpServletResponse.SC_FORBIDDEN; // 403
+        } else if (resultCode == ResultCode.ERROR) {
+            return HttpServletResponse.SC_INTERNAL_SERVER_ERROR; // 500
+        } else if (resultCode == ResultCode.SUCCESS) {
+            return HttpServletResponse.SC_OK; // 200
+        } else {
+            // 其它所有业务错误都用 400
+            return HttpServletResponse.SC_BAD_REQUEST; // 400
+        }
+    }
+
     /**
      * 判断是否为Ajax请求
      *
@@ -114,8 +125,6 @@ public class GlobalExceptionHandler {
         logger.info("Referer: " + referer);
         if (referer != null && !referer.isEmpty() &&
                 referer.contains(request.getServerName())) {
-//            request.getSession().setAttribute("errorMsg", errorMsg);
-//            return "redirect:" + referer;
             try {
                 response.sendRedirect(referer);
                 return null; // 返回 null 表示不再进入视图解析流程

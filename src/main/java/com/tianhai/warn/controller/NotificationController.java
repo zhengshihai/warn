@@ -117,26 +117,28 @@ public class NotificationController {
             throw new BusinessException(ResultCode.PARAMETER_ERROR);
         }
 
-        // 如果使用targetType，则校验器合法性
+        // 如果使用targetType，则校验其合法性
         if (hasTargetType) {
             String role = notificationDTO.getTargetType();
-            boolean validTargetType = !(UserRole.isValidRole(role) || JobRole.isValidRole(role));
+            if (role != null) { role = role.trim(); }
+            boolean validTargetType = UserRole.isValidRole(role) || JobRole.isValidRole(role);
+
             if (!validTargetType) {
-                logger.error("通知接收人角色无不合规, targetType: {}", role);
+                logger.error("通知接收人角色不合规, targetType: {}", role);
                 throw new BusinessException(ResultCode.PARAMETER_ERROR);
             }
         }
 
-        // 校验用户是否有权限发通知 todo 此处有bug 无法从session获取信息
+        // 校验用户是否有权限发通知
         verificationService.checkSysUserStatus();
 
         // 生成通知业务标识id
         notificationDTO.setNoticeId(NoticeIdGenerator.generate());
 
         // 发送通知
-        notificationService.sendNotification(notificationDTO, sendMode);
+        Map<String, Set<String>> invalidReceiverIdMap = notificationService.sendNotification(notificationDTO, sendMode);
 
-        return Result.success();
+        return Result.success(invalidReceiverIdMap);
     }
 
 

@@ -31,7 +31,9 @@ import org.springframework.util.DigestUtils;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * 系统用户服务实现类
@@ -378,13 +380,16 @@ public class SysUserServiceImpl implements SysUserService {
 
     @Override
     public List<SysUser> selectAllSysUserNoAndJobRole() {
-        List<SysUser> sysUserList = sysUserMapper.selectAllSysUserNoAndJobRole();
+        List<Map<String, Object>> resultList = sysUserMapper.selectAllSysUserNoAndJobRole();
 
-        if (sysUserList.isEmpty()) {
-            logger.info("班级管理员表中找不到任何班级管理员信息");
-        }
-
-        return sysUserList;
+        return resultList.stream()
+                .map(map -> {
+                    SysUser sysUser = new SysUser();
+                    sysUser.setSysUserNo((String) map.get("sys_user_no"));
+                    sysUser.setJobRole((String) map.get("job_role"));
+                    return sysUser;
+                })
+                .collect(Collectors.toList());
     }
 
     // 构建分页结果

@@ -66,6 +66,8 @@ public class NotificationServiceImpl implements NotificationService {
     @Autowired
     private AsyncTaskExecutor asyncTaskExecutor;
 
+    private static final String invalidRole = "invalidRole";
+
     // 分页查询属于某个特定用户的通知
     @Override
     public PageResult<NotificationVO> searchSpecialUserPageList(NotificationQuery query) {
@@ -478,7 +480,7 @@ public class NotificationServiceImpl implements NotificationService {
         // 所以需要查询该表并按职位角色进行分类，从而得到具体角色的业务标识id列表
         Map<String, List<String>> jobRoleToSysUserNoListMap = new HashMap<>();
         if (targetScope.equalsIgnoreCase(TargetScope.SPECIAL_ROLE.getCode())) {
-            List<SysUser> sysUserList = sysUserService.selectAll();
+            List<SysUser> sysUserList = sysUserService.selectAllSysUserNoAndJobRole();
             jobRoleToSysUserNoListMap = sysUserList.stream().collect(
                     Collectors.groupingBy(SysUser::getJobRole,
                             Collectors.mapping(SysUser::getSysUserNo, Collectors.toList())));
@@ -597,11 +599,11 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void sendNotification(NotificationDTO notificationDTO, NotificationSendMode sendMode) {
+    public Map<String, Set<String>>  sendNotification(NotificationDTO notificationDTO, NotificationSendMode sendMode) {
         switch (sendMode) {
-            case RECEIVER_ID_LIST -> sendWithReceiverIdList(notificationDTO);
+            case RECEIVER_ID_LIST -> { return sendWithReceiverIdList(notificationDTO);}
 
-            case TARGET_TYPE -> sendWithTargetType(notificationDTO);
+            case TARGET_TYPE -> { return sendWithTargetType(notificationDTO); }
 
             default -> throw new SystemException("暂时不支持该发送方式");
         }
@@ -611,17 +613,53 @@ public class NotificationServiceImpl implements NotificationService {
     // -- 我们这里假设receiverId是包含不同的用户角色（学生 宿管 班级管理员），
     //    而且对这些receiverId所属的角色进行辨别，
     //    实际业务中应该让前端按角色，让用户分类导入，从而减少后端业务的复杂度
-    private void sendWithReceiverIdList(NotificationDTO notificationDTO) {
+    protected Map<String, Set<String>> sendWithReceiverIdList(NotificationDTO notificationDTO) {
         // 构造无效的通知对象业务标识Map
         Map<String, Set<String>> invalidReceiverIdMap = new ConcurrentHashMap<>();
 
-        if (ProfileUtils.isProfileActive("dev")) {
-            doSendWithReceiverIdList(notificationDTO, invalidReceiverIdMap);
-        }
+        // 预处理形式上无效的receiverId
+        List<String> validRoleReceiverIdList = filterReceiverIdList(notificationDTO.getReceiverIdList(), invalidReceiverIdMap);
+        notificationDTO.setNoticeIdList(validRoleReceiverIdList);
+
+        // 执行发送通知
+        doSendWithReceiverIdList(notificationDTO, invalidReceiverIdMap);
+
+        // 调试
+        invalidReceiverIdMap.forEach((key, valueSet) -> {
+            logger.info("ReceiverIds 中存在部分无效receiverId, Key = {}, Value = {}", key, valueSet);
+        });
+
+        
+        return invalidReceiverIdMap;
+    }
+
+    // 预处理receiverIdList
+    // InvalidReceiverIdMap中，有以角色（具体到职位角色）作为Key，
+    // 另外还额外设立一个不属于任何角色的Key，该Key名为invalidRole，
+    // 注：这里的预处理仅是从正则表达式进行预处理过滤，而非结合数据库校验该用户是否存在。后续不同角色的无效receiverId会单独设置
+    private List<String> filterReceiverIdList(List<String> receiverIdList,
+                                              Map<String, Set<String>> invalidReceiverIdMap) {
+        // 形式上合规的receiverId集合
+        Set<String> validRoleReceiverIdList = receiverIdList.stream()
+                .filter(receiverId -> Arrays.stream(RoleMatcher.values())
+                        .anyMatch(roleMatcher -> roleMatcher != RoleMatcher.ILLEGAL
+                                && roleMatcher.matcher.test(receiverId)))
+                .collect(Collectors.toSet());
+
+        // 形式上不合规的receiverId集合
+        Set<String> invalidRoleReceiverIdSet = receiverIdList.stream()
+                .filter(receiverId -> Arrays.stream(RoleMatcher.values())
+                        .noneMatch(roleMatcher -> roleMatcher != RoleMatcher.ILLEGAL
+                                && roleMatcher.matcher.test(receiverId)))
+                .collect(Collectors.toSet());
+
+        invalidReceiverIdMap.put(invalidRole, invalidRoleReceiverIdSet);
+
+        return validRoleReceiverIdList.stream().toList();
     }
 
     /**
-     * 生产环境下根据receiverIdList发送通知
+     * 根据receiverIdList发送通知
      * @param notificationDTO    通知对象DTO
      */
     private void doSendWithReceiverIdList(NotificationDTO notificationDTO,
@@ -643,7 +681,7 @@ public class NotificationServiceImpl implements NotificationService {
         sendSysUserNotification(notificationDTO, roleToListMap, invalidReceiverIdMap);
     }
 
-    // 按照学生 宿管 班级管理员划分receiverIdList
+    // 按照学生 宿管 班级管理员划分receiverIdList //todo 这里要设置一个不属于任何角色的key
     private Map<String, Set<String>> distinguishReceiverIdByRole(Set<String> dtoReceiverIdSet) {
         return Arrays.stream(RoleMatcher.values())
                 .collect(Collectors.toMap(
@@ -661,12 +699,20 @@ public class NotificationServiceImpl implements NotificationService {
         // 获取导入的接收通知的学生业务标识id集合
         Set<String> stuReceiverIdInputSet = roleToListMap.getOrDefault(RoleMatcher.STUDENT.getRole(), Set.of());
 
-        // 获取数据库中学生业务标识id集合
-        Set<String> stuReceiverIdDBSet = studentService.selectAllStudentNo();
-
         if (!stuReceiverIdInputSet.isEmpty()) {
+            // 获取数据库中学生业务标识id集合
+            Set<String> stuReceiverIdDBSet = studentService.selectAllStudentNo();
+
             // 过滤掉无效的学生业务标识id
             Set<String> validStuReceiverIdSet = filterValidReceiverIds(stuReceiverIdInputSet, stuReceiverIdDBSet);
+
+            // 将无效的学生学号加入invalidReceiverIdMap
+            if (validStuReceiverIdSet.size() < stuReceiverIdInputSet.size()) {
+                addToInvalidReceiverIdMap(invalidReceiverIdMap,
+                        validStuReceiverIdSet,
+                        stuReceiverIdInputSet,
+                        Constants.STUDENT);
+            }
 
             if (validStuReceiverIdSet.isEmpty()) {
                 logger.info("导入的通知对象中，没有有效的学生学号studentNo");
@@ -677,13 +723,6 @@ public class NotificationServiceImpl implements NotificationService {
                 batchInsertNotifications(stuNotificationList);
             }
 
-            // 将无效的学生学号加入invalidReceiverIdMap
-            if (validStuReceiverIdSet.size() < stuReceiverIdInputSet.size()) {
-                addToInvalidReceiverIdMap(invalidReceiverIdMap,
-                        validStuReceiverIdSet,
-                        stuReceiverIdInputSet,
-                        Constants.STUDENT);
-            }
 
             // 向notification_receiver表插入信息
             String noticeId = notificationDTO.getNoticeId();
@@ -701,11 +740,20 @@ public class NotificationServiceImpl implements NotificationService {
         // 获取导入的接收通知的宿管业务标识id集合
         Set<String> dorManReceiverIdInputSet = roleToListMap.getOrDefault(RoleMatcher.DORMITORY_MANAGER.getRole(), Set.of());
 
-        // 获取数据库中宿管业务标识id集合
-        Set<String> dorManReceiverIdDBSet = dormitoryManagerService.selectAllManagerId(); // 此处不做用户状态校验，因为用户登录时已经做了校验
         if (!dorManReceiverIdInputSet.isEmpty()) {
+            // 获取数据库中宿管业务标识id集合
+            Set<String> dorManReceiverIdDBSet = dormitoryManagerService.selectAllManagerId(); // 此处不做用户状态校验，因为用户登录时已经做了校验
+
             // 过滤无效的宿管业务标识id
             Set<String> validDorManReceiverIdSet = filterValidReceiverIds(dorManReceiverIdInputSet, dorManReceiverIdDBSet);
+
+            // 将无效的宿管工号加入invalidReceiverIdMap
+            if (validDorManReceiverIdSet.size() < dorManReceiverIdInputSet.size()) {
+                addToInvalidReceiverIdMap(invalidReceiverIdMap,
+                        validDorManReceiverIdSet,
+                        dorManReceiverIdInputSet,
+                        Constants.DORMITORY_MANAGER);
+            }
 
             if (validDorManReceiverIdSet.isEmpty()) {
                 logger.info("导入的通知对象中，没有有效的宿管业务标识id");
@@ -715,14 +763,6 @@ public class NotificationServiceImpl implements NotificationService {
                         notificationDTO, Constants.DORMITORY_MANAGER, now);
 
                 batchInsertNotifications(dorManNotificationList);
-            }
-
-            // 将无效的宿管工号加入invalidReceiverIdMap
-            if (validDorManReceiverIdSet.size() < dorManReceiverIdInputSet.size()) {
-                addToInvalidReceiverIdMap(invalidReceiverIdMap,
-                        validDorManReceiverIdSet,
-                        dorManReceiverIdInputSet,
-                        Constants.DORMITORY_MANAGER);
             }
 
             // 向notification_receiver表插入信息
@@ -744,11 +784,6 @@ public class NotificationServiceImpl implements NotificationService {
             processSysUserReceiverIds(invalidReceiverIdMap, sysUserReceiverIdInputSet,
                     sysUserDBList, notificationDTO);
         }
-
-
-
-
-
     }
 
     // 根据角色构造无效的通知对象的Map 此处的role具体到职位角色
@@ -801,6 +836,7 @@ public class NotificationServiceImpl implements NotificationService {
     private void batchInsertNotifications(List<Notification> notificationList) {
         int batchSize = 500;
         if (notificationList.isEmpty()) {
+            logger.info("通知列表为空，不执行插入");
             return;
         }
 
@@ -828,12 +864,12 @@ public class NotificationServiceImpl implements NotificationService {
         // 将无效的班级管理员工号加入invalidReceiverIdMap
         if (filteredSysUserList.size() < sysUserReceiverIdInputSet.size()) {
             // 提取有效的班级管理员的业务标识id组成集合
-            Set<String> sysUserNoFromDBList = filteredSysUserList.stream()
+            Set<String> sysUserNoFromDBSet = filteredSysUserList.stream()
                     .map(SysUser::getSysUserNo)
                     .collect(Collectors.toSet());
             // 获得无效的班级管理员的业务标识id组成集合
             Set<String> invalidSysUserNoSet = sysUserReceiverIdInputSet.stream()
-                    .filter(sysUserNo -> !sysUserNoFromDBList.contains(sysUserNo))
+                    .filter(sysUserNo -> !sysUserNoFromDBSet.contains(sysUserNo))
                     .collect(Collectors.toSet());
 
             logger.warn("导入的通知对象中，存在无效的 {} 业务标实id: {}", Constants.SYSTEM_USER, invalidSysUserNoSet);
@@ -842,7 +878,7 @@ public class NotificationServiceImpl implements NotificationService {
         }
 
 
-        List<Notification> allRoleNotificationList = new ArrayList<>(filteredSysUserList.size());
+        List<Notification> allSysUserNotificationList = new ArrayList<>(filteredSysUserList.size());
 
         // key - 具体到职位角色的角色名称   value - 该角色的通知接收对象的业务标识id集合
         Map<String, Set<String>> roleToReceiverIdSetMap = filteredSysUserList.stream()
@@ -862,13 +898,15 @@ public class NotificationServiceImpl implements NotificationService {
             processNotificationReceiver(receiverIdSet, noticeId, jobRole);
 
             List<Notification> singleRolenotificationList = buildNotificationList(receiverIdSet, notificationDTO, jobRole, now);
-            allRoleNotificationList.addAll(singleRolenotificationList);
+            allSysUserNotificationList.addAll(singleRolenotificationList);
         }
 
-        notificationMapper.insertBatch(allRoleNotificationList);
+        if (!allSysUserNotificationList.isEmpty()) {
+            notificationMapper.insertBatch(allSysUserNotificationList);
+        } else {
+            logger.info("通知列表为空，不执行插入");
+        }
     }
-
-
 
     // 向notification_receiver表中插入信息
     private void processNotificationReceiver(Set<String> receiverIdSet,
@@ -893,13 +931,19 @@ public class NotificationServiceImpl implements NotificationService {
                 })
                 .toList();
 
-        notificationReceiverService.insertBatch(notificationReceiverList);
+        if (!notificationReceiverList.isEmpty()) {
+            notificationReceiverService.insertBatch(notificationReceiverList);
+        } else {
+            logger.info("通知接收列表为空，不执行插入");
+        }
     }
 
 
     // todo 通过targetType发送
-    private void sendWithTargetType(NotificationDTO notificationDTO) {
+    private Map<String, Set<String>> sendWithTargetType(NotificationDTO notificationDTO) {
+        Map<String, Set<String>> invalidReceiverIdMap = new ConcurrentHashMap<>();
 
+        return invalidReceiverIdMap;
     }
 
 }
