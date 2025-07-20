@@ -1,0 +1,34 @@
+version: '3'
+services:
+  namesrv:
+    image: apache/rocketmq:5.1.4
+    container_name: rmqnamesrv
+    ports:
+      - "9876:9876"
+    volumes:
+      - ./rmqnamesrv/logs:/home/rocketmq/logs
+      - ./rmqnamesrv/store:/home/rocketmq/store
+    environment:
+      - JAVA_OPT_EXT=-server -Xms512m -Xmx512m
+    command: sh mqnamesrv
+
+  broker:
+    image: apache/rocketmq:5.1.4
+    container_name: rmqbroker
+    ports:
+      - "10909:10909"
+      - "10911:10911"
+      - "10912:10912"
+    volumes:
+      - ./rmqbroker/logs:/home/rocketmq/logs
+      - ./rmqbroker/store:/home/rocketmq/store
+    environment:
+      - JAVA_OPT_EXT=-server -Xms512m -Xmx512m
+      - NAMESRV_ADDR=namesrv:9876
+    command: sh mqbroker -n namesrv:9876 -c /home/rocketmq/rocketmq-5.1.4/conf/broker.conf
+    depends_on:
+      - namesrv
+
+
+
+    # 项目已改为使用本地mq 启动RocketMQ容器CMD命令  docker-compost down, docker-compose up -d
