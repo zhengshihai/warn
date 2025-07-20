@@ -13,10 +13,10 @@ public class Constants {
     public static final String SYSTEM_USER = "systemuser";
     public static final String SUPER_ADMIN = "superadmin";
 
-    public static final String JOB_ROLE_COUNSELOR = "COUNSELOR"; // 辅导员
-    public static final String JOB_ROLE_CLASS_TEACHER = "CLASSTEACHER"; // 班主任
-    public static final String JOB_ROLE_DEAN = "DEAN"; // 院系领导
-    public static final String JOB_ROLE_OTHER = "OTHER"; // 其他角色
+    public static final String JOB_ROLE_COUNSELOR = "counselor"; // 辅导员
+    public static final String JOB_ROLE_CLASS_TEACHER = "classtearcher"; // 班主任
+    public static final String JOB_ROLE_DEAN = "dean"; // 院系领导
+    public static final String JOB_ROLE_OTHER = "other"; // 其他角色
 
     public static final String ENABLE_STR = "ENABLE";
     public static final Integer ENABLE_INT = 1;

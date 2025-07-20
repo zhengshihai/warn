@@ -9,6 +9,7 @@ import com.tianhai.warn.enums.*;
 import com.tianhai.warn.exception.BusinessException;
 import com.tianhai.warn.exception.SystemException;
 import com.tianhai.warn.mapper.NotificationMapper;
+import com.tianhai.warn.mapper.NotificationReceiverMapper;
 import com.tianhai.warn.model.*;
 import com.tianhai.warn.query.NotificationQuery;
 import com.tianhai.warn.query.NotificationReceiverQuery;
@@ -32,6 +33,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -67,6 +69,8 @@ public class NotificationServiceImpl implements NotificationService {
     private AsyncTaskExecutor asyncTaskExecutor;
 
     private static final String invalidRole = "invalidRole";
+    @Autowired
+    private NotificationReceiverMapper notificationReceiverMapper;
 
     // 分页查询属于某个特定用户的通知
     @Override
@@ -600,27 +604,30 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Map<String, Set<String>>  sendNotification(NotificationDTO notificationDTO, NotificationSendMode sendMode) {
-        switch (sendMode) {
-            case RECEIVER_ID_LIST -> { return sendWithReceiverIdList(notificationDTO);}
+        // 构造无效的通知对象业务标识Map
+        Map<String, Set<String>> invalidReceiverIdMap = new ConcurrentHashMap<>();
 
-            case TARGET_TYPE -> { return sendWithTargetType(notificationDTO); }
+        // 如果采用receiverIDList的方式发送消息，则需要预处理形式上无效的receiverId
+        if (notificationDTO.getReceiverIdList() != null && !notificationDTO.getReceiverIdList().isEmpty()) {
+            List<String> validRoleReceiverIdList = filterReceiverIdList(notificationDTO.getReceiverIdList(), invalidReceiverIdMap);
+            notificationDTO.setNoticeIdList(validRoleReceiverIdList);
+        }
+
+        switch (sendMode) {
+            case RECEIVER_ID_LIST -> { return sendWithReceiverIdList(notificationDTO, invalidReceiverIdMap);}
+
+            case TARGET_TYPE -> { return sendWithTargetType(notificationDTO, invalidReceiverIdMap); }
 
             default -> throw new SystemException("暂时不支持该发送方式");
         }
     }
 
     // 通过receiverIdList发送
-    // -- 我们这里假设receiverId是包含不同的用户角色（学生 宿管 班级管理员），
+    // -- receiverId是包含不同的用户角色（学生 宿管 班级管理员），
     //    而且对这些receiverId所属的角色进行辨别，
     //    实际业务中应该让前端按角色，让用户分类导入，从而减少后端业务的复杂度
-    protected Map<String, Set<String>> sendWithReceiverIdList(NotificationDTO notificationDTO) {
-        // 构造无效的通知对象业务标识Map
-        Map<String, Set<String>> invalidReceiverIdMap = new ConcurrentHashMap<>();
-
-        // 预处理形式上无效的receiverId
-        List<String> validRoleReceiverIdList = filterReceiverIdList(notificationDTO.getReceiverIdList(), invalidReceiverIdMap);
-        notificationDTO.setNoticeIdList(validRoleReceiverIdList);
-
+    protected Map<String, Set<String>> sendWithReceiverIdList(NotificationDTO notificationDTO,
+                                                              Map<String, Set<String>> invalidReceiverIdMap) {
         // 执行发送通知
         doSendWithReceiverIdList(notificationDTO, invalidReceiverIdMap);
 
@@ -639,6 +646,8 @@ public class NotificationServiceImpl implements NotificationService {
     // 注：这里的预处理仅是从正则表达式进行预处理过滤，而非结合数据库校验该用户是否存在。后续不同角色的无效receiverId会单独设置
     private List<String> filterReceiverIdList(List<String> receiverIdList,
                                               Map<String, Set<String>> invalidReceiverIdMap) {
+        logger.info("开始预处理receiverIdList列表");
+
         // 形式上合规的receiverId集合
         Set<String> validRoleReceiverIdList = receiverIdList.stream()
                 .filter(receiverId -> Arrays.stream(RoleMatcher.values())
@@ -810,7 +819,7 @@ public class NotificationServiceImpl implements NotificationService {
                 .collect(Collectors.toSet());
     }
 
-    // 构造通知列表
+    // TargetScope为 specialUser 条件下的构造通知列表
     private List<Notification> buildNotificationList(Set<String> targetIdSet,
                                                      NotificationDTO notificationDTO,
                                                      String targetType,
@@ -848,6 +857,25 @@ public class NotificationServiceImpl implements NotificationService {
             }
         } else {
             notificationMapper.insertBatch(notificationList);
+        }
+    }
+
+    // 分批插入 列表大小超过500条就分批插入
+    private void batchInsertNotRecs(List<NotificationReceiver> notRecList) {
+        int batchSize = 500;
+        if (notRecList.isEmpty()) {
+            logger.info("通知列表为空，不执行插入");
+            return;
+        }
+
+        if (notRecList.size() > batchSize) {
+            for (int i = 0; i < notRecList.size(); i += batchSize) {
+                int end = Math.min(i + batchSize, notRecList.size());
+                List<NotificationReceiver> batch = notRecList.subList(i, end);
+                notificationReceiverMapper.insertBatch(batch);
+            }
+        } else {
+            notificationReceiverMapper.insertBatch(notRecList);
         }
     }
 
@@ -938,12 +966,117 @@ public class NotificationServiceImpl implements NotificationService {
         }
     }
 
+    // 根据角色从班级管理员中获取接收人业务标识id集合
+    private Map<String, Set<String>> getJobRoleToReceiverIdSetMap() {
+        List<SysUser> sysUserNoAndJobRoleList = sysUserService.selectAllSysUserNoAndJobRole();
 
-    // todo 通过targetType发送
-    private Map<String, Set<String>> sendWithTargetType(NotificationDTO notificationDTO) {
-        Map<String, Set<String>> invalidReceiverIdMap = new ConcurrentHashMap<>();
+        Map<String, Set<String>> jobRoleToReceiverIdSetMap = sysUserNoAndJobRoleList.stream()
+                .collect(Collectors.groupingBy(
+                        SysUser::getJobRole,
+                        Collectors.mapping(SysUser::getSysUserNo, Collectors.toSet())));
+
+        Set<String> counselorSysUserNoSet, claTeaSysUserNoSet, deanSysUserNoSet;
+        if (!jobRoleToReceiverIdSetMap.containsKey(Constants.JOB_ROLE_COUNSELOR)) {
+            logger.info("班级管理员中没有辅导员信息，无法给辅导员角色发送通知");
+        } else {
+            counselorSysUserNoSet = jobRoleToReceiverIdSetMap.get(Constants.JOB_ROLE_COUNSELOR);
+            logger.info("在班级管理员中，一共有{}条辅导员信息", counselorSysUserNoSet.size());
+        }
+
+        if (!jobRoleToReceiverIdSetMap.containsKey(Constants.JOB_ROLE_CLASS_TEACHER)) {
+            logger.info("班级管理员中没有班主任信息，无法给班主任角色发送通知");
+        } else {
+            claTeaSysUserNoSet = jobRoleToReceiverIdSetMap.get(Constants.JOB_ROLE_CLASS_TEACHER);
+            logger.info("在班级管理员中，一共有{}条班主任信息", claTeaSysUserNoSet.size());
+        }
+
+        if (!jobRoleToReceiverIdSetMap.containsKey(Constants.JOB_ROLE_DEAN)) {
+            logger.info("班级管理员中没有院系领导信息，无法给院系领导角色发送通知");
+        } else {
+            deanSysUserNoSet = jobRoleToReceiverIdSetMap.get(Constants.JOB_ROLE_DEAN);
+            logger.info("班级管理员中，一共有{}条院系领导信息", deanSysUserNoSet.size());
+        }
+
+        return jobRoleToReceiverIdSetMap;
+
+    }
+
+    // 通过targetType发送（排除超级管理员角色）
+    private Map<String, Set<String>> sendWithTargetType(NotificationDTO notificationDTO,
+                                                        Map<String, Set<String>> invalidReceiverIdMap) {
+        if (notificationDTO.getTargetType().equalsIgnoreCase(Constants.STUDENT)) {
+            // todo 筛选在校生
+
+            Date now = new Date();
+            int batchSize = 500;
+            Set<String> receiverIdSet = new HashSet<>();
+
+            String targetType = notificationDTO.getTargetType().toLowerCase();
+            Map<String, Set<String>> jobRoleToReceiverIdSetMap = getJobRoleToReceiverIdSetMap();
+
+            switch (targetType) {
+                // 学生
+                case Constants.STUDENT -> handleNotAndNotRecForSpecialRole(
+                        notificationDTO, Constants.STUDENT, () -> studentService.selectAllStudentNo());
+
+                // 宿管
+                case Constants.DORMITORY_MANAGER -> handleNotAndNotRecForSpecialRole(
+                        notificationDTO, Constants.DORMITORY_MANAGER, () -> dormitoryManagerService.selectAllManagerId());
+
+                // 辅导员
+                case Constants.JOB_ROLE_COUNSELOR -> handleNotAndNotRecForSpecialRole(
+                        notificationDTO, Constants.JOB_ROLE_COUNSELOR, () -> jobRoleToReceiverIdSetMap.get(Constants.JOB_ROLE_COUNSELOR));
+
+                // 班主任
+                case Constants.JOB_ROLE_CLASS_TEACHER -> handleNotAndNotRecForSpecialRole(
+                        notificationDTO, Constants.JOB_ROLE_COUNSELOR, () -> jobRoleToReceiverIdSetMap.get(Constants.JOB_ROLE_CLASS_TEACHER));
+
+                // 院系领导
+                case Constants.JOB_ROLE_DEAN -> handleNotAndNotRecForSpecialRole(
+                        notificationDTO, Constants.JOB_ROLE_DEAN, () -> jobRoleToReceiverIdSetMap.get(Constants.JOB_ROLE_DEAN));
+
+                default ->
+                    logger.error("给特定角色发送消息功能中，暂时不支持该targetType: {}", targetType);
+            }
+        }
 
         return invalidReceiverIdMap;
+    }
+
+    // 执行给特定角色发送通知和插入通知接收信息
+    private void handleNotAndNotRecForSpecialRole(NotificationDTO notificationDTO,
+                                                  String specialRole,
+                                                  Supplier<Set<String>> receiverIdSupplier) {
+        Set<String> receiverIdSet = receiverIdSupplier.get();
+
+        Notification notification = buildNotification(
+                notificationDTO, specialRole, TargetScope.SPECIAL_ROLE.getCode());
+        notificationMapper.insert(notification);
+
+        List<NotificationReceiver> notRecList = buildNotRecList(
+                new ArrayList<>(receiverIdSet), notification.getNoticeId(), specialRole);
+
+        // 同步插入
+        // todo 这里如果是学生角色，因为学生数量会比较多，应该使用异步，
+        //  但考虑到事务的回滚，这里应该使用分布式事务，但为了降低开发复杂度 这里直接使用同步方式执行
+        notificationReceiverService.insertBatch(notRecList);
+    }
+
+    // TargetScope为SpecialRole条件下构造通知
+    private Notification buildNotification(NotificationDTO dto, String targetType, String targetScopeCode) {
+        Date now = new Date();
+
+        Notification notification = new Notification();
+        notification.setNoticeId(dto.getNoticeId());
+        notification.setTitle(dto.getTitle());
+        notification.setContent(dto.getContent());
+        notification.setNoticeType(dto.getNoticeType());
+        notification.setTargetType(targetType);
+        notification.setTargetScope(targetScopeCode);
+        notification.setCreateTime(now);
+        notification.setUpdateTime(now);
+
+        return notification;
     }
 
 }
