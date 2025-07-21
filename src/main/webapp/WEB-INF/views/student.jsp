@@ -1703,6 +1703,8 @@
             startRecording();
         }
 
+        let isRecordingStopped = false;
+
         // 取消一键报警请求
         $('#cancel-alarm-btn').click(function() {
             if (!alarmNo) {
@@ -1736,6 +1738,7 @@
                     alarmNo = null;
 
                     //停止录音录像
+                    isRecordingStopped = true;
                     stopRecording();
                 },
                 error: function(err) {
@@ -1787,6 +1790,7 @@
 
         // 开始录音和录像
         function startRecording() {
+            isRecordingStopped = false; // 每次开始录制前重置
             if (!mediaStream) return;
             console.log("开始录像和录音")
             mediaRecorder = new MediaRecorder(mediaStream, { mimeType: "video/webm; codecs=vp8,opus" });
@@ -1797,7 +1801,7 @@
                         alarmNo,
                         sessionId,
                         chunkIndex: chunkIndex,
-                        isLastChunk: false // 结束时再置true
+                        isLastChunk: isRecordingStopped // 只有最后一次才为true
                     };
                     chunkCache.push({ ...chunk, data: event.data }); // 本地缓存
                     sendChunk(chunk, event.data);
@@ -1806,29 +1810,10 @@
             };
 
             // todo 根据网络和后端接受策略动态调整单个分片的时间长度
-            mediaRecorder.start(5000); // 每5秒一个分片
+            mediaRecorder.start(3000); // 每3秒一个分片
         }
 
         // 通过ws发送音视频分片数据
-        // function sendChunk(chunk, blob) {
-        //     console.log("开始传输音视频分片数据");
-        //     if (ws && ws.readyState === WebSocket.OPEN) {
-        //         // 先发JSON头，再发二进制体
-        //         let header = JSON.stringify(chunk);
-        //         let encoder = new TextEncoder();
-        //         let headerBytes = encoder.encode(header);
-        //         let headerLength = new Uint32Array([headerBytes.length]);
-        //         blob.arrayBuffer().then(dataBuffer => {
-        //             // 拼接：4字节头长 + 头 + 数据
-        //             let total = new Uint8Array(4 + headerBytes.length + dataBuffer.byteLength);
-        //             total.set(new Uint8Array(headerLength.buffer), 0);
-        //             total.set(headerBytes, 4);
-        //             total.set(new Uint8Array(dataBuffer), 4 + headerBytes.length);
-        //             ws.send(total.buffer);
-        //         });
-        //     }
-        // }
-
         function sendChunk(chunk, blob) {
             console.log("开始传输音视频分片数据");
             if (ws && ws.readyState === WebSocket.OPEN) {
@@ -1850,6 +1835,7 @@
                 // 写入二进制体
                 blob.arrayBuffer().then(dataBuffer => {
                     total.set(new Uint8Array(dataBuffer), 4 + headerBytes.length);
+                    console.log("total的长度" + total.length)
                     ws.send(total.buffer);
                 });
             }
@@ -1864,13 +1850,28 @@
 
         // 停止录音和录像
         function stopRecording() {
-            console.log("停止录音和录像")
+            console.log("停止录音和录像");
+            isRecordingStopped = true;
             if (mediaRecorder && mediaRecorder.state !== "inactive") {
                 mediaRecorder.stop();
             }
         }
 
+        // 页面关闭/刷新时自动安全结束录制
+        window.addEventListener('beforeunload', function (e) {
+            if (mediaRecorder && mediaRecorder.state !== "inactive") {
+                isRecordingStopped = true;
+                mediaRecorder.stop();
+            }
+            // 可选：关闭WebSocket
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.close();
+            }
+        });
+
         // -----------------------------------------------------------------------------
+
+      
     </script>
 
 

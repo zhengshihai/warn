@@ -82,7 +82,7 @@ public class MediaWebSocketHandler extends AbstractWebSocketHandler {
          */
         ByteBuffer buffer = message.getPayload();
         buffer.mark();
-        int headerLen = buffer.getInt();
+
 
         // 读取头部长度
         // 1. 读取头部长度
@@ -91,8 +91,10 @@ public class MediaWebSocketHandler extends AbstractWebSocketHandler {
             session.sendMessage(new TextMessage("收到的分片数据不足4字节"));
             return;
         }
+        int headerLen = buffer.getInt();
         if (buffer.remaining() < headerLen) {
-            logger.error("收到的分片数据不足headerLen，无法解析头部");
+            logger.error("收到的分片数据不足headerLen，无法解析头部, headerLen={}, buffer.remaining={}",
+                    headerLen, buffer.remaining());
             session.sendMessage(new TextMessage("收到的分片数据不足headerLen"));
             return;
         }
