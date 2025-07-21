@@ -33,4 +33,11 @@ public interface NotificationReceiverService {
      * @return                          更新行数
      */
     int updateBatch(List<NotificationReceiver> existingNotRecList);
+
+    /**
+     * 批量删除通知接收消息
+     * @param notRecQuery       删除条件
+     * @return                  删除行数
+     */
+    int deleteBatch(NotificationReceiverQuery notRecQuery);
 }

@@ -1220,6 +1220,8 @@
 
         $(document).ready(function() {
             $('#notificationStatusFilter').on('change', function() {
+                // 筛选条件改变时，重置到第一页
+                notificationCurrentPage = 1;
                 loadNotifications();
             });
         });
@@ -1356,9 +1358,12 @@
             const total = pageResult.total;
             const totalPages = Math.ceil(total / notificationPageSize);
             
-            // 更新分页控件（可以添加到通知区域底部）
+            // 先移除已存在的分页控件
+            $('#notificationPagination').remove();
+            
+            // 创建新的分页控件
             var paginationHtml =
-                '<div class="flex justify-between items-center mt-4">' +
+                '<div id="notificationPagination" class="flex justify-between items-center mt-4">' +
                     '<span class="text-sm text-gray-500">' +
                         '共 ' + total + ' 条通知' +
                     '</span>' +

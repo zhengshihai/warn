@@ -8,7 +8,6 @@ import com.tianhai.warn.enums.*;
 import com.tianhai.warn.exception.BusinessException;
 import com.tianhai.warn.query.NotificationQuery;
 import com.tianhai.warn.service.VerificationService;
-import com.tianhai.warn.service.impl.VerificationServiceImpl;
 import com.tianhai.warn.utils.*;
 import com.tianhai.warn.vo.NotificationVO;
 import org.apache.commons.lang3.StringUtils;
@@ -30,11 +29,11 @@ public class NotificationController {
 
     private static final Logger logger = LoggerFactory.getLogger(NotificationController.class);
 
-
     @Autowired
     private NotificationService notificationService;
+
     @Autowired
-    private VerificationServiceImpl verificationServiceImpl;
+    private VerificationService verificationService;
 
     // 分页获取属于特定用户的通知
     @PostMapping("/special-user/page")
@@ -84,9 +83,6 @@ public class NotificationController {
 
         return Result.success();
     }
-
-    @Autowired
-    private VerificationService verificationService;
 
     // 发送通知
     @PostMapping("/send")
@@ -140,6 +136,54 @@ public class NotificationController {
 
         return Result.success(invalidReceiverIdMap);
     }
+
+    // 删除站内通知
+    @DeleteMapping("/del")
+    @ResponseBody
+    @RequirePermission(roles = {Constants.SYSTEM_USER, Constants.SUPER_ADMIN})
+    @LogOperation("删除站内通知")
+    public Result<?> delete(@RequestBody NotificationDTO notificationDTO) {
+        // 校验要删除的通知
+        List<String> needDeleteNoticeIdList = notificationDTO.getNoticeIdList();
+        if (needDeleteNoticeIdList != null && !needDeleteNoticeIdList.isEmpty()) {
+            // 校验通知业务ID是否合法
+            boolean patternLegal = needDeleteNoticeIdList.stream()
+                    .allMatch(notId -> notId.startsWith("NT") && IdValidator.isValid(notId));
+            if (!patternLegal) {
+                logger.error("要删除的通知列表中存在不合法的业务id");
+                throw new BusinessException(ResultCode.PARAMETER_ERROR);
+            }
+        }
+
+        // 校验删除范围 要么根据通知业务id删除 要么使用时间范围删除 两者不可同时存在
+        boolean hasNotificationIdList = notificationDTO.getNoticeIdList() != null && !notificationDTO.getNoticeIdList().isEmpty();
+        boolean hasDelTimeRange = notificationDTO.getCreateTimeStart() != null && notificationDTO.getCreateTimeEnd() != null;
+        if (hasNotificationIdList && hasDelTimeRange) {
+            logger.error("通知删除范围不合规，不能同时使用通知业务id列表和时间范围");
+            throw new BusinessException(ResultCode.PARAMETER_ERROR);
+        }
+
+        // 校验时间范围
+        if (hasDelTimeRange) {
+            if (notificationDTO.getCreateTimeStart().after(notificationDTO.getCreateTimeEnd())) {
+                logger.error("通知删除的时间范围不合法, startDate: {}, endDate:{}",
+                        notificationDTO.getCreateTimeStart(), notificationDTO.getCreateTimeEnd());
+                throw new BusinessException(ResultCode.PARAMETER_ERROR);
+            }
+        }
+
+        if (hasDelTimeRange) {
+            notificationDTO.setNoticeIdList(null);
+        } else {
+            notificationDTO.setCreateTimeStart(null);
+            notificationDTO.setCreateTimeEnd(null);
+        }
+
+        notificationService.deleteBatch(notificationDTO);
+
+        return Result.success();
+    }
+
 
 
     // 校验参数是否合规

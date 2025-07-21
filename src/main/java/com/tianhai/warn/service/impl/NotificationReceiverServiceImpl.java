@@ -99,6 +99,24 @@ public class NotificationReceiverServiceImpl implements NotificationReceiverServ
         }
     }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int deleteBatch(NotificationReceiverQuery notRecQuery) {
+        if (notRecQuery == null) {
+            logger.error("批量删除参数为空, notRecQuery: {}", notRecQuery);
+            throw new BusinessException(ResultCode.PARAMETER_ERROR);
+        }
+
+        int affectRow;
+        try {
+            affectRow = notificationReceiverMapper.deleteBatch(notRecQuery);
+            return affectRow;
+        } catch (Exception e) {
+            logger.error("批量删除notification接收信息失败, notRecQuery: {}", notRecQuery, e);
+            throw new SystemException(ResultCode.ERROR);
+        }
+    }
+
     private boolean validateReceiverRole(String receiverRole) {
         // 判断是否属于基本的用户角色
         if (UserRole.isValidRole(receiverRole.toLowerCase())) {

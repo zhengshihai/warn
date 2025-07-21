@@ -152,4 +152,44 @@
         </foreach>
     </insert>
 
+    <delete id="deleteBatch" parameterType="com.tianhai.warn.query.NotificationQuery">
+        DELETE FROM notification
+        <where>
+            <if test="noticeId != null and noticeId != ''">
+                AND notice_id = #{noticeId}
+            </if>
+            <if test="noticeIdList != null and noticeIdList.size() > 0">
+                AND notice_id IN
+                <foreach collection="noticeIdList" item="id" open="(" separator="," close=")">
+                    #{id}
+                </foreach>
+            </if>
+            <if test="targetId != null and targetId != ''">
+                AND target_id = #{targetId}
+            </if>
+            <if test="targetIdList != null and targetIdList.size() > 0">
+                AND target_id IN
+                <foreach collection="targetIdList" item="tid" open="(" separator="," close=")">
+                    #{tid}
+                </foreach>
+            </if>
+            <if test="targetType != null and targetType != ''">
+                AND target_type = #{targetType}
+            </if>
+            <if test="targetScope != null and targetScope != ''">
+                AND target_scope = #{targetScope}
+            </if>
+            <if test="noticeType != null and noticeType != ''">
+                AND notice_type = #{noticeType}
+            </if>
+            <if test="createTimeStart != null">
+                AND create_time &gt;= #{createTimeStart}
+            </if>
+            <if test="createTimeEnd != null">
+                AND create_time &lt;= #{createTimeEnd}
+            </if>
+        </where>
+    </delete>
+
+
 </mapper> 

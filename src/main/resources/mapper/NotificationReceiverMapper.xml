@@ -191,7 +191,7 @@
     <delete id="deleteByReceiverId">
         DELETE FROM notification_receiver WHERE receiver_id = #{receiverId}
     </delete>
-    
+
     <!-- 统计未读消息数量 -->
     <select id="countUnreadByReceiverId" resultType="int">
         SELECT COUNT(*)
@@ -229,5 +229,44 @@
         SET read_status = 'READ', read_time = NOW(), update_time = NOW()
         WHERE receiver_id = #{receiverId} AND read_status = 'UNREAD'
     </update>
-    
+
+    <!--根据条件批量删除-->
+    <delete id="deleteBatch" parameterType="com.tianhai.warn.query.NotificationReceiverQuery">
+    DELETE FROM notification_receiver
+    <where>
+        <if test="id != null">
+            AND id = #{id}
+        </if>
+        <if test="noticeId != null and noticeId != ''">
+            AND notice_id = #{noticeId}
+        </if>
+        <if test="noticeIdList != null and noticeIdList.size() > 0">
+            AND notice_id IN
+            <foreach collection="noticeIdList" item="nid" open="(" separator="," close=")">
+                #{nid}
+            </foreach>
+        </if>
+        <if test="receiverId != null and receiverId != ''">
+            AND receiver_id = #{receiverId}
+        </if>
+        <if test="receiverRole != null and receiverRole != ''">
+            AND receiver_role = #{receiverRole}
+        </if>
+        <if test="readStatus != null and readStatus != ''">
+            AND read_status = #{readStatus}
+        </if>
+        <if test="readTimeStart != null">
+            AND read_time &gt;= #{readTimeStart}
+        </if>
+        <if test="readTimeEnd != null">
+            AND read_time &lt;= #{readTimeEnd}
+        </if>
+        <if test="createTimeStart != null">
+            AND create_time &gt;= #{createTimeStart}
+        </if>
+        <if test="createTimeEnd != null">
+            AND create_time &lt;= #{createTimeEnd}
+        </if>
+    </where>
+</delete>    
 </mapper>

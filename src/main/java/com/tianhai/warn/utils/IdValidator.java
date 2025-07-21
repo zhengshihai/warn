@@ -33,7 +33,7 @@ public class IdValidator {
      */
     private static class PrefixInfo {
         private final String prefix;
-        private final int length;
+        private final Integer length;
         private final Pattern pattern;
 
         public PrefixInfo(String prefix, int length) {

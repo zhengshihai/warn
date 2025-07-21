@@ -29,4 +29,11 @@ public interface NotificationMapper {
      * @return                           插入行数
      */
     int insertBatch(@Param("notificationList") List<Notification> notificationList);
+
+    /**
+     * 批量删除通知
+     * @param notQuery          删除条件
+     * @return                  删除行数
+     */
+    int deleteBatch(NotificationQuery notQuery);
 }

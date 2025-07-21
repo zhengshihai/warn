@@ -54,4 +54,11 @@ public interface NotificationService {
      * @return                   无效的接收者ID列表
      */
     Map<String, Set<String>> sendNotification(NotificationDTO notificationDTO, NotificationSendMode sendMode);
+
+    /**
+     * 批量删除通知
+     * @param notificationDTO    通知数据传输对象
+     * @return                   删除行数
+     */
+    int deleteBatch(NotificationDTO notificationDTO);
 }
