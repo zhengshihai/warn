@@ -150,7 +150,7 @@ public class NotificationServiceImpl implements NotificationService {
      * 获取特定用户类型的通知
      */
     private List<Notification> getSpecialUserNotifications(NotificationQuery query, String targetId,
-            String targetType) {
+                                                           String targetType) {
         query.setTargetId(targetId);
         query.setTargetType(targetType);
         query.setTargetScope(TargetScope.SPECIAL_USER.getCode());
@@ -208,7 +208,7 @@ public class NotificationServiceImpl implements NotificationService {
      * 根据读取状态异步处理通知列表
      */
     private Map<String, PageResult<NotificationVO>> processNotByReadStatusAsync(List<Notification> notificationList,
-            NotificationQuery query) {
+                                                                                NotificationQuery query) {
 
         // 异步获取已读状态的NotificationVO列表
         CompletableFuture<PageResult<NotificationVO>> readFuture = CompletableFuture.supplyAsync(() -> {
@@ -273,8 +273,8 @@ public class NotificationServiceImpl implements NotificationService {
      * 构建特定状态的额NotificationVO分页结果
      */
     private PageResult<NotificationVO> buildPageResultByReadStatus(String readStatus,
-            List<Notification> notifications,
-            NotificationQuery query) {
+                                                                   List<Notification> notifications,
+                                                                   NotificationQuery query) {
         boolean validReadStatus = "READ".equalsIgnoreCase(readStatus)
                 || "UNREAD".equalsIgnoreCase(readStatus);
         if (!validReadStatus) {
@@ -345,7 +345,7 @@ public class NotificationServiceImpl implements NotificationService {
      * 结合notification_receiver表 筛选已读或未读的通知
      */
     private List<Notification> distinguishReadOrUnread(List<Notification> allNotificationList,
-            NotificationQuery notQuery) {
+                                                       NotificationQuery notQuery) {
         // 校验特定用户的信息
         String targetType = notQuery.getTargetType();
         String targetId = notQuery.getTargetId();
@@ -604,8 +604,8 @@ public class NotificationServiceImpl implements NotificationService {
 
     // 构建通知接收对象列表
     private List<NotificationReceiver> buildNotRecList(List<String> receiverIdList,
-            String noticeId,
-            String receiverRole) {
+                                                       String noticeId,
+                                                       String receiverRole) {
         if (receiverIdList == null || receiverIdList.isEmpty()) {
             return new ArrayList<>();
         }
@@ -628,13 +628,14 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public Map<String, Set<String>>  sendNotification(NotificationDTO notificationDTO, NotificationSendMode sendMode) {
+    public Map<String, Set<String>> sendNotification(NotificationDTO notificationDTO, NotificationSendMode sendMode) {
         // 构造无效的通知对象业务标识Map
         Map<String, Set<String>> invalidReceiverIdMap = new ConcurrentHashMap<>();
 
         // 如果采用receiverIDList的方式发送消息，则需要预处理形式上无效的receiverId
         if (notificationDTO.getReceiverIdList() != null && !notificationDTO.getReceiverIdList().isEmpty()) {
-            List<String> validRoleReceiverIdList = filterReceiverIdList(notificationDTO.getReceiverIdList(), invalidReceiverIdMap);
+            List<String> validRoleReceiverIdList = filterReceiverIdList(notificationDTO.getReceiverIdList(),
+                    invalidReceiverIdMap);
             notificationDTO.setNoticeIdList(validRoleReceiverIdList);
         }
 
@@ -653,10 +654,10 @@ public class NotificationServiceImpl implements NotificationService {
 
     // 通过receiverIdList发送
     // -- receiverId是包含不同的用户角色（学生 宿管 班级管理员），
-    //    而且对这些receiverId所属的角色进行辨别，
-    //    实际业务中应该让前端按角色，让用户分类导入，从而减少后端业务的复杂度
+    // 而且对这些receiverId所属的角色进行辨别，
+    // 实际业务中应该让前端按角色，让用户分类导入，从而减少后端业务的复杂度
     protected Map<String, Set<String>> sendWithReceiverIdList(NotificationDTO notificationDTO,
-            Map<String, Set<String>> invalidReceiverIdMap) {
+                                                              Map<String, Set<String>> invalidReceiverIdMap) {
         // 执行发送通知
         doSendWithReceiverIdList(notificationDTO, invalidReceiverIdMap);
 
@@ -673,7 +674,7 @@ public class NotificationServiceImpl implements NotificationService {
     // 另外还额外设立一个不属于任何角色的Key，该Key名为invalidRole，
     // 注：这里的预处理仅是从正则表达式进行预处理过滤，而非结合数据库校验该用户是否存在。后续不同角色的无效receiverId会单独设置
     private List<String> filterReceiverIdList(List<String> receiverIdList,
-            Map<String, Set<String>> invalidReceiverIdMap) {
+                                              Map<String, Set<String>> invalidReceiverIdMap) {
         logger.info("开始预处理receiverIdList列表");
 
         // 形式上合规的receiverId集合
@@ -697,11 +698,11 @@ public class NotificationServiceImpl implements NotificationService {
 
     /**
      * 根据receiverIdList发送通知
-     * 
+     *
      * @param notificationDTO 通知对象DTO
      */
     private void doSendWithReceiverIdList(NotificationDTO notificationDTO,
-            Map<String, Set<String>> invalidReceiverIdMap) {
+                                          Map<String, Set<String>> invalidReceiverIdMap) {
 
         // 获取不同角色的业务标识Id集合
         Map<String, Set<String>> roleToListMap = distinguishReceiverIdByRole(
@@ -729,8 +730,8 @@ public class NotificationServiceImpl implements NotificationService {
 
     // 处理学生角色
     private void sendStuNotification(NotificationDTO notificationDTO,
-            Map<String, Set<String>> roleToListMap,
-            Map<String, Set<String>> invalidReceiverIdMap) {
+                                     Map<String, Set<String>> roleToListMap,
+                                     Map<String, Set<String>> invalidReceiverIdMap) {
         Date now = new Date();
 
         // 获取导入的接收通知的学生业务标识id集合
@@ -809,8 +810,8 @@ public class NotificationServiceImpl implements NotificationService {
 
     // 处理班级管理员角色
     private void sendSysUserNotification(NotificationDTO notificationDTO,
-            Map<String, Set<String>> roleToListMap,
-            Map<String, Set<String>> invalidReceiverIdMap) {
+                                         Map<String, Set<String>> roleToListMap,
+                                         Map<String, Set<String>> invalidReceiverIdMap) {
         Set<String> sysUserReceiverIdInputSet = roleToListMap.getOrDefault(RoleMatcher.SYS_USER.getRole(), Set.of());
 
         // 获取数据库中班级管理员集合
@@ -824,9 +825,9 @@ public class NotificationServiceImpl implements NotificationService {
 
     // 根据角色构造无效的通知对象的Map 此处的role具体到职位角色
     private void addToInvalidReceiverIdMap(Map<String, Set<String>> invalidReceiverIdMap,
-            Set<String> validReceiverIdSet,
-            Set<String> inputReceiverIdSet,
-            String role) {
+                                           Set<String> validReceiverIdSet,
+                                           Set<String> inputReceiverIdSet,
+                                           String role) {
         // 计算无效的业务标识id
         Set<String> invalidReceiverIdSet = inputReceiverIdSet.stream()
                 .filter(id -> !validReceiverIdSet.contains(id))
@@ -847,9 +848,9 @@ public class NotificationServiceImpl implements NotificationService {
 
     // TargetScope为 specialUser 条件下的构造通知列表
     private List<Notification> buildNotificationList(Set<String> targetIdSet,
-            NotificationDTO notificationDTO,
-            String targetType,
-            Date now) {
+                                                     NotificationDTO notificationDTO,
+                                                     String targetType,
+                                                     Date now) {
         return targetIdSet.stream()
                 .map(targetId -> {
                     Notification notification = new Notification();
@@ -907,9 +908,9 @@ public class NotificationServiceImpl implements NotificationService {
 
     // 处理班级管理员角色的接收通知
     private void processSysUserReceiverIds(Map<String, Set<String>> invalidReceiverIdMap,
-            Set<String> sysUserReceiverIdInputSet,
-            List<SysUser> sysUserDBList,
-            NotificationDTO notificationDTO) {
+                                           Set<String> sysUserReceiverIdInputSet,
+                                           List<SysUser> sysUserDBList,
+                                           NotificationDTO notificationDTO) {
         // 过滤掉无效的班级管理员
         List<SysUser> filteredSysUserList = sysUserDBList.stream()
                 .filter(sysUser -> sysUserReceiverIdInputSet.contains(sysUser.getSysUserNo()))
@@ -933,7 +934,7 @@ public class NotificationServiceImpl implements NotificationService {
 
         List<Notification> allSysUserNotificationList = new ArrayList<>(filteredSysUserList.size());
 
-        // key - 具体到职位角色的角色名称   value - 该角色的通知接收对象的业务标识id集合
+        // key - 具体到职位角色的角色名称 value - 该角色的通知接收对象的业务标识id集合
         Map<String, Set<String>> roleToReceiverIdSetMap = filteredSysUserList.stream()
                 .collect(Collectors.groupingBy(
                         SysUser::getJobRole,
@@ -962,8 +963,8 @@ public class NotificationServiceImpl implements NotificationService {
 
     // 向notification_receiver表中插入信息
     private void processNotificationReceiver(Set<String> receiverIdSet,
-            String noticeId,
-            String receiverRole) {
+                                             String noticeId,
+                                             String receiverRole) {
         if (receiverIdSet.isEmpty()) {
             logger.info("没有有效的通知接收人，无法插入notification_receiver表");
             return;
@@ -1027,7 +1028,7 @@ public class NotificationServiceImpl implements NotificationService {
 
     // 通过targetType发送（排除超级管理员角色）
     private Map<String, Set<String>> sendWithTargetType(NotificationDTO notificationDTO,
-            Map<String, Set<String>> invalidReceiverIdMap) {
+                                                        Map<String, Set<String>> invalidReceiverIdMap) {
         if (notificationDTO.getTargetType().equalsIgnoreCase(Constants.STUDENT)) {
             // todo 筛选在校生
 
@@ -1064,7 +1065,7 @@ public class NotificationServiceImpl implements NotificationService {
                         () -> jobRoleToReceiverIdSetMap.get(Constants.JOB_ROLE_DEAN));
 
                 default ->
-                    logger.error("给特定角色发送消息功能中，暂时不支持该targetType: {}", targetType);
+                        logger.error("给特定角色发送消息功能中，暂时不支持该targetType: {}", targetType);
             }
         }
 
@@ -1073,8 +1074,8 @@ public class NotificationServiceImpl implements NotificationService {
 
     // 执行给特定角色发送通知和插入通知接收信息
     private void handleNotAndNotRecForSpecialRole(NotificationDTO notificationDTO,
-            String specialRole,
-            Supplier<Set<String>> receiverIdSupplier) {
+                                                  String specialRole,
+                                                  Supplier<Set<String>> receiverIdSupplier) {
         Set<String> receiverIdSet = receiverIdSupplier.get();
 
         Notification notification = buildNotification(
