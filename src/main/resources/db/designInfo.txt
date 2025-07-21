@@ -523,3 +523,11 @@ CREATE TABLE IF NOT EXISTS notification_receiver (
    对于群发和全发场景，发送通知后立即推送异步任务（如 MQ、定时器）来逐批插入 notification_receiver，
    避免长时间阻塞主线程。
 
+
+【获取云端的人脸数据业务】
+✅ 本地系统访问云端的方式（选择一或组合）：
+方式	特点	适用场景
+1. 定时任务 + HTTP REST API	定时访问云端接口获取晚归数据，解析存入本地数据库	适合数据量不大、不要求实时
+2. 消息队列（MQ）	云端主动推送数据到本地（通过 MQ，如 RabbitMQ, Kafka）	适合数据实时性强、系统解耦
+3. 直接数据库访问	本地通过 JDBC/ORM 直连云数据库（如云MySQL）	安全性差，一般不推荐
+4. WebSocket（或SSE）	保持实时连接，由云端推送更新数据	适合准实时、高互动性场景
