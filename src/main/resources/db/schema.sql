@@ -37,6 +37,7 @@ CREATE TABLE IF NOT EXISTS late_return (
     process_remark VARCHAR(500) COMMENT '处理备注',
     create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    photo_url VARCHAR(200) COMMENT '晚归照片URL',
     UNIQUE KEY uk_late_return_id (late_return_id),
     KEY idx_student_no (student_no),
     KEY idx_late_time (late_time),

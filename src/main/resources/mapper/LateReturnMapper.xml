@@ -17,12 +17,13 @@
         <result column="student_name" property="studentName"/>
         <result column="college" property="college"/>
         <result column="dormitory" property="dormitory"/>
+        <result column="photo_url" property="photoUrl"/>
     </resultMap>
     
     <!-- 通用查询结果列 -->
     <sql id="Base_Column_List">
         lr.id, lr.late_return_id, lr.student_no, lr.late_time, lr.reason, lr.process_status, lr.process_result,
-        lr.process_remark, lr.create_time, lr.update_time, s.name as student_name, s.college, s.dormitory
+        lr.process_remark, lr.create_time, lr.update_time, s.name as student_name, s.college, s.dormitory, lr.photo_url
     </sql>
     
     <!-- 根据ID查询 -->
@@ -183,18 +184,19 @@
         INSERT INTO late_return (
             late_return_id, student_no, late_time, reason, 
             process_status, process_result, process_remark,
-             create_time, update_time
+            create_time, update_time, photo_url
         ) VALUES (
             #{lateReturnId}, #{studentNo}, #{lateTime}, #{reason},
             #{processStatus}, #{processResult}, #{processRemark},
-            NOW(), NOW()
+            NOW(), NOW(), #{photoUrl}
         )
         ON DUPLICATE KEY UPDATE
             reason = VALUES(reason),
             process_status = VALUES(process_status),
             process_result = VALUES(process_result),
             process_remark = VALUES(process_remark),
-            update_time = NOW()
+            update_time = NOW(),
+            photo_url = VALUES(photo_url)
     </insert>
     
     <!-- 更新 -->
@@ -205,6 +207,7 @@
             <if test="processStatus != null">process_status = #{processStatus},</if>
             <if test="processResult != null">process_result = #{processResult},</if>
             <if test="processRemark != null">process_remark = #{processRemark},</if>
+            <if test="photoUrl != null">photo_url = #{photoUrl},</if>
             update_time = NOW()
         </set>
         WHERE id = #{id}

@@ -232,4 +232,11 @@ public interface LateReturnService {
      * @return 影响行数
      */
     int updateBatch(List<LateReturn> lateReturnList);
+
+    /**
+     * 批量插入晚归记录
+     * @param lateReturnList    晚归记录
+     * @return                  插入行数
+     */
+    int insertBatch(List<LateReturn> lateReturnList);
 }

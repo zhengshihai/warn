@@ -3,6 +3,7 @@ package com.tianhai.warn.mapper;
 import com.tianhai.warn.dto.StudentLateResultDTO;
 import com.tianhai.warn.model.LateReturn;
 import com.tianhai.warn.query.LateReturnQuery;
+import org.apache.ibatis.annotations.MapKey;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import java.util.List;
@@ -186,4 +187,11 @@ public interface LateReturnMapper {
      * @return 影响行数
      */
     int updateBatch(@Param("lateReturnList") List<LateReturn> lateReturnList);
+
+    /**
+     * 批量插入晚归记录
+     * @param lateReturnList    晚归记录
+     * @return                  插入行数
+     */
+    int insertBatch(List<LateReturn> lateReturnList);
 }
