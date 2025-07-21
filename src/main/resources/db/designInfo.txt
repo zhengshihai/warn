@@ -531,3 +531,20 @@ CREATE TABLE IF NOT EXISTS notification_receiver (
 2. 消息队列（MQ）	云端主动推送数据到本地（通过 MQ，如 RabbitMQ, Kafka）	适合数据实时性强、系统解耦
 3. 直接数据库访问	本地通过 JDBC/ORM 直连云数据库（如云MySQL）	安全性差，一般不推荐
 4. WebSocket（或SSE）	保持实时连接，由云端推送更新数据	适合准实时、高互动性场景
+
+前后端音视频分片上传+断点续传的完整方案
+一、协议设计
+每个分片消息需包含：
+alarmNo：报警编号
+sessionId：本次报警唯一标识（可用UUID，前端生成）
+chunkIndex：当前分片序号（从0开始）
+totalChunks：总分片数（可选，流式可不传）
+isLastChunk：是否为最后一个分片
+data：分片二进制数据
+采用WebSocket二进制消息+自定义头部或WebSocket文本头+二进制体，这里用JSON头+二进制体（主流做法）
+
+整个 BinaryMessage 二进制结构（前端打包后发送）：
+┌──────────────┬─────────────────────┬────────────────────────┐
+│ HeaderLength │ Header(JSON String) │ Chunk (音视频二进制)   │
+│    (4B)      │    (N bytes)        │     (剩余全部 Byte)     │
+└──────────────┴─────────────────────┴────────────────────────┘

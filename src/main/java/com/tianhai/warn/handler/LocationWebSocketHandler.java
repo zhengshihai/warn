@@ -24,7 +24,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-//todo 前端在建立 WebSocket 连接时，通过 URL 参数指定业务类型：  
 //   ws://localhost:8080/warn/ws/location?alarmNo=AL0001&businessType=ALARM_LOCATION
 @Component
 public class LocationWebSocketHandler extends TextWebSocketHandler {
@@ -55,7 +54,7 @@ public class LocationWebSocketHandler extends TextWebSocketHandler {
         String alarmNo = getAlarmNoFromSession(session);
         if (alarmNo == null) {
             logger.error("WebSocket连接失败：缺少alarmNo参数，URI: {}", session.getUri());
-            session.close(CloseStatus.BAD_DATA.withReason("Missing alarmNo parameter"));
+            session.close(CloseStatus.BAD_DATA.withReason("缺少参数alarmNo"));
             return;
         }
 
@@ -110,7 +109,7 @@ public class LocationWebSocketHandler extends TextWebSocketHandler {
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
         String alarmNo = getAlarmNoFromSession(session);
         if (alarmNo == null) {
-            session.close(CloseStatus.BAD_DATA.withReason("Missing alarmNo parameter"));
+            session.close(CloseStatus.BAD_DATA.withReason("缺少参数alarmNo"));
             return;
         }
 
@@ -124,7 +123,7 @@ public class LocationWebSocketHandler extends TextWebSocketHandler {
             // 验证消息格式
             if (!isValidLocationMessage(locationUpdateDTO)) {
                 logger.warn("无效的位置消息格式: {}", message.getPayload());
-                session.sendMessage(new TextMessage("Invalid message format"));
+                session.sendMessage(new TextMessage("位置消息格式无效"));
                 return;
             }
 
@@ -135,7 +134,7 @@ public class LocationWebSocketHandler extends TextWebSocketHandler {
             session.sendMessage(new TextMessage("Message received"));
         } catch (Exception e) {
             logger.error("处理位置消息失败: {}", message.getPayload(), e);
-            session.sendMessage(new TextMessage("Error processing message"));
+            session.sendMessage(new TextMessage("服务器位置消息处理失败"));
         }
     }
 

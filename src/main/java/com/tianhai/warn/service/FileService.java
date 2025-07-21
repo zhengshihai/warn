@@ -2,6 +2,7 @@ package com.tianhai.warn.service;
 
 import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.Date;
 
 /**
@@ -37,4 +38,20 @@ public interface FileService {
      * @return 完整的访问URL
      */
     String getFileUrl(String relativePath);
+
+    /**
+     * 保存音视频分片数据
+     * @param alarmNo       报警号
+     * @param sessionId     会话ID
+     * @param chunkIndex    分片索引
+     * @param chunkData     分片数据的字节缓冲区
+     */
+    void saveMediaChunk(String alarmNo, String sessionId, int chunkIndex, ByteBuffer chunkData);
+
+    /**
+     * 合并音视频分片数据
+     * @param alarmNo       报警号
+     * @param sessionId     会话ID
+     */
+    void mergeMediaChunks(String alarmNo, String sessionId);
 }
