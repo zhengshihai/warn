@@ -251,6 +251,15 @@
                 <div id="location-info" class="mt-2 text-gray-600"></div>
             </div>
 
+            <!-- 音视频采集预览区域 -->
+            <div class="portal-card p-6 mb-6">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">录像录音区域</h3>
+                <div class="flex justify-center">
+                    <video id="videoPreview" autoplay muted style="max-width: 100%; height: auto; background: #000; border-radius: 0.5rem; border: 1px solid #e5e7eb;"></video>
+                </div>
+            </div>
+
+
             <!-- 标签页导航 -->
             <div class="border-b border-gray-200 mb-6">
                 <nav class="-mb-px flex space-x-8">
@@ -1605,75 +1614,96 @@
                     longitude: window.currentPosition.longitude
                 }),
                 success: function(res) {
-                    alert('报警成功！');
-                    // 显示取消报警按钮
-                    $('#cancel-alarm-btn').removeClass('hidden');
-                    // 禁用报警按钮
-                    $('#normal-alarm-btn, #emergency-alarm-btn').prop('disabled', true);
-                    
-                    // 建立WebSocket连接
-                    const wsUrl = 'ws://' + window.location.host + '${pageContext.request.contextPath}/ws/location?alarmNo=' + alarmNo + '&businessType=ALARM_LOCATION';
-                    currentWebSocket = new WebSocket(wsUrl);
-                    
-                    // 连接建立时的处理
-                    currentWebSocket.onopen = function() {
-                        console.log('WebSocket连接已建立');
-                        // 开始定时发送位置更新
-                        const locationInterval = setInterval(function() {
-                            if (currentWebSocket.readyState === WebSocket.OPEN && window.currentPosition) {
-                                const locationData = {
-                                    alarmNo: alarmNo,
-                                    latitude: window.currentPosition.latitude,
-                                    longitude: window.currentPosition.longitude,
-                                    locationTime: new Date().toLocaleString('zh-CN', {
-                                        year: 'numeric',
-                                        month: '2-digit',
-                                        day: '2-digit',
-                                        hour: '2-digit',
-                                        minute: '2-digit',
-                                        second: '2-digit',
-                                        hour12: false
-                                    }).replace(/\//g, '-'),
-                                    speed: 0,
-                                    direction: 0,
-                                    locationAccuracy: window.currentPosition.accuracy
-                                };
-                                currentWebSocket.send(JSON.stringify(locationData));
-                            } else {
-                                clearInterval(locationInterval);
-                            }
-                        }, 3000); // 每3秒发送一次
-                        
-                        // 保存interval ID，以便在连接关闭时清除
-                        currentWebSocket.locationInterval = locationInterval;
-                    };
-                    
-                    // 接收消息的处理
-                    currentWebSocket.onmessage = function(event) {
-                        console.log('收到消息:', event.data);
-                    };
-                    
-                    // 连接关闭时的处理
-                    currentWebSocket.onclose = function() {
-                        console.log('WebSocket连接已关闭');
-                        if (currentWebSocket.locationInterval) {
-                            clearInterval(currentWebSocket.locationInterval);
-                        }
-                    };
-                    
-                    // 连接错误时的处理
-                    currentWebSocket.onerror = function(error) {
-                        console.error('WebSocket错误:', error);
-                        if (currentWebSocket.locationInterval) {
-                            clearInterval(currentWebSocket.locationInterval);
-                        }
-                    };
+                    // 1. 启动位置信息WebSocket
+                    startLocationWebSocket(alarmNo);
+                    // 2. 启动音视频WebSocket
+                    startMediaWebSocket(alarmNo);
+                    // 3. todo 其他处理
+
+
                 },
                 error: function(err) {
                     alert('报警失败，请重试');
                 }
             });
         });
+
+        // 成功触发报警后使用ws处理位置信息
+        function startLocationWebSocket(alarmNo) {
+            alert('报警成功！');
+            // 显示取消报警按钮
+            $('#cancel-alarm-btn').removeClass('hidden');
+            // 禁用报警按钮
+            $('#normal-alarm-btn, #emergency-alarm-btn').prop('disabled', true);
+
+            // 建立WebSocket连接
+            const wsUrl = 'ws://' + window.location.host + '${pageContext.request.contextPath}/ws/location?alarmNo=' + alarmNo + '&businessType=ALARM_LOCATION';
+            currentWebSocket = new WebSocket(wsUrl);
+
+            // 连接建立时的处理
+            currentWebSocket.onopen = function() {
+                console.log('WebSocket连接已建立');
+                // 开始定时发送位置更新
+                const locationInterval = setInterval(function() {
+                    if (currentWebSocket.readyState === WebSocket.OPEN && window.currentPosition) {
+                        const locationData = {
+                            alarmNo: alarmNo,
+                            latitude: window.currentPosition.latitude,
+                            longitude: window.currentPosition.longitude,
+                            locationTime: new Date().toLocaleString('zh-CN', {
+                                year: 'numeric',
+                                month: '2-digit',
+                                day: '2-digit',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                second: '2-digit',
+                                hour12: false
+                            }).replace(/\//g, '-'),
+                            speed: 0,
+                            direction: 0,
+                            locationAccuracy: window.currentPosition.accuracy
+                        };
+                        currentWebSocket.send(JSON.stringify(locationData));
+                    } else {
+                        clearInterval(locationInterval);
+                    }
+                }, 3000); // 每3秒发送一次
+
+                // 保存interval ID，以便在连接关闭时清除
+                currentWebSocket.locationInterval = locationInterval;
+            };
+
+            // 接收消息的处理
+            currentWebSocket.onmessage = function(event) {
+                console.log('收到消息:', event.data);
+            };
+
+            // 连接关闭时的处理
+            currentWebSocket.onclose = function() {
+                console.log('WebSocket连接已关闭');
+                if (currentWebSocket.locationInterval) {
+                    clearInterval(currentWebSocket.locationInterval);
+                }
+            };
+
+            // 连接错误时的处理
+            currentWebSocket.onerror = function(error) {
+                console.error('WebSocket错误:', error);
+                if (currentWebSocket.locationInterval) {
+                    clearInterval(currentWebSocket.locationInterval);
+                }
+            };
+        }
+
+        // 成功触发报警后使用ws处理音视频信息
+        async function startMediaWebSocket(alarmNo) {
+            sessionId = generateSessionId();
+            await startMedia(); // 等待摄像头/麦克风准备好
+            connectVideoWebSocket(alarmNo, sessionId); // 传递参数更安全
+            startRecording();
+        }
+
+        let isRecordingStopped = false;
 
         // 取消一键报警请求
         $('#cancel-alarm-btn').click(function() {
@@ -1706,12 +1736,142 @@
                     $('#normal-alarm-btn, #emergency-alarm-btn').prop('disabled', false);
                     // 清除当前报警编号
                     alarmNo = null;
+
+                    //停止录音录像
+                    isRecordingStopped = true;
+                    stopRecording();
                 },
                 error: function(err) {
                     alert('取消报警失败，请重试');
                 }
             });
         });
+
+    // -----------------------------------------------------------------------------
+        let ws, mediaRecorder, mediaStream;
+        let sessionId = generateSessionId();
+        let chunkIndex = 0;
+        let chunkCache = []; // 本地缓存分片
+
+        // 开始录音和录像
+        async function startMedia() {
+            mediaStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            document.querySelector("#videoPreview").srcObject = mediaStream;
+        }
+
+        function generateSessionId() {
+            return 'xxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                var r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+
+        // 建立发送音视频数据的ws链接
+        function connectVideoWebSocket(alarmNo, sessionId) {
+            ws = new WebSocket('ws://' + window.location.host + '${pageContext.request.contextPath}/ws/media?alarmNo=' + alarmNo + "&sessionId=" + sessionId);
+            ws.binaryType = "arraybuffer";
+
+            ws.onopen = () => {
+                startRecording();
+            };
+
+            ws.onmessage = (event) => {
+                // 后端返回已收到chunkIndex，前端据此删除本地缓存
+                let resp = JSON.parse(event.data);
+                if (resp.type === "ACK") {
+                    // 删除已确认分片
+                    chunkCache = chunkCache.filter(chunk => chunk.chunkIndex > resp.chunkIndex);
+                }
+            };
+
+            ws.onclose = () => { stopRecording(); };
+            ws.onerror = (e) => { stopRecording(); };
+        }
+
+        // 开始录音和录像
+        function startRecording() {
+            isRecordingStopped = false; // 每次开始录制前重置
+            if (!mediaStream) return;
+            console.log("开始录像和录音")
+            mediaRecorder = new MediaRecorder(mediaStream, { mimeType: "video/webm; codecs=vp8,opus" });
+
+            mediaRecorder.ondataavailable = function(event) {
+                if (event.data && event.data.size > 0) {
+                    let chunk = {
+                        alarmNo,
+                        sessionId,
+                        chunkIndex: chunkIndex,
+                        isLastChunk: isRecordingStopped // 只有最后一次才为true
+                    };
+                    chunkCache.push({ ...chunk, data: event.data }); // 本地缓存
+                    sendChunk(chunk, event.data);
+                    chunkIndex++;
+                }
+            };
+
+            // todo 根据网络和后端接受策略动态调整单个分片的时间长度
+            mediaRecorder.start(3000); // 每3秒一个分片
+        }
+
+        // 通过ws发送音视频分片数据
+        function sendChunk(chunk, blob) {
+            console.log("开始传输音视频分片数据");
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                let header = JSON.stringify(chunk);
+                let encoder = new TextEncoder();
+                let headerBytes = encoder.encode(header);
+
+                // 用 DataView 明确写入大端字节序
+                let totalLength = 4 + headerBytes.length + blob.size;
+                let total = new Uint8Array(totalLength);
+                let view = new DataView(total.buffer);
+
+                // 写入4字节大端header长度
+                view.setUint32(0, headerBytes.length, false); // false = big-endian
+
+                // 写入header
+                total.set(headerBytes, 4);
+
+                // 写入二进制体
+                blob.arrayBuffer().then(dataBuffer => {
+                    total.set(new Uint8Array(dataBuffer), 4 + headerBytes.length);
+                    console.log("total的长度" + total.length)
+                    ws.send(total.buffer);
+                });
+            }
+        }
+
+        // 断线重连时重发未确认分片
+        function resendChunks() {
+            chunkCache.forEach(chunkObj => {
+                sendChunk(chunkObj, chunkObj.data);
+            });
+        }
+
+        // 停止录音和录像
+        function stopRecording() {
+            console.log("停止录音和录像");
+            isRecordingStopped = true;
+            if (mediaRecorder && mediaRecorder.state !== "inactive") {
+                mediaRecorder.stop();
+            }
+        }
+
+        // 页面关闭/刷新时自动安全结束录制
+        window.addEventListener('beforeunload', function (e) {
+            if (mediaRecorder && mediaRecorder.state !== "inactive") {
+                isRecordingStopped = true;
+                mediaRecorder.stop();
+            }
+            // 可选：关闭WebSocket
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.close();
+            }
+        });
+
+        // -----------------------------------------------------------------------------
+
+      
     </script>
 
 

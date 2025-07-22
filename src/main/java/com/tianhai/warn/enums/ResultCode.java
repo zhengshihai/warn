@@ -69,7 +69,11 @@ public enum ResultCode implements IResultCode {
     ALARM_CONFIG_STATUS_INVALID(10012, "该报警配置状态无效" ),
 
     SYS_USER_NO_LOCKED_FAIL(12000, "获取SysUserNo锁失败"),
-    SYS_USER_DISABLE(12001, "该班级管理员已被禁用");
+    SYS_USER_DISABLE(12001, "该班级管理员已被禁用"),
+
+
+    VIDEO_DATA_SAVE_FAILED(13000, "保存音视频数据失败" ),
+    VIDEO_CHUNK_MERGE_FAILED(13001, "合并音视频失败" );
 
     private final Integer code;
     private final String message;

@@ -18,6 +18,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataAccessException;
 import org.springframework.data.geo.Point;
 import org.springframework.data.redis.connection.RedisGeoCommands;
@@ -62,6 +63,9 @@ public class LocationTrackServiceImpl implements LocationTrackService {
     private static final String COMPENSATE_REDIS_LIST = "location:compensate:redis";
 
     private static final Integer MAX_RETRY_TIMES = 3;
+
+    @Value("video.file.storage.path") // todo 区分开发环境和线上环境
+    private String videoFilePath;
 
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
