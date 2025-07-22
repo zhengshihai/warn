@@ -3,14 +3,12 @@ package com.tianhai.warn.service.impl;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import com.tianhai.warn.constants.Constants;
-import com.tianhai.warn.dto.AuditActionDTO;
-import com.tianhai.warn.dto.ProcessActionDTO;
-import com.tianhai.warn.dto.StudentLateQueryDTO;
-import com.tianhai.warn.dto.StudentLateResultDTO;
+import com.tianhai.warn.dto.*;
 import com.tianhai.warn.enums.ResultCode;
 import com.tianhai.warn.events.StatsEvent;
 import com.tianhai.warn.exception.BusinessException;
 
+import com.tianhai.warn.exception.SystemException;
 import com.tianhai.warn.mapper.LateReturnMapper;
 import com.tianhai.warn.model.DormitoryManager;
 import com.tianhai.warn.model.LateReturn;
@@ -27,11 +25,11 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.core.env.Environment;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClient;
 import reactor.util.annotation.Nullable;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -497,5 +495,35 @@ public class LateReturnServiceImpl implements LateReturnService {
     @Transactional(rollbackFor = Exception.class)
     public int updateBatch(List<LateReturn> lateReturnList) {
         return lateReturnMapper.updateBatch(lateReturnList);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int insertBatch(List<LateReturn> lateReturnList) {
+        if (lateReturnList == null || lateReturnList.isEmpty()) {
+            return 0;
+        }
+
+        final int batchSize = 500;
+        int totalInserted = 0;
+
+        try {
+            if (lateReturnList.size() <= batchSize) {
+                return lateReturnMapper.insertBatch(lateReturnList);
+            }
+
+            // 分批插入
+            int total = lateReturnList.size();
+            for (int i = 0; i < total; i += batchSize) {
+                int end = Math.min(i + batchSize, total);
+                List<LateReturn> subList = lateReturnList.subList(i, end);
+                totalInserted += lateReturnMapper.insertBatch(subList);
+            }
+        } catch (Exception e) {
+            logger.error("批量插入晚归数据时出现异常", e);
+            throw new SystemException(ResultCode.ERROR);
+        }
+
+        return totalInserted;
     }
 }

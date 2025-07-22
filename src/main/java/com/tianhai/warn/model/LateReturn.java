@@ -41,6 +41,7 @@ public class LateReturn implements Serializable {
     private Date createTime; // 创建时间
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date updateTime; // 更新时间
+    private String photoUrl; // 晚归照片URL 
 
     // 非数据库字段
     private String studentName; // 学生姓名
