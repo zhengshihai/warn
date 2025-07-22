@@ -20,7 +20,8 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.stream.Collectors;
+import com.xxl.job.core.biz.model.ReturnT;
+
 
 @Component
 public class LateReturnFaceDataHandler {
@@ -37,52 +38,52 @@ public class LateReturnFaceDataHandler {
     private LateReturnService lateReturnService;
 
     // 从云端获取学生晚归的人脸数据并保存在数据库
-    @XxlJob("lateReturnFaceDataJobHandler")
-    public int fetchSaveLateReturnData(String lateStartTime, String lateEndTime) {
-        // 从云端获取数据
-        String url = environment.getProperty("warn.face.cloud.url");
-        String secret = environment.getProperty("warn.face.cloud.secret");
-        String responseTimeoutStr = environment.getProperty("warn.face.cloud.response.timeout", "10");
-        long responseTimeout = Long.parseLong(responseTimeoutStr);
-
-        if (StringUtils.isBlank(lateStartTime) || StringUtils.isBlank(lateEndTime)) {
-            logger.error("晚归时间范围不能为空");
-            throw new BusinessException(ResultCode.VALIDATE_FAILED);
-        }
-
-        if (StringUtils.isBlank(url)) {
-            logger.error("未配置云端人脸数据获取URL或Token");
-            throw new BusinessException(ResultCode.VALIDATE_FAILED);
-        }
-        String faceDataReqUrl = String.format(url, lateStartTime, lateEndTime);
-
-        List<LateReturnFaceDTO> lateReturnFaceDTOList;
-        try {
-            lateReturnFaceDTOList = webClient.get()
-                    .uri(faceDataReqUrl)
-                    .header("face-api-secret", secret)
-                    .retrieve()
-                    .bodyToFlux(LateReturnFaceDTO.class)
-                    .collectList()
-                    .block(Duration.ofSeconds(responseTimeout));
-        } catch (Exception e) {
-            logger.error("从云端获取晚归人脸数据失败, lateStartTime: {}, lateEndTime: {}", lateStartTime, lateEndTime, e);
-            throw new SystemException(ResultCode.ERROR);
-        }
-
-        // 将晚归人脸数据保存在late_return表
-        if (lateReturnFaceDTOList == null || lateReturnFaceDTOList.isEmpty()) {
-            logger.info("没有获取到晚归人脸数据");
-            return 0;
-        } else {
-            logger.info("获取到晚归人脸数据，数量: {}", lateReturnFaceDTOList.size());
-        }
-
-        int saveLateReturnRows = saveLateReturnData(lateReturnFaceDTOList);
-        logger.info("成功保存晚归人脸数据到数据库，保存行数: {}", saveLateReturnRows);
-
-        return saveLateReturnRows;
-    }
+//    @XxlJob("lateReturnFaceDataJobHandler")
+//    public ReturnT<String> fetchSaveLateReturnData(String lateStartTime, String lateEndTime) {
+//        // 从云端获取数据
+//        String url = environment.getProperty("warn.face.cloud.url");
+//        String secret = environment.getProperty("warn.face.cloud.secret");
+//        String responseTimeoutStr = environment.getProperty("warn.face.cloud.response.timeout", "10");
+//        long responseTimeout = Long.parseLong(responseTimeoutStr);
+//
+//        if (StringUtils.isBlank(lateStartTime) || StringUtils.isBlank(lateEndTime)) {
+//            logger.error("晚归时间范围不能为空");
+//            throw new BusinessException(ResultCode.VALIDATE_FAILED);
+//        }
+//
+//        if (StringUtils.isBlank(url)) {
+//            logger.error("未配置云端人脸数据获取URL或Token");
+//            throw new BusinessException(ResultCode.VALIDATE_FAILED);
+//        }
+//        String faceDataReqUrl = String.format(url, lateStartTime, lateEndTime);
+//
+//        List<LateReturnFaceDTO> lateReturnFaceDTOList;
+//        try {
+//            lateReturnFaceDTOList = webClient.get()
+//                    .uri(faceDataReqUrl)
+//                    .header("face-api-secret", secret)
+//                    .retrieve()
+//                    .bodyToFlux(LateReturnFaceDTO.class)
+//                    .collectList()
+//                    .block(Duration.ofSeconds(responseTimeout));
+//        } catch (Exception e) {
+//            logger.error("从云端获取晚归人脸数据失败, lateStartTime: {}, lateEndTime: {}", lateStartTime, lateEndTime, e);
+//            throw new SystemException(ResultCode.ERROR);
+//        }
+//
+//        // 将晚归人脸数据保存在late_return表
+//        if (lateReturnFaceDTOList == null || lateReturnFaceDTOList.isEmpty()) {
+//            logger.info("没有获取到晚归人脸数据");
+//            return ReturnT.SUCCESS;
+//        } else {
+//            logger.info("获取到晚归人脸数据，数量: {}", lateReturnFaceDTOList.size());
+//        }
+//
+//        int saveLateReturnRows = saveLateReturnData(lateReturnFaceDTOList);
+//        logger.info("成功保存晚归人脸数据到数据库，保存行数: {}", saveLateReturnRows);
+//
+//        return ReturnT.SUCCESS;
+//    }
 
     // 保存晚归人脸数据到数据库
     private int saveLateReturnData(List<LateReturnFaceDTO> lateReturnFaceDTOList) {

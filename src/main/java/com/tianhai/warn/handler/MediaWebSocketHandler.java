@@ -62,17 +62,6 @@ public class MediaWebSocketHandler extends AbstractWebSocketHandler {
     // 处理音视频的二进制数据
     @Override
     protected void handleBinaryMessage(WebSocketSession session, BinaryMessage message) throws Exception {
-//        String alarmNo = getAlarmNoFromSession(session);
-//        if (alarmNo == null) {
-//            session.close(CloseStatus.BAD_DATA.withReason("Missing alarmNo parameter"));
-//            return;
-//        }
-//        LAST_ACTIVE_TIME.put(alarmNo, System.currentTimeMillis());
-//
-//        // 保存音视频数据到本地文件
-//        fileService.saveMediaToFile(alarmNo, message.getPayload());
-//        logger.info("接收到音视频数据，alarmNo: {}, 数据大小: {} bytes", alarmNo, message.getPayloadLength());
-
         // 此处BinaryMessage的二进制结构
         /*
             ┌──────────────┬─────────────────────┬────────────────────────┐
