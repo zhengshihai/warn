@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.tianhai.warn.mapper.AlarmVideoSliceMapper">
+
+    <resultMap id="AlarmVideoSliceResultMap" type="com.tianhai.warn.model.AlarmVideoSlice">
+        <id property="id" column="id"/>
+        <result property="videoId" column="video_id"/>
+        <result property="sliceId" column="slice_id"/>
+        <result property="startTimeSec" column="start_time_sec"/>
+        <result property="durationSec" column="duration_sec"/>
+        <result property="sliceFilePath" column="slice_file_path"/>
+        <result property="fileSizeBytes" column="file_size_bytes"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <!-- 插入单条 -->
+    <insert id="insert" parameterType="com.tianhai.warn.model.AlarmVideoSlice" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO alarm_video_slices (
+            video_id, slice_id, start_time_sec, duration_sec, slice_file_path, file_size_bytes, created_at, updated_at
+        ) VALUES (
+            #{videoId}, #{sliceId}, #{startTimeSec}, #{durationSec}, #{sliceFilePath}, #{fileSizeBytes}, #{createdAt}, #{updatedAt}
+        )
+    </insert>
+
+    <!-- 批量插入 -->
+    <insert id="insertBatch" parameterType="java.util.List">
+        INSERT INTO alarm_video_slices (
+            video_id, slice_id, start_time_sec, duration_sec, slice_file_path, file_size_bytes, created_at, updated_at
+        ) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.videoId}, #{item.sliceId}, #{item.startTimeSec}, #{item.durationSec}, #{item.sliceFilePath}, #{item.fileSizeBytes}, #{item.createdAt}, #{item.updatedAt})
+        </foreach>
+    </insert>
+
+    <!-- 删除 -->
+    <delete id="deleteById" parameterType="long">
+        DELETE FROM alarm_video_slices WHERE id = #{id}
+    </delete>
+
+    <!-- 更新 -->
+    <update id="updateById" parameterType="com.tianhai.warn.model.AlarmVideoSlice">
+        UPDATE alarm_video_slices
+        SET
+            video_id = #{videoId},
+            slice_id = #{sliceId},
+            start_time_sec = #{startTimeSec},
+            duration_sec = #{durationSec},
+            slice_file_path = #{sliceFilePath},
+            file_size_bytes = #{fileSizeBytes},
+            created_at = #{createdAt},
+            updated_at = #{updatedAt}
+        WHERE id = #{id}
+    </update>
+
+    <!-- 查询单条 -->
+    <select id="selectById" parameterType="long" resultMap="AlarmVideoSliceResultMap">
+        SELECT * FROM alarm_video_slices WHERE id = #{id}
+    </select>
+
+    <!-- 查询某视频所有切片 -->
+    <select id="selectByVideoId" parameterType="string" resultMap="AlarmVideoSliceResultMap">
+        SELECT * FROM alarm_video_slices WHERE video_id = #{videoId}
+    </select>
+
+    <!-- 查询全部 -->
+    <select id="selectAll" resultMap="AlarmVideoSliceResultMap">
+        SELECT * FROM alarm_video_slices
+    </select>
+
+</mapper>

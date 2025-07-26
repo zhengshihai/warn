@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.tianhai.warn.mapper.AlarmVideoMapper">
+
+    <resultMap id="AlarmVideoResultMap" type="com.tianhai.warn.model.AlarmVideo">
+        <id property="id" column="id"/>
+        <result property="videoId" column="video_id"/>
+        <result property="alarmNo" column="alarm_no"/>
+        <result property="studentNo" column="student_no"/>
+        <result property="title" column="title"/>
+        <result property="filePath" column="file_path"/>
+        <result property="durationSec" column="duration_sec"/>
+        <result property="fileSizeBytes" column="file_size_bytes"/>
+        <result property="format" column="format"/>
+        <result property="resolution" column="resolution"/>
+        <result property="bitrate" column="bitrate"/>
+        <result property="uploadUserId" column="upload_user_id"/>
+        <result property="status" column="status"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <!-- 插入 -->
+    <insert id="insert" parameterType="com.tianhai.warn.model.AlarmVideo" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO alarm_videos (
+            video_id, alarm_no, student_no, title, file_path, duration_sec, file_size_bytes, format, resolution, bitrate, upload_user_id, status, created_at, updated_at
+        ) VALUES (
+                     #{videoId}, #{alarmNo}, #{studentNo}, #{title}, #{filePath}, #{durationSec}, #{fileSizeBytes}, #{format}, #{resolution}, #{bitrate}, #{uploadUserId}, #{status}, #{createdAt}, #{updatedAt}
+                 )
+    </insert>
+
+    <!-- 删除 -->
+    <delete id="deleteById" parameterType="long">
+        DELETE FROM alarm_videos WHERE id = #{id}
+    </delete>
+
+    <!-- 更新 -->
+    <update id="updateById" parameterType="com.tianhai.warn.model.AlarmVideo">
+        UPDATE alarm_videos
+        SET
+            video_id = #{videoId},
+            alarm_no = #{alarmNo},
+            student_no = #{studentNo},
+            title = #{title},
+            file_path = #{filePath},
+            duration_sec = #{durationSec},
+            file_size_bytes = #{fileSizeBytes},
+            format = #{format},
+            resolution = #{resolution},
+            bitrate = #{bitrate},
+            upload_user_id = #{uploadUserId},
+            status = #{status},
+            created_at = #{createdAt},
+            updated_at = #{updatedAt}
+        WHERE id = #{id}
+    </update>
+
+    <!-- 查询单条 -->
+    <select id="selectById" parameterType="long" resultMap="AlarmVideoResultMap">
+        SELECT * FROM alarm_videos WHERE id = #{id}
+    </select>
+
+    <!-- 查询全部 -->
+    <select id="selectAll" resultMap="AlarmVideoResultMap">
+        SELECT * FROM alarm_videos
+    </select>
+
+</mapper>
