@@ -4,6 +4,7 @@ import com.tianhai.warn.dto.CancelAlarmDTO;
 import com.tianhai.warn.dto.LocationDTO;
 import com.tianhai.warn.dto.LocationUpdateDTO;
 import com.tianhai.warn.dto.OneClickAlarmDTO;
+import com.tianhai.warn.model.AlarmRecord;
 import com.tianhai.warn.vo.StudentAlarmContactsVO;
 
 import java.util.List;
@@ -17,6 +18,5 @@ public interface AlarmService {
 
     // 获取触发报警的学生的基本信息，报警信息，家长联系方式
     List<StudentAlarmContactsVO> searchStudentAlarmContactInfo(String helperNo, String role);
-
 
 }

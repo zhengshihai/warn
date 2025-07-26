@@ -35,7 +35,7 @@ public class LocationWebSocketHandler extends TextWebSocketHandler {
     private static final int MAX_MESSAGE_SIZE = 1024 * 1024; // 1MB
 
     @Autowired
-    @Qualifier("alarmProducer")
+    @Qualifier("locationProducer")
     private DefaultMQProducer defaultMQProducer;
 
     public LocationWebSocketHandler() {

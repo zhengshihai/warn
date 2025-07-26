@@ -1,6 +1,7 @@
 package com.tianhai.warn.mq;
 
 import com.alibaba.fastjson.JSON;
+import com.tianhai.warn.constants.AlarmConstants;
 import com.tianhai.warn.dto.LocationUpdateDTO;
 import com.tianhai.warn.service.LocationTrackService;
 import io.lettuce.core.dynamic.annotation.CommandNaming;
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Component;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
+// 位置补偿消息监听器
 @Component
 public class LocationCompensateMessageListener implements MessageListenerConcurrently, RocketMQListenerMarker {
 
@@ -47,7 +49,7 @@ public class LocationCompensateMessageListener implements MessageListenerConcurr
 
     @Override
     public String getTopic() {
-        return "alarm-location-compensate";
+        return AlarmConstants.COMPENSATE_TOPIC;
     }
 
     @Override

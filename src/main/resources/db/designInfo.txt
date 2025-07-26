@@ -334,6 +334,8 @@
     ├── 异常检测
     └── 告警通知
 
+
+
 定位展示设计思路和任务
 
 1 学生端和教师端接受相关条款并签名
@@ -408,6 +410,8 @@ Consumer收到补偿消息后，再次尝试写入MySQL。
 可以临时加System.out.println或logger.info辅助观察。
 
 
+
+
 sessionLoginUUID
 由后端在用户登录成功后生成（如 UUID）。
 后端将其保存在 Spring Session（即服务端 session）中。
@@ -419,7 +423,10 @@ requestLoginUUID
 后端拦截器拿到 requestLoginUUID（来自请求头）和 sessionLoginUUID（来自 session）。
 只有两者一致时，才允许访问业务接口，否则强制下线或重定向登录。
 
-【消息已读和未读 群发和单发 实现思路】
+
+
+
+【消息已读和未读 群发和单发 业务】
 -- 通知表
 CREATE TABLE IF NOT EXISTS notification (
         id INT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID',
@@ -524,6 +531,9 @@ CREATE TABLE IF NOT EXISTS notification_receiver (
    避免长时间阻塞主线程。
 
 
+
+
+
 【获取云端的人脸数据业务】
 ✅ 本地系统访问云端的方式（选择一或组合）：
 方式	特点	适用场景
@@ -548,3 +558,219 @@ data：分片二进制数据
 │ HeaderLength │ Header(JSON String) │ Chunk (音视频二进制)   │
 │    (4B)      │    (N bytes)        │     (剩余全部 Byte)     │
 └──────────────┴─────────────────────┴────────────────────────┘
+
+
+
+
+【一键报警视频切片业务】
+视频切片策略的核心选择问题：是以时间维度划分（如每10秒一个切片），还是以文件大小为维度划分（如每个切片不超过5MB）？这两种方案各有优劣，下面我们通俗对比分析一下：
+
+✅ 一、按“时间”划分（常见，10s一个ts）
+原理：
+将整个视频按照固定时长（如 10 秒）进行切片，不管文件大小，只关心时间点。
+
+优点：
+适用于直播、点播等标准视频播放场景；
+
+兼容性好，配合 .m3u8 可直接用于 HLS 播放；
+
+切片顺序固定、播放顺滑；
+
+支持边下边播（比如播放器只要拿到第一个 ts 文件就可以播放了）；
+
+更易做断点续播、拖动跳转等操作；
+
+很多 FFmpeg 工具链、HLS 服务、CDN 都天然支持这种模式。
+
+缺点：
+对于高码率视频，单个切片文件可能会很大；
+
+对于低码率视频，切片文件可能很小，碎片多，影响存储或传输效率；
+
+不易精确控制文件大小（有的需求可能是“每个切片不超过5MB”这种）；
+
+✅ 二、按“文件大小”划分（比如每个切片不超过5MB）
+原理：
+将视频数据在字节级或帧级进行划分，使每个切片的体积接近某个目标大小（如 5MB）。
+
+优点：
+可以精确控制每个切片的体积，便于网络传输（比如用于区块同步、P2P等）；
+
+可避免产生太大或太小的 ts 文件；
+
+适用于离线分发场景，如预加载缓存、磁盘存储优化等；
+
+某些定制系统（如用 chunk 做上传分片存储）会优先考虑这种方式。
+
+缺点：
+不适合标准播放器直接播放，因为 .m3u8 和播放器通常以时间为单位；
+
+切片不对齐关键帧可能造成播放卡顿或失败；
+
+编码复杂：需要精准控制码率、GOP 大小，确保切片在关键帧位置结束；
+
+FFmpeg 等工具原生不直接支持这种划分方式，要手动计算大小、拆解二进制内容。
+
+🆚 何时选择哪种方案？
+需求场景	推荐方案
+视频点播、直播、网页播放	✅按时间划分
+希望快速预览视频某段	✅按时间划分
+对视频切片体积有严格控制（如10MB以下）	✅按大小划分
+文件分发、断点续传、P2P下载	✅按大小划分
+与 HLS/CDN 配合播放	✅按时间划分
+自定义存储或上传逻辑（如分块上传）	✅按大小划分
+
+如果你的业务是“播放优先”，就用时间切片；如果是“传输或存储优先”，就用大小切片。
+
+
+
+【位置消息 视频消息消费业务】
+问题：前端发送一条主题为location-topic的消息，现在我需要消费者在消费时调用和位置相关的
+业务接口处理location信息。另外 还有一条主题为video-topic的消息，需要消费者在消费时调用
+和视频相关的业务接口处理video信息，理论上只需要使用不同topic区分即可，没必要专门新建一个
+视频消费者群组和一个位置消费者群组消费，你觉得呢？
+
+-方案解析（同一个 Consumer Group，消费多个 Topic）
+定义一个消费者 Group，比如 mainGroup；
+这个 Group 订阅多个 Topic，比如 location-topic 和 video-topic；
+在消费逻辑中根据 Topic 做分发处理：
+
+consumer.subscribe("location-topic", "*");
+consumer.subscribe("video-topic", "*");
+
+consumer.registerMessageListener((msgs, context) -> {
+    for (MessageExt msg : msgs) {
+        String topic = msg.getTopic();
+        switch (topic) {
+            case "location-topic":
+                locationService.handle(msg);
+                break;
+            case "video-topic":
+                videoService.handle(msg);
+                break;
+        }
+    }
+});
+
+✅ 优点：
+
+简洁统一；
+初期部署/维护简单；
+一个消费者处理多个主题内容。
+
+❌ 潜在问题（建议你特别留意）：
+
+问题类型	描述
+职责不清	一个消费者处理多个业务，难以界定职责边界；
+代码耦合	消息分发逻辑聚合在一个消费者类里，不利于模块独立维护；
+性能问题	一个 Group 的消费压力被两个 Topic 的消息抢占，不易伸缩；
+难以扩展	如果后续 video 业务要加重试、监控、限流、消费进度隔离……很难分离；
+调试困难	日志混乱，问题排查成本高；
+顺序消费风险	多个 Topic 混用同一个 Group 时可能引起消费顺序混乱。
+
+-方案解析（不同 Group，按 Topic 分工）
+为每个 Topic 创建一个专属的 Consumer Group：
+locationGroup → 只订阅 location-topic
+videoGroup → 只订阅 video-topic
+
+java
+复制
+编辑
+// 位置消费者
+locationConsumer.setConsumerGroup("locationGroup");
+locationConsumer.subscribe("location-topic", "*");
+
+// 视频消费者
+videoConsumer.setConsumerGroup("videoGroup");
+videoConsumer.subscribe("video-topic", "*");
+✅ 优势：
+
+优点	说明
+模块清晰	每个 Group 专注一个业务方向，职责清晰；
+易于维护	一组消费者只关心一个业务，逻辑集中；
+可独立部署	每个 Group 可按需扩容缩容；
+消费进度独立	不同 Group 不干扰，进度清晰可控；
+后期可加不同策略	比如 video 加限速、location 加实时性保障等；
+日志干净	每个 Group 的日志只关注自己业务；
+
+
+在同一个消费者群组这种方案中，
+后续 video 业务要加重试、监控、限流、消费进度隔离时，会很难分离，原因分析如下：
+🎯 首先，我们看看你使用“同一个 Consumer Group 消费多个 Topic”时会遇到的问题根源：
+consumer.setConsumerGroup("mainGroup");
+consumer.subscribe("location-topic", "*");
+consumer.subscribe("video-topic", "*");
+
+consumer.registerMessageListener((msgs, context) -> {
+    for (MessageExt msg : msgs) {
+        if (msg.getTopic().equals("video-topic")) {
+            videoService.handle(msg);
+        } else if (msg.getTopic().equals("location-topic")) {
+            locationService.handle(msg);
+        }
+    }
+});
+乍一看很清晰，但未来只要 video 业务变化了，就会变得很难维护和拆分，下面一条条说明为什么：
+
+一、重试机制耦合，无法独立配置
+❌ 问题
+RocketMQ 的消费重试次数和重试队列是以 Group 为单位管理的。
+如果 video 消息消费失败，你想设置：
+video-topic 允许重试 10 次；
+location-topic 最多重试 2 次；
+👉 但这是做不到的，因为整个 Group 的重试策略只能配置一套。
+
+✅ 如果拆成两个 Group
+videoGroup 可配 maxReconsumeTimes=10
+locationGroup 可配 maxReconsumeTimes=2
+你就可以根据业务风险分别处理。
+
+二、消费进度隔离失败
+❌ 问题
+RocketMQ 的消费进度（offset）是以 Group + Topic + Queue 为维度管理的。
+如果你用一个 Group，同时订阅了两个 Topic，它们的 offset 保存在同一个目录下，无法做到
+ video-topic 出问题时只暂停 video 消费而不影响 location。
+
+如果你想单独暂停 video-topic 的消费（比如正在升级），那会很麻烦。
+
+三、监控和报警不可控
+❌ 问题
+如果你用同一个 Group 来消费多个 Topic，RocketMQ 控制台上看到的监控指标会混在一起，比如：
+TPS（消费速率）
+消费堆积（Lag）
+消费失败次数
+你会发现这些监控数据无法细分到底是 video-topic 的问题还是 location-topic 的问题，可观测性变差。
+
+四、限流和性能调优困难
+❌ 问题
+如果未来 video-topic 的消息量暴增，而 location-topic 的量很小：
+你想给 video 限流、隔离线程池、隔离消费线程；
+但由于使用的是同一个 Group，同一个线程池处理两个 Topic 的消息，
+你没法对 video 单独做消费调度控制。
+这可能导致 video 抢占资源，location 延迟增加。
+
+五、代码维护与团队协作问题
+❌ 问题
+随着逻辑增加，你的消费代码变成：
+
+java
+复制
+编辑
+if (topic.equals("video-topic")) {
+    if (msg.property("type").equals("streaming")) {
+        // ...
+    } else if (...) {
+        // ...
+    }
+} else if (topic.equals("location-topic")) {
+    // ...
+}
+维护成本上升、业务边界模糊、容易引发协同混乱
+
+✅ 总结：拆分 Consumer Group 是业务解耦的基础设施能力
+问题维度	同一个 Group 的劣势	拆分 Group 的优势
+重试策略	一刀切	可定制
+消费进度	难以隔离	互不干扰
+异常监控	无法精细定位	指标清晰可控
+限流控制	不能单独限流	可独立调整
+代码维护	if-else 越来越多	模块职责清晰

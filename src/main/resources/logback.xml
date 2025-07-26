@@ -4,44 +4,30 @@
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
-            <charset>UTF-8</charset>
         </encoder>
     </appender>
 
-    <!-- 文件输出 -->
+    <!-- 文件输出（追加模式） -->
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>logs/warn.log</file>
+        <!-- 日志文件路径 -->
+        <file>E:/Warning/Warn/logs/warn/app.log</file>
+
+        <!-- 日志滚动策略 -->
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>logs/warn.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
-            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
-                <maxFileSize>100MB</maxFileSize>
-            </timeBasedFileNamingAndTriggeringPolicy>
-            <maxHistory>30</maxHistory>
+            <!-- 滚动日志文件名，基于上面file目录 -->
+            <fileNamePattern>E:/Warning/Warn/logs/warn/app.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <!-- 保存最近300天 -->
+            <maxHistory>300</maxHistory>
         </rollingPolicy>
+
         <encoder>
             <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
-            <charset>UTF-8</charset>
         </encoder>
     </appender>
 
-    <!-- Spring框架日志级别 -->
-    <logger name="org.springframework" level="INFO"/>
 
-    <!-- MyBatis日志级别 -->
-    <logger name="org.mybatis" level="INFO"/>
-
-    <!-- 数据库连接池日志级别 -->
-    <logger name="com.alibaba.druid" level="INFO"/>
-
-    <!-- 腾讯云SDK日志级别 -->
-    <logger name="com.tencentcloudapi" level="INFO"/>
-
-    <!-- 项目包日志级别 -->
-    <logger name="com.tianhai.warn" level="DEBUG"/>
-
-    <!-- 根日志级别 -->
+    <!-- 设置日志级别 -->
     <root level="INFO">
-        <appender-ref ref="CONSOLE"/>
-        <appender-ref ref="FILE"/>
+        <appender-ref ref="CONSOLE" />
     </root>
 </configuration>

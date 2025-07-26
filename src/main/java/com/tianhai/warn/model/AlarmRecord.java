@@ -5,7 +5,10 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.bytedeco.opencv.presets.opencv_core;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.util.Date;
 import java.util.List;
 
@@ -14,7 +17,11 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class AlarmRecord {
+public class AlarmRecord implements Serializable {
+
+    @Serial
+    private static final long serialVersionUID = 1L;
+
     /**
      * 主键ID
      */
@@ -86,4 +93,24 @@ public class AlarmRecord {
      */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date updatedAt;
+
+    @Override
+    public String toString() {
+        return "AlarmRecord{" +
+                "id=" + id +
+                ", alarmNo='" + alarmNo + '\'' +
+                ", studentNo='" + studentNo + '\'' +
+                ", alarmType=" + alarmType +
+                ", alarmLevel=" + alarmLevel +
+                ", alarmStatus=" + alarmStatus +
+                ", alarmTime=" + alarmTime +
+                ", latitude=" + latitude +
+                ", longitude=" + longitude +
+                ", locationAddress='" + locationAddress + '\'' +
+                ", description='" + description + '\'' +
+                ", mediaUrls=" + mediaUrls +
+                ", createdAt=" + createdAt +
+                ", updatedAt=" + updatedAt +
+                '}';
+    }
 }

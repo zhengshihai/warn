@@ -16,6 +16,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+// 定位信息消息监听器
 @Component
 public class LocationTrackMessageListener implements
         MessageListenerConcurrently, RocketMQListenerMarker {

@@ -101,7 +101,7 @@ public class MediaWebSocketHandler extends AbstractWebSocketHandler {
         // 获取剩余的音视频分片数据
         ByteBuffer chunkData = buffer.slice();
 
-        // 保存该音视频分片数据
+        // 保存二进制音视频数据为chunk文件
         fileService.saveMediaChunk(alarmNo, sessionId, chunkIndex, chunkData);
 
         // 向前端返回ACK确认信号

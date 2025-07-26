@@ -1,6 +1,5 @@
 package com.tianhai.warn.config;
 
-import com.tianhai.warn.mq.LocationTrackMessageListener;
 import com.tianhai.warn.mq.RocketMQListenerMarker;
 import org.apache.rocketmq.client.consumer.DefaultMQPushConsumer;
 import org.apache.rocketmq.client.consumer.listener.MessageListenerConcurrently;
@@ -35,10 +34,10 @@ public class RocketMQConfig {
 
     // 报警业务配置
     @Value("${rocketmq.alarm.producer.group}")
-    private String alarmProducerGroup;
+    private String locationProducerGroup;
 
     @Value("${rocketmq.alarm.consumer.group}")
-    private String alarmConsumerGroup;
+    private String locationConsumerGroup;
 
     // 视频业务配置
     @Value("${rocketmq.video.producer.group}")
@@ -70,16 +69,18 @@ public class RocketMQConfig {
     @Autowired
     private List<RocketMQListenerMarker> listenerBeans;
 
+
     private static final Logger logger = LoggerFactory.getLogger(RocketMQConfig.class);
 
     /**
-     * 报警业务生产者
+     * 位置业务生产者
      */
-    @Bean("alarmProducer")
-    public DefaultMQProducer alarmProducer() {
+    @Bean("locationProducer")
+//    public DefaultMQProducer alarmProducer() {
+    public DefaultMQProducer locationProducer() {
         DefaultMQProducer producer = new DefaultMQProducer();
         producer.setNamesrvAddr(nameServer);
-        producer.setProducerGroup(alarmProducerGroup);
+        producer.setProducerGroup(locationProducerGroup);
         producer.setSendMsgTimeout(sendMessageTimeout);
         producer.setRetryTimesWhenSendFailed(retryTimesWhenSendFailed);
         producer.setRetryTimesWhenSendAsyncFailed(retryTimesWhenSendAsyncFailed);
@@ -88,11 +89,12 @@ public class RocketMQConfig {
         try {
             logger.info("正在启动报警业务 RocketMQ Producer...");
             producer.start();
+
             logger.info("报警业务 RocketMQ Producer 启动成功，nameServer: {}, producerGroup: {}",
-                    nameServer, alarmProducerGroup);
+                    nameServer, locationProducerGroup);
         } catch (Exception e) {
             logger.error("报警业务 RocketMQ Producer 启动失败: {}, nameServer: {}, producerGroup: {}",
-                    e.getMessage(), nameServer, alarmProducerGroup, e);
+                    e.getMessage(), nameServer, locationProducerGroup, e);
             throw new RuntimeException("报警业务 RocketMQ Producer 启动失败", e);
         }
 
@@ -100,13 +102,14 @@ public class RocketMQConfig {
     }
 
     /**
-     * 报警业务消费者
+     * 位置业务消费者
      */
-    @Bean("alarmConsumer")
-    public DefaultMQPushConsumer alarmConsumer() {
+    @Bean("locationConsumer")
+//    public DefaultMQPushConsumer alarmConsumer() {
+    public DefaultMQPushConsumer locationConsumer() {
         DefaultMQPushConsumer consumer = new DefaultMQPushConsumer();
         consumer.setNamesrvAddr(nameServer);
-        consumer.setConsumerGroup(alarmConsumerGroup);
+        consumer.setConsumerGroup(locationConsumerGroup);
         return consumer;
     }
 
@@ -173,6 +176,9 @@ public class RocketMQConfig {
         return configs;
     }
 
+    /**
+     * 补偿业务生产者
+     */
     @Bean("compensateProducer")
     public DefaultMQProducer compensateProducer() {
         DefaultMQProducer producer = new DefaultMQProducer();
@@ -205,12 +211,12 @@ public class RocketMQConfig {
             // 根据topic判断使用哪个消费者组
             String consumerGroup;
             if (config.getTopic().startsWith("location-")) {
-                consumerGroup = alarmConsumerGroup;
+                consumerGroup = locationConsumerGroup;
             } else if (config.getTopic().startsWith("video-")) {
                 consumerGroup = videoConsumerGroup;
             } else {
                 logger.warn("未知的topic类型: {}, 使用默认的报警消费者组", config.getTopic());
-                consumerGroup = alarmConsumerGroup;
+                consumerGroup = locationConsumerGroup;
             }
 
             DefaultMQPushConsumer consumer = new DefaultMQPushConsumer(consumerGroup);

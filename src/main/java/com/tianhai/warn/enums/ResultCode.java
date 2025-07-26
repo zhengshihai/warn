@@ -73,7 +73,17 @@ public enum ResultCode implements IResultCode {
 
 
     VIDEO_DATA_SAVE_FAILED(13000, "保存音视频数据失败" ),
-    VIDEO_CHUNK_MERGE_FAILED(13001, "合并音视频失败" );
+    VIDEO_CHUNK_MERGE_FAILED(13001, "合并音视频失败" ),
+    VIDEO_NOT_EXISTS(13002, "视频文件不存在"),
+    VIDEO_CHANGE_FORMAT_FAILED(13003, "视频格式转换失败" ),
+    VIDEO_META_DATA_ANALYSIS_FAILED(13004, "分析视频元数据失败" ),
+    DIRECTORY_CREATION_FAILED(13005, "创建目录失败"),
+    VIDEO_DECODER_START_FAILED(13006, "视频解码器启动失败" ),
+    VIDEO_SEGMENT_CREATE_FAILED(13007, "启动切片写入器失败" ),
+    VIDEO_FRAME_RECORD_FAILED(13008, "写入帧失败"),
+    VIDEO_SPLICE_FAILED(13009, "视频切片失败"),
+    M3U8_WRITE_FAILED(13010, "写入 m3u8 文件失败"),
+    VIDEO_INFO_SAVED_FAILED(13011, "保存报警视频信息失败");
 
     private final Integer code;
     private final String message;

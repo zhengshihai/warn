@@ -8,7 +8,6 @@ import com.tianhai.warn.enums.ResultCode;
 import com.tianhai.warn.exception.BusinessException;
 import com.tianhai.warn.exception.SystemException;
 import com.tianhai.warn.handler.LocationWebSocketHandler;
-import com.tianhai.warn.model.AlarmRecord;
 import com.tianhai.warn.mq.AlarmContext;
 import com.tianhai.warn.mq.RocketMQMessageSender;
 import com.tianhai.warn.service.AlarmRecordService;
@@ -35,8 +34,8 @@ public class WebSocketServiceImpl implements WebSocketService {
     private LocationWebSocketHandler locationWebSocketHandler;
 
     @Autowired
-    @Qualifier("alarmProducer")
-    private DefaultMQProducer defaultMQProducer;
+    @Qualifier("locationProducer")
+    private DefaultMQProducer locationProducer;
 
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
@@ -99,7 +98,7 @@ public class WebSocketServiceImpl implements WebSocketService {
         while (retryCount < MAX_RETRY_TIMES) {
             try {
                 // 此处使用mq原始方式发送
-                defaultMQProducer.send(message);
+                locationProducer.send(message);
                 return;
             } catch (Exception e) {
                 retryCount++;

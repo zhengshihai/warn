@@ -13,8 +13,11 @@ public class AlarmConstants {
     public static final long REDIS_EXPIRE_ALARM_PROCESS = 24 * 60 * 60; // 24小时
     public static final long REDIS_EXPIRE_ALARM_RATE_LIMIT = 60 * 30; // 半小时
 
+    public static final String COMPENSATE_TOPIC = "compensate-topic"; // MQ补偿主题
     public static final String ROCKETMQ_TOPIC_LOCATION = "location-topic";
     public static final String ROCKETMQ_TAG_LOCATION_UPDATE = "location-update";
+    public static final String ROCKETMQ_TOPIC_VIDEO_PROCESS = "video-topic";
+    public static final String ROCKETMQ_TAG_VIDEO_PROCESS = "video-process";
 
     public static final Integer ONE_CLICK_ALARM_TYPE = 1;
     public static final Integer INTERFACE_ALARM_TYPE = 2;
@@ -23,6 +26,7 @@ public class AlarmConstants {
     public static final Integer ALARM_CONFIG_ACTIVE = 1; // 报警配置启用状态
     public static final Integer ALARM_CONFIG_INACTIVE = 0; // 报警配置禁用状态
     public static final Integer ALARM_ONE_CLICK_RATE_LIMIT = 30;// 一键报警在半小时内次数最多不超过30次
+
 
     /**
      * WebSocket会话超时时间（单位：秒）

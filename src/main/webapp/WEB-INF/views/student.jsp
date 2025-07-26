@@ -1703,7 +1703,7 @@
             startRecording();
         }
 
-        let isRecordingStopped = false;
+      
 
         // 取消一键报警请求
         $('#cancel-alarm-btn').click(function() {
@@ -1734,12 +1734,13 @@
                     $('#cancel-alarm-btn').addClass('hidden');
                     // 启用报警按钮
                     $('#normal-alarm-btn, #emergency-alarm-btn').prop('disabled', false);
-                    // 清除当前报警编号
-                    alarmNo = null;
 
                     //停止录音录像
                     isRecordingStopped = true;
                     stopRecording();
+
+                    // 清除当前报警编号
+                    // alarmNo = null;
                 },
                 error: function(err) {
                     alert('取消报警失败，请重试');
@@ -1752,6 +1753,8 @@
         let sessionId = generateSessionId();
         let chunkIndex = 0;
         let chunkCache = []; // 本地缓存分片
+        let isRecordingStopped = false;
+        let lastChunkIndex = null; // 记录最后一个分片的索引
 
         // 开始录音和录像
         async function startMedia() {
@@ -1782,6 +1785,17 @@
                     // 删除已确认分片
                     chunkCache = chunkCache.filter(chunk => chunk.chunkIndex > resp.chunkIndex);
                 }
+
+                // 检查是否是最后一个分片的ACK
+                if (lastChunkIndex !== null && resp.chunkIndex === lastChunkIndex) {
+                    // 最后一个分片已被后端确认，可以安全清理状态
+                    alarmNo = null;
+                    sessionId = null;
+                    chunkIndex = 0;
+                    chunkCache = [];
+                    lastChunkIndex = null;
+                    console.log("最后一个分片已确认，状态已清理");
+                }
             };
 
             ws.onclose = () => { stopRecording(); };
@@ -1791,20 +1805,27 @@
         // 开始录音和录像
         function startRecording() {
             isRecordingStopped = false; // 每次开始录制前重置
+            chunkIndex = 0;
+            lastChunkIndex = null;
+
             if (!mediaStream) return;
             console.log("开始录像和录音")
             mediaRecorder = new MediaRecorder(mediaStream, { mimeType: "video/webm; codecs=vp8,opus" });
 
             mediaRecorder.ondataavailable = function(event) {
                 if (event.data && event.data.size > 0) {
+                    let isLast = isRecordingStopped;
                     let chunk = {
                         alarmNo,
                         sessionId,
                         chunkIndex: chunkIndex,
-                        isLastChunk: isRecordingStopped // 只有最后一次才为true
+                        isLastChunk: isLast // 只有最后一次才为true
                     };
                     chunkCache.push({ ...chunk, data: event.data }); // 本地缓存
                     sendChunk(chunk, event.data);
+                    if (isLast) {
+                        lastChunkIndex = chunkIndex; // 记录最后一个分片的索引
+                    }
                     chunkIndex++;
                 }
             };

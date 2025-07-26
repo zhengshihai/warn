@@ -119,24 +119,6 @@ CREATE TABLE IF NOT EXISTS warning_rule (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='预警规则表';
 
 -- 通知记录表
-# CREATE TABLE IF NOT EXISTS notification (
-#     id INT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID',
-#     notice_id VARCHAR(32) NOT NULL COMMENT '通知ID', -- 额外设计的通知id 格式：NT + 年月日 + 6位随机数
-#     title VARCHAR(200) NOT NULL COMMENT '通知标题',
-#     content TEXT NOT NULL COMMENT '通知内容',
-#     type VARCHAR(50) NOT NULL COMMENT '通知类型（系统通知/晚归通知/预警通知等）',
-#     target_type VARCHAR(20) NOT NULL COMMENT '目标类型（STUDENT/DORM_MANAGER/SYSTEM_USER等）',
-#     target_id VARCHAR(50) DEFAULT NULL COMMENT '目标ID（特定用户的唯一标识，如学号、工号等）',
-#     status VARCHAR(20) NOT NULL DEFAULT 'UNREAD' COMMENT '状态 已读/未读',
-#     create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-#     update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-#     KEY idx_target (target_type, target_id),
-#     UNIQUE KEY uk_notice_id (notice_id),
-#     KEY idx_type (type),
-#     KEY idx_status (status)
-# ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='通知记录表';
-
--- 通知记录表
 CREATE TABLE IF NOT EXISTS notification (
         id INT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID',
         notice_id VARCHAR(32) NOT NULL COMMENT '通知ID',
@@ -380,3 +362,36 @@ CREATE TABLE alarm_handler_config (
       updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
       UNIQUE KEY uk_handler_type (handler_type)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='报警处理方配置表';
+
+-- 原视频表 （这里的原视频是指将webm格式的视频转为mp4格式后的视频，相对于它的切片来说是原视频）
+CREATE TABLE alarm_videos (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '视频表主键，自增ID',
+    video_id VARCHAR(32) NOT NULL COMMENT '视频唯一标识ID，格式：VI + 年月日 + 6位随机数',
+    alarm_no VARCHAR(20) NOT NULL COMMENT '关联的报警记录ID',
+    student_no VARCHAR(20) NOT NULL COMMENT '学生学号',
+    title VARCHAR(255) NOT NULL COMMENT '视频名称',
+    file_path VARCHAR(255) NOT NULL COMMENT '视频文件的存储路径或URL',
+    duration_sec BIGINT NOT NULL COMMENT '视频总时长（秒）',
+    file_size_bytes BIGINT NOT NULL COMMENT '视频文件大小，单位字节',
+    format VARCHAR(50) NOT NULL COMMENT '视频格式，例如mp4、webm等',
+    resolution VARCHAR(50) COMMENT '视频分辨率，如1920x1080',
+    bitrate BIGINT COMMENT '视频码率，单位bps',
+    upload_user_id VARCHAR(32) COMMENT '上传用户ID，关联用户表',
+    status TINYINT DEFAULT 0 COMMENT '切片完成状态，0-未切片，1-切片中，2-已切片',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '记录创建时间',
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '记录最后更新时间'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='视频基本信息表，存储原始视频元数据';
+
+-- 视频切片表
+CREATE TABLE alarm_video_slices (
+      id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '切片表主键，自增ID',
+      video_id VARCHAR(32) NOT NULL COMMENT '关联视频表videos的ID',
+      slice_id VARCHAR(40) NOT NULL COMMENT 'AlarmNo + 五位数字，例如00001,00002等，用于标识切片顺序',
+      start_time_sec BIGINT NOT NULL COMMENT '切片起始时间（秒）',
+      duration_sec BIGINT NOT NULL COMMENT '切片持续时长（秒）',
+      slice_file_path VARCHAR(255) NOT NULL COMMENT '切片文件存储路径或URL',
+      file_size_bytes BIGINT DEFAULT 0 COMMENT '切片文件大小，单位字节',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '记录创建时间',
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '记录最后更新时间',
+      UNIQUE KEY idx_video_slice (video_id, slice_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='视频切片信息表，存储视频被切成的小片段数据';
