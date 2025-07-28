@@ -6,6 +6,7 @@ import com.tianhai.warn.constants.Constants;
 import com.tianhai.warn.dto.NotificationDTO;
 import com.tianhai.warn.enums.*;
 import com.tianhai.warn.exception.BusinessException;
+import com.tianhai.warn.model.Notification;
 import com.tianhai.warn.query.NotificationQuery;
 import com.tianhai.warn.service.VerificationService;
 import com.tianhai.warn.utils.*;
@@ -184,6 +185,155 @@ public class NotificationController {
         return Result.success();
     }
 
+    // --------------------
+
+    /*
+     *
+     {
+        "targetId":"2420710220XS",
+        "targetType":"student",
+        "targetScope":"specialUser",
+        "title":"es建立索引测试2",
+        "noticeId": "NT20250728345850",
+        "noticeType":"系统通知",
+        "content":"注意了，最近学校对晚归这方面要求非常严格，请大家合理安排时间出行"
+    }
+     *
+     */
+    @PutMapping("/es/pre")
+    @ResponseBody
+    @RequirePermission
+    @LogOperation("执行建立索引前的预处理")
+    public Result<?> preEs() {
+        notificationService.createIndex();
+
+        return Result.success();
+    }
+
+    @PostMapping("/es/index")
+    @ResponseBody
+    @RequirePermission
+    @LogOperation("建立ES索引")
+    public Result<?> buildEsIndex(@RequestBody Notification notification) {
+        // 此控制层接口在开发环境下简便测试（未来使用单元测试和集成测试代替）
+        if (!ProfileUtils.isProfileActive("dev")) {
+            logger.error("当前环境不允许直接建立ES索引");
+            throw new BusinessException(ResultCode.FORBIDDEN);
+        }
+
+        if (StringUtils.isBlank(notification.getNoticeId())) {
+            notification.setNoticeId(NoticeIdGenerator.generate());
+        }
+
+        notificationService.indexNotification(notification);
+
+        return Result.success();
+    }
+
+    @PostMapping("/es/index-batch")
+    @ResponseBody
+    @LogOperation("批量建立ES索引")
+    public Result<?> buildBatchEsIndex(@RequestBody List<Notification> notificationList) {
+        // 此控制层接口在开发环境下简便测试（未来使用单元测试和集成测试代替）
+        if (!ProfileUtils.isProfileActive("dev")) {
+            logger.error("当前环境不允许直接建立ES索引");
+            throw new BusinessException(ResultCode.FORBIDDEN);
+        }
+
+        notificationService.indexNotificationList(notificationList);
+
+        return Result.success();
+    }
+
+    @PutMapping("/es/rebuild")
+    @ResponseBody
+    @RequirePermission
+    @LogOperation("重建ES索引")
+    public Result<?> rebuildEsIndex() {
+        // 此控制层接口在开发环境下简便测试
+        if (!ProfileUtils.isProfileActive("dev")) {
+            logger.error("当前环境不允许直接重建ES索引");
+            throw new BusinessException(ResultCode.FORBIDDEN);
+        }
+
+        notificationService.rebuildIndex();
+
+        return Result.success();
+    }
+
+    @DeleteMapping
+    @ResponseBody
+    @RequirePermission
+    @LogOperation("删除ES索引")
+    public Result<?> deleteEsIndex(@RequestParam String notificationId) {
+        if (StringUtils.isBlank(notificationId)) {
+            logger.error("通知业务id不能为空");
+            throw new BusinessException(ResultCode.PARAMETER_ERROR);
+        }
+
+        // 此控制层接口在开发环境下简便测试
+        if (!ProfileUtils.isProfileActive("dev")) {
+            logger.error("当前环境不允许直接删除ES索引");
+            throw new BusinessException(ResultCode.FORBIDDEN);
+        }
+
+        notificationService.deleteEsIndex(notificationId);
+
+        return Result.success();
+    }
+    // --------------------
+
+    @PostMapping("/es/search-page")
+    @ResponseBody
+    @RequirePermission
+    @LogOperation("通过ES分页查询通知")
+    public Result<PageResult<NotificationVO>> searchPageListByEs(@RequestBody NotificationQuery notificationQuery) {
+        // 参数校验
+        checkEsQueryWrapper(notificationQuery);
+
+        PageResult<NotificationVO> pageResult =  notificationService.searchNotificationListPageByEs(notificationQuery);
+
+        return Result.success(pageResult);
+    }
+
+
+
+
+    // 校验ES查询参数
+    private void checkEsQueryWrapper(NotificationQuery notificationQuery) {
+        if (notificationQuery == null) {
+            logger.error("ES查询参数不能为空");
+            throw new BusinessException(ResultCode.PARAMETER_ERROR);
+        }
+
+        // 规范化分页参数
+        PageUtils.normalizePageNums(notificationQuery);
+
+        // 判断searcherRole是否在允许的角色列表中
+        String targetType = notificationQuery.getTargetType();
+        if (RoleUtils.validateConcreteRole(targetType)) {
+            logger.error("无效的查询角色, searcherRole: {}", targetType);
+            throw new BusinessException(ResultCode.PARAMETER_ERROR);
+        }
+
+        // 校验检索人业务标识id
+        String searcherNo = notificationQuery.getTargetId();
+        if (StringUtils.isBlank(searcherNo)) {
+            logger.error("检索人业务标识id不能为空");
+            throw new BusinessException(ResultCode.PARAMETER_ERROR);
+        }
+
+        // 校验通知检索范围
+        boolean contentLikeValidate = StringUtils.isBlank(notificationQuery.getContentLike());
+        boolean titleLikeValidate = StringUtils.isBlank(notificationQuery.getTitleLike());
+        boolean targetTypeValidate = StringUtils.isBlank(notificationQuery.getTargetType());
+        if (contentLikeValidate && titleLikeValidate && targetTypeValidate) {
+            logger.error("通知检索范围参数不能全为空, contentLike: {}, titleLike: {}, targetType: {}",
+                    notificationQuery.getContentLike(), notificationQuery.getTitleLike(), notificationQuery.getTargetType());
+
+            throw new BusinessException(ResultCode.PARAMETER_ERROR);
+        }
+    }
 
 
     // 校验参数是否合规

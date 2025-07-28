@@ -7,10 +7,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.core.env.Environment;
 
 // Xxl-job配置 这个功能有bug
 @Configuration
+@PropertySource("classpath:application.properties")
 public class XxlJobConfig {
 
     private static final Logger logger = LoggerFactory.getLogger(XxlJobConfig.class);
@@ -53,9 +55,8 @@ public class XxlJobConfig {
 //        executor.setAccessToken(accessToken);
 //        executor.setLogPath(logPath);
 //        executor.setLogRetentionDays(Integer.parseInt(logRetentionDays));
-//
+
 //        logger.info("执行器executor构造成功：{}", executor);
-//
 //        return executor;
 
         // 调度中心地址

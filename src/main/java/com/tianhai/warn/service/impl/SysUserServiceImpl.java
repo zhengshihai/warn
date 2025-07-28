@@ -1,25 +1,19 @@
 package com.tianhai.warn.service.impl;
 
-import cn.hutool.core.bean.BeanUtil;
 import com.github.pagehelper.Page;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
-import com.tianhai.warn.dto.SysUserExcelDTO;
 import com.tianhai.warn.enums.ResultCode;
 import com.tianhai.warn.exception.BusinessException;
 import com.tianhai.warn.exception.SystemException;
 import com.tianhai.warn.mapper.SysUserMapper;
-import com.tianhai.warn.model.Student;
 import com.tianhai.warn.model.SysUser;
-import com.tianhai.warn.model.SysUserClass;
 import com.tianhai.warn.query.SysUserQuery;
 import com.tianhai.warn.service.SysUserClassService;
 import com.tianhai.warn.service.SysUserService;
 import com.tianhai.warn.utils.EmailValidator;
 import com.tianhai.warn.utils.PageResult;
-import com.tianhai.warn.utils.Result;
 import org.apache.commons.lang3.StringUtils;
-import org.eclipse.tags.shaded.org.apache.bcel.generic.IF_ACMPEQ;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.slf4j.Logger;
@@ -358,9 +352,9 @@ public class SysUserServiceImpl implements SysUserService {
     }
 
     @Override
-    public List<SysUser> selectBySysUserNos(List<String> sysUserNos) {
+    public List<SysUser> selectBySysUserNoList(List<String> sysUserNos) {
         logger.debug("Selecting users by sysUserNos: {}", sysUserNos);
-        List<SysUser> users = sysUserMapper.selectBySysUserNos(sysUserNos);
+        List<SysUser> users = sysUserMapper.selectBySysUserNoList(sysUserNos);
         logger.debug("Found {} users", users.size());
         return users;
     }
@@ -405,5 +399,13 @@ public class SysUserServiceImpl implements SysUserService {
         return result;
     }
 
+    @Override
+    public SysUser selectBySysUserNo(String sysUserNo) {
+        if (StringUtils.isBlank(sysUserNo)) {
+            logger.info("用户编号不能为空");
+            throw new BusinessException(ResultCode.PARAMETER_ERROR);
+        }
 
+        return sysUserMapper.selectBySysUserNo(sysUserNo);
+    }
 }

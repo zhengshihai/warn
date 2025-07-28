@@ -46,6 +46,10 @@ public enum ResultCode implements IResultCode {
     NOTIFICATION_SEND_FAILED(6000, "通知发送失败"),
     NOTIFICATION_SAVE_FAILED(6001, "通知保存失败"),
     NOTIFICATION_UPDATE_FAILED(6002, "通知更新失败"),
+    NOTIFICATION_INDEX_FAILED(6003, "通知建立索引失败" ),
+    NOTIFICATION_ELASTICSEARCH_FAILED(6004,"通过ES查询通知失败"),
+    NOTIFICATION_INDEX_DELETE_FAILED(6005, "删除通知索引失败"),
+    NOTIFICATION_CONVERT_FAILED(6006, "转换通知结果失败" ),
 
     SUPER_ADMIN_NOT_FOUND(7000, "该超级管理员不存在"),
     SUPER_ADMIN_DISABLE(7001, "该管理员已被禁用"),

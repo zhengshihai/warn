@@ -1,6 +1,5 @@
 package com.tianhai.warn.service;
 
-import com.tianhai.warn.controller.NotificationController;
 import com.tianhai.warn.dto.NotificationDTO;
 import com.tianhai.warn.enums.NotificationSendMode;
 import com.tianhai.warn.model.Notification;
@@ -61,4 +60,63 @@ public interface NotificationService {
      * @return                   删除行数
      */
     int deleteBatch(NotificationDTO notificationDTO);
+
+// ------------------------------以下为Elasticsearch接口---------------------------------------------------
+
+    /**
+     * 索引通知文档
+     * @param notification      通知信息
+     */
+    void indexNotification(Notification notification);
+
+    /**
+     * 索引通知列表
+     * @param notificationList  通知信息列表
+     */
+    void indexNotificationList(List<Notification> notificationList);
+
+    /**
+     * 删除通知索引
+     * @param notificationId    通知ID
+     */
+    void deleteEsIndex(String notificationId);
+
+    /**
+     * 使用Elasticsearch查询通知列表 todo ???
+     * @param notificationQuery     查询条件
+     * @return                      分页结果
+     */
+    PageResult<NotificationVO> searchNotificationListPageByEs(NotificationQuery notificationQuery);
+
+    /**
+     * ES全文检索通知（包括检索其他角色）
+     * @param keyword       检索关键词
+     * @return              通知信息列表
+     */
+    List<Notification> fullTextSearchWithoutLimited(String keyword);
+
+    /**
+     * ES全文检索通知（仅限当前职位角色和业务标识ID）
+     * @param keyword           检索关键词
+     * @param searcherRole      检索者职位角色（具体到用户角色）
+     * @param searcherNo        检索者业务标识ID（如学号、工号等）
+     * @return                  通知信息列表
+     */
+    List<Notification> fullTextSearchWithRoleLimited(String keyword, String searcherRole, String searcherNo);
+
+    /**
+     * 重建通知索引
+     */
+    void rebuildIndex();
+
+    /**
+     * 创建通知索引
+     */
+    void createIndex();
+
+    /**
+     * 检查通知索引是否存在
+     * @return      存在为true
+     */
+    boolean validateIndexExists();
 }

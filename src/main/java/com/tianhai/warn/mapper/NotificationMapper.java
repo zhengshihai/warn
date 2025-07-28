@@ -36,4 +36,10 @@ public interface NotificationMapper {
      * @return                  删除行数
      */
     int deleteBatch(NotificationQuery notQuery);
+
+    /**
+     * 获取所有通知的主要信息 （title, type, content)
+     * @return              通知列表
+     */
+    List<Notification> selectAllNotificationMainInfo();
 }

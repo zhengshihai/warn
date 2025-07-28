@@ -181,7 +181,7 @@ public class SmsServiceImpl implements SmsService {
             sysUserNoList.add(sysUserClass.getSysUserNo());
         }
 
-        List<SysUser> classManagerList = sysUserService.selectBySysUserNos(sysUserNoList);
+        List<SysUser> classManagerList = sysUserService.selectBySysUserNoList(sysUserNoList);
         for (SysUser sysUser : classManagerList) {
             if (StringUtils.isNotBlank(sysUser.getPhone())) {
                 managerPhoneList.add(sysUser.getPhone());

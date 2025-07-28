@@ -97,7 +97,11 @@
         </choose>
     
     </select>
-    
+    <select id="selectAllNotificationMainInfo" resultType="com.tianhai.warn.model.Notification">
+        SELECT notice_id, notice_type, title, content
+        FROM notification
+    </select>
+
     <!-- 插入通知信息 -->
     <insert id="insert" parameterType="com.tianhai.warn.model.Notification">
         INSERT INTO notification (

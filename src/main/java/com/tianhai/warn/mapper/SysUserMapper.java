@@ -88,7 +88,7 @@ public interface SysUserMapper {
      * @param sysUserNos 用户编号列表
      * @return 班级管理员信息列表
      */
-    List<SysUser> selectBySysUserNos(@Param("sysUserNos") List<String> sysUserNos);
+    List<SysUser> selectBySysUserNoList(@Param("sysUserNos") List<String> sysUserNos);
 
     /**
      * 批量插入班级管理员数据
@@ -99,8 +99,15 @@ public interface SysUserMapper {
     int insertBatch(@Param("sysUserList") List<SysUser> sysUserList);
 
     /**
-     * 获取班级管理员的工号和职位角色
+     * 获取班级管理员的工号和职位角色（此处无需理会MybatisX的报错信息）
      * @return    属性Map
      */
     List<Map<String, Object>> selectAllSysUserNoAndJobRole();
+
+    /**
+     * 根据用户编号查询系统用户信息
+     * @param sysUserNo         用户编号
+     * @return                  系统用户信息
+     */
+    SysUser selectBySysUserNo(String sysUserNo);
 }

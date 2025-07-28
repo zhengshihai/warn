@@ -183,7 +183,7 @@
     </select>
 
     <!-- 根据用户编号列表查询系统用户信息 -->
-    <select id="selectBySysUserNos" resultMap="BaseResultMap">
+    <select id="selectBySysUserNoList" resultMap="BaseResultMap">
         select 
         <include refid="Base_Column_List" />
         from sys_user

@@ -497,7 +497,7 @@ public class StatsEventListener implements ApplicationListener<StatsEvent> {
         logger.info("sysUserNoList size: {}, content: {}", sysUserNoList.size(), sysUserNoList);
 
         // 利用sysUserNo列表获取sysUser完整信息
-        List<SysUser> result = sysUserService.selectBySysUserNos(sysUserNoList)
+        List<SysUser> result = sysUserService.selectBySysUserNoList(sysUserNoList)
                 .stream()
                 .filter(sysUser -> sysUser != null
                         && Constants.ENABLE_STR.equals(sysUser.getStatus())

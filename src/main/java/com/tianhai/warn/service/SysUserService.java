@@ -73,7 +73,7 @@ public interface SysUserService {
      * @param sysUserNos 用户编号列表
      * @return 系统用户信息列表
      */
-    List<SysUser> selectBySysUserNos(List<String> sysUserNos);
+    List<SysUser> selectBySysUserNoList(List<String> sysUserNos);
 
     /**
      * 根据主键ID查询系统用户信息
@@ -108,4 +108,11 @@ public interface SysUserService {
      * @return    班级管理员集合
      */
     List<SysUser> selectAllSysUserNoAndJobRole();
+
+    /**
+     * 根据用户编号查询系统用户信息
+     * @param sysUserNo     用户编号
+     * @return              系统用户信息
+     */
+    SysUser selectBySysUserNo(String sysUserNo);
 }
