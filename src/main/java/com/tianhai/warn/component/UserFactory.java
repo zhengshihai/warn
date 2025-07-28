@@ -1,4 +1,4 @@
-package com.tianhai.warn.factory;
+package com.tianhai.warn.component;
 
 import com.tianhai.warn.constants.Constants;
 import com.tianhai.warn.dto.RegisterDTO;

@@ -11,6 +11,7 @@ import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.indices.CreateIndexResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.pagehelper.PageInfo;
+import com.tianhai.warn.component.MapperInvoker;
 import com.tianhai.warn.constants.Constants;
 import com.tianhai.warn.dto.NotificationDTO;
 import com.tianhai.warn.enums.*;
@@ -51,7 +52,8 @@ public class NotificationServiceImpl implements NotificationService {
     private static final Logger logger = LoggerFactory.getLogger(NotificationServiceImpl.class);
 
     private static final String invalidRole = "invalidRole";
-    private static final String INDEX_NAME = "notifications";
+    private static final String INDEX_NAME = "notification";
+    private static final Integer DEFAULT_BATCH_SIZE = 1000;
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     @Autowired
@@ -1212,7 +1214,7 @@ public class NotificationServiceImpl implements NotificationService {
         // 删除ElasticSearch索引
         try {
             for (String noticeId : notificationDTO.getNoticeIdList()) {
-                deleteEsIndex(noticeId);
+                deleteEsIndexByNotId(noticeId);
             }
         } catch (Exception e) {
             logger.error("删除ElasticSearch索引失败", e);
@@ -1248,7 +1250,7 @@ public class NotificationServiceImpl implements NotificationService {
         // 删除ElasticSearch索引
         try {
             for (String noticeId : notificationDTO.getNoticeIdList()) {
-                deleteEsIndex(noticeId);
+                deleteEsIndexByNotId(noticeId);
             }
         } catch (Exception e) {
             logger.error("删除ElasticSearch索引失败", e);
@@ -1265,6 +1267,11 @@ public class NotificationServiceImpl implements NotificationService {
         logger.info("一共删除了{}条通知接收记录", notRecRow);
 
         return notDelRow + notRecRow;
+    }
+
+    @Override
+    public int countAll() {
+        return notificationMapper.countAll();
     }
 
     @Override
@@ -1331,6 +1338,7 @@ public class NotificationServiceImpl implements NotificationService {
      */
     @Override
     public void indexNotificationList(List<Notification> notificationList) {
+        logger.info("即将批量索引通知信息，数量：{}", notificationList.size());
         try {
             BulkRequest.Builder builder = new BulkRequest.Builder();
 
@@ -1415,9 +1423,6 @@ public class NotificationServiceImpl implements NotificationService {
 
         try {
             // 转换为基础Notification列表
-//            List<Notification> allNotificationList = response.hits().hits().stream()
-//                    .map(hit -> convertMapToNotification(hit.source()))
-//                    .collect(Collectors.toList());
             List<Notification> allNotificationList = response.hits().hits().stream()
                     .map(hit -> {
                         Map<String, Object> source = hit.source();
@@ -1691,42 +1696,125 @@ public class NotificationServiceImpl implements NotificationService {
     /**
      * 重建ES索引
      */
-    @Override
-    public void rebuildIndex() {
+    @Override // todo 这里可以用事务管理吗
+    public void rebuildIndex(String indexName) {
         try {
             // 删除现有索引
-            if (validateIndexExists()) {
-                elasticsearchClient.indices().delete(document -> document.index(INDEX_NAME));
-                logger.info("成功删除现有索引: {}", INDEX_NAME);
+            if (validateIndexExists(indexName)) {
+                elasticsearchClient.indices().delete(document -> document.index(indexName));
+                logger.info("成功删除现有索引: {}", indexName);
             }
 
             // 创建索引
             createIndex();
 
-            // 从数据库重新同步数据
-            List<Notification> allNotifications = notificationMapper.selectAllNotificationMainInfo();
-            indexNotificationList(allNotifications);
+            // 获取该索引对应的总文档数
+            int totalDocCount;
+            try {
+                totalDocCount = countDocuments(indexName);
+            } catch (Exception e) {
+                logger.error("数据库发生异常，无法获取该索引对应的总文档数, indexName:{}", indexName);
+                return;
+            }
+            if (totalDocCount == 0) {
+                logger.info("索引 {} 中没有文档，跳过索引重建", indexName);
+                return;
+            }
 
-            logger.info("成功重建索引: {}", INDEX_NAME);
+            // 为ES索引异步执行全量同步
+            CompletableFuture.runAsync(() -> {
+                try {
+                    performFullSyncForEsIndex(totalDocCount, indexName);
+                } catch (Exception e) {
+                    logger.error("重建ES索引时发生错误", e);
+                }
+            }, asyncTaskExecutor);
+
+            // 从数据库重新同步数据
+//            List<Notification> allNotifications = notificationMapper.selectAllNotificationMainInfo();
+//            indexNotificationList(allNotifications);
+
+            logger.info("成功重建ES索引: {}", indexName);
         } catch (Exception e) {
-            logger.error("重建索引失败", e);
-            throw new SystemException(ResultCode.NOTIFICATION_INDEX_FAILED);
+            logger.error("重建ES索引失败", e);
+            throw new SystemException(ResultCode.INDEX_BUILD_FAILED);
         }
     }
 
+
+    /**
+     * 统计数据表记录数
+     * 根据索引名统计该索引对应的数据库表有多少条记录（多少个文档）
+     * @param indexName     索引名（如：notification） 这里对应表名（如果表名有英文下划线，需要另外处理）
+     * @return      文档数
+     */
+    private int countDocuments(String indexName) {
+        //本项目只为notification表实现ES索引
+//        return MapperInvoker.countAllFunction.apply(indexName);
+        return notificationMapper.countAll();
+    }
+
+    /**
+     * 执行全量同步 todo 异步线程异常的处理，分布式事务处理
+     * @param totalCount            总行数（总文档数）
+     * @param indexName             索引名（数据库表名）
+     */
+    private void performFullSyncForEsIndex(int totalCount, String indexName) {
+
+
+        int batchSize = DEFAULT_BATCH_SIZE;
+        int totalBatches = (int) Math.ceil((double) totalCount / batchSize); // 向上取整
+
+        for (int batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
+            int offset = batchIndex * batchSize;
+            int limit = Math.min(batchSize, totalCount - offset);
+
+            // 执行分页查询
+            // 【注】本项目设定只为notification表建立ES检索，如果有为多张表建立ES检索，
+            // 则需要建立indexName和表名或者接口的映射关系，实现方案参考本类的countDocuments方法
+            List<Notification> batchList = null;
+            try {
+                batchList = notificationMapper.selectBatchWithOffset(offset, limit);
+            } catch (Exception e) {
+                logger.error("查询批次数据失败，批次索引：{}，偏移量：{}，限制：{}", batchIndex, offset, limit, e);
+
+            }
+
+            // 异步为当前批次的数据建立ES索引
+            final int currentBatchIndex = batchIndex;
+            final List<Notification> currentBatchList = batchList;
+            CompletableFuture.runAsync(() -> {
+                try {
+                    indexNotificationList(currentBatchList);
+                    logger.info("批次 {}/{} 同步完成建立ES索引，记录数：{}",
+                            currentBatchIndex, totalBatches, currentBatchList.size());
+                } catch (Exception e) {
+                    logger.error("批次 {} 同步失败", currentBatchIndex, e);
+                    deleteEsIndexByIndexName(INDEX_NAME);
+                }
+            }, asyncTaskExecutor);
+        }
+
+        logger.info("建立ES索引全量同步任务已启动，共 {} 个批次", totalBatches);
+    }
+
+
+
     /**
      * 判断ES索引是否存在
+     * @param       indexName   索引名
      * @return      true 如果索引存在，false 如果索引不存在
      */
     @Override
-    public boolean validateIndexExists() {
+    public boolean validateIndexExists(String indexName) {
         try {
-            return elasticsearchClient.indices().exists(e -> e.index(INDEX_NAME)).value();
+            return elasticsearchClient.indices().exists(e -> e.index(indexName)).value();
         } catch (Exception e) {
             logger.error("检查ES索引是否存在时发生错误", e);
             return false;
         }
     }
+
 
     /**
      * 将Notification对象转换为Map
@@ -1749,21 +1837,58 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     /**
-     * 删除ES索引
-     * @param notificationId    通知业务ID
+     * 删除ES文档
+     * @param noticeId    通知业务ID（ES文档的id）
      */
     @Override
-    public void deleteEsIndex(String notificationId) {
+    public void deleteEsIndexByNotId(String noticeId) {
+        if (StringUtils.isBlank(noticeId)) {
+            logger.info("通知业务id（文档id）为空，跳过删除ES索引操作");
+            return;
+        }
+
         try {
-            elasticsearchClient.delete(d -> d.index(INDEX_NAME).id(notificationId));
-            logger.info("成功删除通知ES索引, notificationId：{}", notificationId);
+            elasticsearchClient.delete(d -> d.index(INDEX_NAME).id(noticeId));
+            logger.info("成功删除通知ES文档, notificationId：{}", noticeId);
         } catch (Exception e) {
-            logger.error("无法删除ES索引, notificationId: {}", notificationId);
+            logger.error("无法删除ES文档, notificationId: {}", noticeId);
             throw new SystemException(ResultCode.NOTIFICATION_INDEX_DELETE_FAILED);
         }
     }
 
-    // todo 批量删除ES索引
+    /**
+     * 批量删除ES的通知索引的文档
+     * @param noticeIdList      通知业务ID列表（ES文档id列表）
+     */
+    public void deleteEsIndexByNotIdList(List<String> noticeIdList) {
+        if (noticeIdList == null || noticeIdList.isEmpty()) {
+            logger.info("通知业务id列表为空，跳过批量删除ES索引操作");
+            return;
+        }
+
+        try {
+            BulkRequest.Builder bulkRequest = new BulkRequest.Builder();
+            for (String noticeId : noticeIdList) {
+                bulkRequest.operations(op -> op.delete(d -> d.index(INDEX_NAME).id(noticeId)));
+            }
+
+            BulkResponse response = elasticsearchClient.bulk(bulkRequest.build());
+
+            if (response.errors()) {
+                logger.error("批量删除ES索引文档失败");
+                response.items().forEach(item -> {
+                    if (item.error() != null) {
+                        logger.error("删除失败，ID: {}, 错误: {}", item.id(), item.error().reason());
+                    }
+                });
+            } else {
+                logger.info("成功批量删除通知ES文档，数量: {}", noticeIdList.size());
+            }
+        } catch (Exception e) {
+            logger.error("批量删除ES索引文档失败", e);
+            throw new SystemException(ResultCode.NOTIFICATION_INDEX_DELETE_FAILED);
+        }
+    }
 
     /**
      * ES全文检索通知列表（此处不返回通知的阅读状态）
@@ -1826,6 +1951,39 @@ public class NotificationServiceImpl implements NotificationService {
         return response.hits().hits().stream()
                 .map(hit -> convertMapToNotification(hit.source()))
                 .toList();
+    }
+
+    /**
+     * 删除ES索引（通过索引名）
+     * @param indexName     索引名
+     * @return              是否删除成功
+     */
+    @Override
+    public boolean deleteEsIndexByIndexName(String indexName) {
+        if (StringUtils.isBlank(indexName)) {
+            logger.warn("索引名为空，跳过删除操作");
+            return true;
+        }
+
+        try {
+            // 检查索引是否存在
+            boolean exists = elasticsearchClient.indices().exists(e -> e.index(indexName)).value();
+
+            if (!exists) {
+                logger.warn("索引 {} 不存在，跳过删除操作", indexName);
+                return true;
+            }
+
+            // 删除索引
+            elasticsearchClient.indices().delete(d -> d.index(indexName));
+            logger.info("成功删除ES索引: {}", indexName);
+
+        } catch (Exception e) {
+            logger.error("删除ES索引失败，索引名: {}", indexName, e);
+            throw new SystemException(ResultCode.INDEX_DELETE_FAILED);
+        }
+
+        return true;
     }
 }
 

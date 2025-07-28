@@ -102,6 +102,16 @@
         FROM notification
     </select>
 
+    <select id="selectBatchWithOffset" resultType="com.tianhai.warn.model.Notification">
+        SELECT * FROM notification
+        ORDER BY id ASC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="countAll" resultType="java.lang.Integer">
+        SELECT count(*) FROM notification
+    </select>
+
     <!-- 插入通知信息 -->
     <insert id="insert" parameterType="com.tianhai.warn.model.Notification">
         INSERT INTO notification (

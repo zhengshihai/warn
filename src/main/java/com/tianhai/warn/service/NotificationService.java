@@ -61,6 +61,12 @@ public interface NotificationService {
      */
     int deleteBatch(NotificationDTO notificationDTO);
 
+    /**
+     * 统计通知总数量
+     * @return          通知总数量
+     */
+    int countAll();
+
 // ------------------------------以下为Elasticsearch接口---------------------------------------------------
 
     /**
@@ -76,13 +82,13 @@ public interface NotificationService {
     void indexNotificationList(List<Notification> notificationList);
 
     /**
-     * 删除通知索引
-     * @param notificationId    通知ID
+     * 根据文档ID删除ES索引
+     * @param indexId    诸如notificationId的文档id
      */
-    void deleteEsIndex(String notificationId);
+    void deleteEsIndexByNotId(String indexId);
 
     /**
-     * 使用Elasticsearch查询通知列表 todo ???
+     * 使用Elasticsearch查询通知列表
      * @param notificationQuery     查询条件
      * @return                      分页结果
      */
@@ -105,9 +111,10 @@ public interface NotificationService {
     List<Notification> fullTextSearchWithRoleLimited(String keyword, String searcherRole, String searcherNo);
 
     /**
-     * 重建通知索引
+     * 重建通知ES索引
+     * @param indexName  ES索引名称
      */
-    void rebuildIndex();
+    void rebuildIndex(String indexName);
 
     /**
      * 创建通知索引
@@ -116,7 +123,14 @@ public interface NotificationService {
 
     /**
      * 检查通知索引是否存在
+     * @param indexName  ES索引名称
      * @return      存在为true
      */
-    boolean validateIndexExists();
+    boolean validateIndexExists(String indexName);
+
+    /**
+     * 删除指定名称的ES索引
+     * @param indexName     ES索引名称
+     */
+    boolean deleteEsIndexByIndexName(String indexName);
 }

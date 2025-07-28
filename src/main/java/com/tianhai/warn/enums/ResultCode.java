@@ -87,7 +87,10 @@ public enum ResultCode implements IResultCode {
     VIDEO_FRAME_RECORD_FAILED(13008, "写入帧失败"),
     VIDEO_SPLICE_FAILED(13009, "视频切片失败"),
     M3U8_WRITE_FAILED(13010, "写入 m3u8 文件失败"),
-    VIDEO_INFO_SAVED_FAILED(13011, "保存报警视频信息失败");
+    VIDEO_INFO_SAVED_FAILED(13011, "保存报警视频信息失败"),
+
+    INDEX_BUILD_FAILED(14000, "ES索引建立失败"),
+    INDEX_DELETE_FAILED(14001, "ES索引删除失败");
 
     private final Integer code;
     private final String message;

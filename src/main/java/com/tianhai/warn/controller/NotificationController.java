@@ -256,7 +256,7 @@ public class NotificationController {
             throw new BusinessException(ResultCode.FORBIDDEN);
         }
 
-        notificationService.rebuildIndex();
+        notificationService.rebuildIndex("notification");
 
         return Result.success();
     }
@@ -277,7 +277,7 @@ public class NotificationController {
             throw new BusinessException(ResultCode.FORBIDDEN);
         }
 
-        notificationService.deleteEsIndex(notificationId);
+        notificationService.deleteEsIndexByNotId(notificationId);
 
         return Result.success();
     }

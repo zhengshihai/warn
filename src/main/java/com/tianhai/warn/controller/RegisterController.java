@@ -8,7 +8,7 @@ import com.tianhai.warn.enums.BusinessType;
 import com.tianhai.warn.enums.ResultCode;
 import com.tianhai.warn.exception.BusinessException;
 import com.tianhai.warn.exception.SystemException;
-import com.tianhai.warn.factory.UserFactory;
+import com.tianhai.warn.component.UserFactory;
 import com.tianhai.warn.service.RegisterService;
 import com.tianhai.warn.service.VerificationService;
 import com.tianhai.warn.utils.Result;
@@ -25,7 +25,6 @@ import org.springframework.validation.annotation.Validated;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
 
 import jakarta.validation.Valid;

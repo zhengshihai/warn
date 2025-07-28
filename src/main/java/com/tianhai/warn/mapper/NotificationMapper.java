@@ -42,4 +42,18 @@ public interface NotificationMapper {
      * @return              通知列表
      */
     List<Notification> selectAllNotificationMainInfo();
+
+    /**
+     * 按照一定顺序批量获取通知
+     * @param offset        偏移量
+     * @param limit         限制数量
+     * @return              通知列表
+     */
+    List<Notification> selectBatchWithOffset(@Param("offset") int offset,@Param("limit") int limit);
+
+    /**
+     * 统计通知总数量
+     * @return      通知总数量
+     */
+    int countAll();
 }
