@@ -57,10 +57,13 @@ public class ApplicationServiceImpl implements ApplicationService {
         Application application = new Application();
         application.setStudentNo(studentNo);
         application.setExpectedReturnTime(expectedReturnTime);
-        logger.info("保存申请时间: {}", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(expectedReturnTime));
+        logger.info("保存申请时间: {}",
+                new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(expectedReturnTime));
         application.setReason(reason);
         application.setDestination(destination);
         application.setApplicationId(ApplicationIdGenerator.generate());
+        // 显式由应用层写入申请时间，避免依赖数据库时区导致时间偏移
+        application.setApplyTime(new Date());
 
         // 处理文件上传
         if (file != null && !file.isEmpty()) {
@@ -68,7 +71,8 @@ public class ApplicationServiceImpl implements ApplicationService {
                 // 获取学院代码
                 String collegeCode = CollegeEnum.getCodeByName(student.getCollege());
                 if (collegeCode == null) {
-                    collegeCode = "OTHER"; // 如果找不到对应的学院代码，使用默认值
+                    // 如果找不到对应的学院代码，使用默认值
+                    collegeCode = "OTHER";
                 }
 
                 // 构建文件存储路径：applications/学院代码/班级/
@@ -152,6 +156,26 @@ public class ApplicationServiceImpl implements ApplicationService {
         application.setAuditStatus(auditStatus);
         application.setAuditPerson(auditPerson);
         application.setAuditRemark(auditRemark);
+        applicationMapper.update(application);
+    }
+
+    @Override
+    @Transactional
+    public void auditApplicationByApplicationId(String applicationId, Integer auditStatus, String auditPerson,
+            String auditRemark) {
+        // 先通过applicationId查询申请记录
+        Application application = applicationMapper.selectByApplicationId(applicationId);
+        if (application == null) {
+            throw new BusinessException("申请记录不存在");
+        }
+
+        // 设置审核信息
+        application.setAuditStatus(auditStatus);
+        application.setAuditPerson(auditPerson);
+        application.setAuditRemark(auditRemark);
+        application.setAuditTime(new Date());
+
+        // 更新数据库
         applicationMapper.update(application);
     }
 

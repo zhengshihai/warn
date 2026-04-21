@@ -44,16 +44,10 @@ public class AlarmServiceImpl implements AlarmService {
     private RedisTemplate<String, Object> redisTemplate;
 
     @Autowired
-    private AlarmHandlerConfigService alarmHandlerConfigService;
-
-    @Autowired
     private NotificationService notificationService;
 
     @Autowired
     private SmsService smsService;
-
-    @Autowired
-    private AlarmProcessRecordService alarmProcessRecordService;
 
     @Autowired
     private LocationTrackService locationTrackService;
@@ -229,7 +223,9 @@ public class AlarmServiceImpl implements AlarmService {
         return alarmRecordList.stream()
                 .map(alarmRecord -> {
                     Student student = studentMap.get(alarmRecord.getStudentNo());
-                    if (student == null) return null;
+                    if (student == null) {
+                        return null;
+                    }
 
                     return StudentAlarmContactsVO.builder()
                             .studentName(student.getName())
@@ -283,7 +279,9 @@ public class AlarmServiceImpl implements AlarmService {
         return alarmRecordList.stream()
                 .map(alarmRecord -> {
                     Student student = studentMap.get(alarmRecord.getStudentNo());
-                    if (student == null) return null;
+                    if (student == null) {
+                        return null;
+                    }
 
                     return StudentAlarmContactsVO.builder()
                             .studentName(student.getName())

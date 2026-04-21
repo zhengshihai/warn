@@ -3,6 +3,7 @@ package com.tianhai.warn.controller;
 import com.tianhai.warn.annotation.LogOperation;
 import com.tianhai.warn.annotation.RequirePermission;
 import com.tianhai.warn.constants.Constants;
+import com.tianhai.warn.dto.ApplicationAuditDTO;
 import com.tianhai.warn.enums.ResultCode;
 import com.tianhai.warn.exception.BusinessException;
 import com.tianhai.warn.model.Application;
@@ -49,10 +50,7 @@ public class ApplicationController {
         }
 
         Application returnApplication = applicationService.selectByApplicationId(applicationId);
-        Result<Application> result = new Result<>();
-        result.setData(returnApplication);
-
-        return result;
+        return Result.success(returnApplication);
     }
 
     /**
@@ -97,7 +95,6 @@ public class ApplicationController {
 
         return Result.success(applicationList);
     }
-
 
     /**
      * 添加晚归申请
@@ -156,7 +153,8 @@ public class ApplicationController {
         }
 
         // 调用服务层处理业务逻辑
-        Integer affectRows = applicationService.submitApplication(studentNo, returnTime, reason, destination, file);
+        Integer affectRows = applicationService.submitApplication(
+                studentNo, returnTime, reason, destination, file);
 
         if (affectRows == 0) {
             return Result.error(ResultCode.APPLICATION_SAVE_FAILED);
@@ -216,7 +214,7 @@ public class ApplicationController {
      */
     @PostMapping("/audit")
     @ResponseBody
-    @RequirePermission(roles = {Constants.SYSTEM_USER})
+    @RequirePermission(roles = { Constants.SYSTEM_USER })
     @LogOperation("审核晚归申请")
     public String audit(@RequestParam Long id,
             @RequestParam Integer auditStatus,
@@ -227,6 +225,39 @@ public class ApplicationController {
             return "success";
         } catch (Exception e) {
             return "error";
+        }
+    }
+
+    /**
+     * 根据申请ID审核晚归申请
+     */
+    @PostMapping("/audit-by-id")
+    @ResponseBody
+    @RequirePermission(roles = { Constants.DORMITORY_MANAGER, Constants.SYSTEM_USER })
+    @LogOperation("审核晚归申请")
+    public Result<?> auditByApplicationId(@RequestBody ApplicationAuditDTO auditDTO) {
+        if (StringUtils.isBlank(auditDTO.getApplicationId())) {
+            throw new BusinessException(ResultCode.PARAMETER_ERROR);
+        }
+        if (auditDTO.getAuditStatus() == null || (auditDTO.getAuditStatus() != 1 && auditDTO.getAuditStatus() != 2)) {
+            throw new BusinessException("审核状态无效，必须为1（通过）或2（拒绝）");
+        }
+        if (StringUtils.isBlank(auditDTO.getAuditPerson())) {
+            throw new BusinessException("审核人不能为空");
+        }
+
+        try {
+            applicationService.auditApplicationByApplicationId(
+                    auditDTO.getApplicationId(),
+                    auditDTO.getAuditStatus(),
+                    auditDTO.getAuditPerson(),
+                    auditDTO.getAuditRemark());
+            return Result.success("审核成功");
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            logger.error("审核晚归申请失败", e);
+            throw new BusinessException("审核失败：" + e.getMessage());
         }
     }
 

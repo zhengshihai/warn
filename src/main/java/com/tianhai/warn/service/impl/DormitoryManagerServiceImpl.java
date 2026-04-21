@@ -175,6 +175,7 @@ public class DormitoryManagerServiceImpl implements DormitoryManagerService {
 
             // 设置乐观锁版本号
             manager.setUpdateTime(new Date());
+            manager.setVersion(currentManager.getVersion());
             updateResult = dormitoryManagerMapper.update(manager);
         } catch (InterruptedException e) {
             logger.error("获取邮箱锁失败");

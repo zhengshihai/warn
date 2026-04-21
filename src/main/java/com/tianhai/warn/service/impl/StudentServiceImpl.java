@@ -2,17 +2,16 @@ package com.tianhai.warn.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.json.JSONUtil;
-import com.github.pagehelper.Constant;
 import com.github.pagehelper.Page;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
+import com.tianhai.warn.constants.AlarmConstants;
 import com.tianhai.warn.constants.Constants;
 import com.tianhai.warn.enums.AlarmStatus;
 import com.tianhai.warn.enums.ResultCode;
 import com.tianhai.warn.enums.TargetScope;
 import com.tianhai.warn.exception.BusinessException;
 import com.tianhai.warn.exception.SystemException;
-import com.tianhai.warn.mapper.StudentLateStatsMapper;
 import com.tianhai.warn.mapper.StudentMapper;
 import com.tianhai.warn.model.*;
 import com.tianhai.warn.query.*;
@@ -30,11 +29,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.DigestUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -75,6 +78,9 @@ public class StudentServiceImpl implements StudentService {
 
     @Autowired
     private UpdateScheduler updateScheduler;
+
+    @Autowired
+    private AlarmConfigService alarmConfigService;
 
     @Override
     public Student selectById(Integer id) {
@@ -277,17 +283,17 @@ public class StudentServiceImpl implements StudentService {
                 studentToBeInserted.setPassword(studentExisting.getPassword());
             }
 
-              // 方案一
-//            // 如果学号发生改变，则需要更新其他表中的信息
-//            if (!studentExisting.getStudentNo().equals(newStudentInfo.getStudentNo())) {
-//                updateStudentInfoInOtherTables(newStudentInfo, studentExisting);
-//            }
-//
-//            // 设置更新时间
-//            studentToBeInserted.setUpdateTime(new Date());
-//
-//            // 更新student表信息
-//            updateResult = studentMapper.update(studentToBeInserted);
+            // 方案一
+            // // 如果学号发生改变，则需要更新其他表中的信息
+            // if (!studentExisting.getStudentNo().equals(newStudentInfo.getStudentNo())) {
+            // updateStudentInfoInOtherTables(newStudentInfo, studentExisting);
+            // }
+            //
+            // // 设置更新时间
+            // studentToBeInserted.setUpdateTime(new Date());
+            //
+            // // 更新student表信息
+            // updateResult = studentMapper.update(studentToBeInserted);
 
             // 方案二
             // 立即更新除学号外的其他信息
@@ -378,7 +384,6 @@ public class StudentServiceImpl implements StudentService {
         return notificationService.insert(notification);
     }
 
-
     @Override // todo
     public List<Student> searchByStudentQuery(StudentQuery query) {
         return studentMapper.searchByStudentQuery(query);
@@ -467,5 +472,92 @@ public class StudentServiceImpl implements StudentService {
             logger.error("批量插入学生信息异常", e);
             throw new SystemException(ResultCode.ERROR);
         }
+    }
+
+    /**
+     * 通过腾讯地图IP定位接口获取位置信息
+     *
+     * @param clientIP 客户端IP地址
+     * @return 包含 lat、lng、ip 的位置信息
+     */
+    @Override
+    public Map<String, Object> getLocationByIP(String clientIP) {
+        try {
+            logger.info("获取IP定位，客户端IP: {}", clientIP);
+
+            // 从报警配置表中获取腾讯地图LBS配置
+            AlarmConfig mapConfig = alarmConfigService.selectByApiProvider(AlarmConstants.TENCENT_ALARM_LBS_MAP);
+            if (mapConfig == null || !Objects.equals(mapConfig.getIsActive(), AlarmConstants.ALARM_CONFIG_ACTIVE)) {
+                logger.error("腾讯地图API配置未启用或不存在, apiProvider: {}", AlarmConstants.TENCENT_ALARM_LBS_MAP);
+                throw new SystemException(ResultCode.ALARM_CONFIG_NOT_FOUNT);
+            }
+
+            String tencentMapKey = mapConfig.getApiKey();
+            if (StringUtils.isBlank(tencentMapKey)) {
+                logger.error("腾讯地图API配置中的 apiKey 为空, apiProvider: {}", AlarmConstants.TENCENT_ALARM_LBS_MAP);
+                throw new SystemException(ResultCode.ALARM_CONFIG_NOT_FOUNT);
+            }
+
+            String apiUrl = "https://apis.map.qq.com/ws/location/v1/ip?key=" + tencentMapKey + "&ip=" + clientIP;
+
+            java.net.URL url = new java.net.URL(apiUrl);
+            java.net.HttpURLConnection connection = (java.net.HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("GET");
+            connection.setConnectTimeout(5000);
+            connection.setReadTimeout(5000);
+
+            int responseCode = connection.getResponseCode();
+            if (responseCode == 200) {
+                java.io.BufferedReader reader = new java.io.BufferedReader(
+                        new java.io.InputStreamReader(connection.getInputStream(), "UTF-8"));
+                StringBuilder response = new StringBuilder();
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    response.append(line);
+                }
+                reader.close();
+
+                com.fasterxml.jackson.databind.ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
+                @SuppressWarnings("unchecked")
+                Map<String, Object> result = objectMapper.readValue(response.toString(), Map.class);
+
+                Integer status = (Integer) result.get("status");
+                if (status != null && status == 0) {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> resultData = (Map<String, Object>) result.get("result");
+                    if (resultData != null) {
+                        @SuppressWarnings("unchecked")
+                        Map<String, Object> location = (Map<String, Object>) resultData.get("location");
+                        if (location != null) {
+                            Double lat = ((Number) location.get("lat")).doubleValue();
+                            Double lng = ((Number) location.get("lng")).doubleValue();
+
+                            Map<String, Object> locationResult = new HashMap<>();
+                            locationResult.put("lat", lat);
+                            locationResult.put("lng", lng);
+                            locationResult.put("ip", clientIP);
+
+                            return locationResult;
+                        }
+                    }
+                }
+
+                logger.warn("腾讯地图IP定位API返回错误，状态码: {}, 响应: {}", status, response.toString());
+            } else {
+                logger.error("调用腾讯地图IP定位API失败，HTTP状态码: {}", responseCode);
+            }
+
+            connection.disconnect();
+        } catch (Exception e) {
+            logger.error("获取IP定位信息失败", e);
+        }
+
+        // 定位失败，返回默认位置（北京）
+        Map<String, Object> defaultLocation = new HashMap<>();
+        defaultLocation.put("lat", 39.916527);
+        defaultLocation.put("lng", 116.397128);
+        defaultLocation.put("ip", "unknown");
+
+        return defaultLocation;
     }
 }

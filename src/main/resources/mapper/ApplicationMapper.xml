@@ -165,14 +165,14 @@
             apply_time, audit_status
         ) VALUES (
             #{applicationId}, #{studentNo}, #{expectedReturnTime}, #{reason}, #{destination}, #{description}, #{attachmentUrl},
-            NOW(), 0
+            #{applyTime}, 0
         )
         ON DUPLICATE KEY UPDATE
             reason = VALUES(reason),
             destination = VALUES(destination),
             description = VALUES(description),
             attachment_url = VALUES(attachment_url),
-            apply_time = NOW()
+            apply_time = VALUES(apply_time)
     </insert>
     
     <!-- 更新 -->

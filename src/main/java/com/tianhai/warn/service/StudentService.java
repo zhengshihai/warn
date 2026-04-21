@@ -5,7 +5,9 @@ import com.tianhai.warn.model.Student;
 import com.tianhai.warn.query.StudentQuery;
 import com.tianhai.warn.utils.PageResult;
 import com.tianhai.warn.utils.Result;
+
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -100,7 +102,8 @@ public interface StudentService {
 
     /**
      * 更新最后的登录时间
-     * @param id  主键
+     * 
+     * @param id 主键
      */
     void updateLastLoginTime(Integer id);
 
@@ -108,41 +111,55 @@ public interface StudentService {
 
     /**
      * 分页查询学生信息
-     * @param  studentQuery    查询条件
-     * @return      学生信息
+     * 
+     * @param studentQuery 查询条件
+     * @return 学生信息
      */
     PageResult<Student> selectByPageQuery(StudentQuery studentQuery);
 
     /**
      * 超级管理员更新学生个人信息
-     * @param newStudentInfo   新的学生信息
-     * @return                 更新行数
+     * 
+     * @param newStudentInfo 新的学生信息
+     * @return 更新行数
      */
     int updatePersonalInfoBySuperAdmin(Student newStudentInfo);
 
     /**
      * 根据学号列表删除学生信息
-     * @param distinctIds    学号列表
-     * @return               删除行数
+     * 
+     * @param distinctIds 学号列表
+     * @return 删除行数
      */
     int deleteByIds(List<Integer> distinctIds);
 
     /**
      * 查询所有邮箱
-     * @return    邮箱集合
+     * 
+     * @return 邮箱集合
      */
     Set<String> selectAllEmail();
 
     /**
      * 查询所有学号
-     * @return    学号集合
+     * 
+     * @return 学号集合
      */
     Set<String> selectAllStudentNo();
 
     /**
      * 批量插入学生信息
-     * @param validStudentList    学生信息列表
-     * @return                    插入行数
+     * 
+     * @param validStudentList 学生信息列表
+     * @return 插入行数
      */
     int insertBatch(List<Student> validStudentList);
+
+    /**
+     * 通过腾讯地图IP定位接口获取位置信息
+     * 
+     * @param clientIP 客户端IP地址（可为空，让腾讯侧使用默认IP）
+     * @return 包含lat、lng、ip的位置信息Map
+     */
+    Map<String, Object> getLocationByIP(String clientIP);
 }

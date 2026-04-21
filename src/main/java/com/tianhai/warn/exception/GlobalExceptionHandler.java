@@ -17,6 +17,20 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import java.io.IOException;
 import java.util.List;
 
+/**
+ * 业务代码抛出异常
+ *     ↓
+ * 全局异常处理器拦截
+ *     ↓
+ * 判断异常类型（业务/系统/参数/未知）
+ *     ↓
+ * 判断请求类型（AJAX / 页面）
+ *     ↓
+ * AJAX → 返回统一JSON结果
+ * 页面 → 重定向回原页面 + 携带错误信息
+ *     ↓
+ * 自动设置HTTP状态码 + 打印规范日志
+ */
 @ControllerAdvice
 public class GlobalExceptionHandler {
     private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);

@@ -9,15 +9,15 @@ import org.apache.rocketmq.common.message.MessageExt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
+// import org.springframework.stereotype.Component; // 已注释：停用此监听器
 
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-// webm格式视频消息监听器
-@Component
+// webm格式视频消息监听器（已停用，改为直接调用服务，不使用 RocketMQ）
+// @Component
 public class VideoProcessMessageListener implements
         MessageListenerConcurrently, RocketMQListenerMarker {
 

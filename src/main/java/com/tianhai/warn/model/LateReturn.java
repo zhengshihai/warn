@@ -31,15 +31,15 @@ public class LateReturn implements Serializable {
     private String lateReturnId;
 
     private String studentNo; // 学号
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private Date lateTime; // 晚归时间
     private String reason; // 晚归原因
     private String processStatus; // 处理状态：PENDING-待处理/PROCESSING-处理中/FINISHED-已完成
     private String processResult; // 处理结果：APPROVED-已通过/REJECTED-已驳回
     private String processRemark; // 处理备注
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private Date createTime; // 创建时间
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private Date updateTime; // 更新时间
     private String photoUrl; // 晚归照片URL 
 

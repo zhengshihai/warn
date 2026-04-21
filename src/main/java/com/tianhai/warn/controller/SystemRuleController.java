@@ -120,4 +120,28 @@ public class SystemRuleController {
             return "error";
         }
     }
+
+    /**
+     * 保存或更新系统规则（根据规则键）
+     */
+    @PostMapping("/save-or-update")
+    @ResponseBody
+    public com.tianhai.warn.utils.Result<?> saveOrUpdate(@RequestBody SystemRule rule) {
+        try {
+            if (rule.getRuleKey() == null || rule.getRuleKey().trim().isEmpty()) {
+                return com.tianhai.warn.utils.Result.error("规则键不能为空");
+            }
+            if (rule.getRuleValue() == null || rule.getRuleValue().trim().isEmpty()) {
+                return com.tianhai.warn.utils.Result.error("规则值不能为空");
+            }
+
+            systemRuleService.saveOrUpdateByRuleKey(
+                    rule.getRuleKey(),
+                    rule.getRuleValue(),
+                    rule.getDescription() != null ? rule.getDescription() : "");
+            return com.tianhai.warn.utils.Result.success("保存成功");
+        } catch (Exception e) {
+            return com.tianhai.warn.utils.Result.error("保存失败：" + e.getMessage());
+        }
+    }
 }

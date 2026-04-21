@@ -19,7 +19,11 @@
     <!-- 引入验证脚本 -->
     <script src="${pageContext.request.contextPath}/static/js/student-validation.js"></script>
 
-    <script src="https://webapi.amap.com/maps?v=2.0&key=c34c1fdbcbe4d043906c95993710fbcc"></script>
+    <!-- 高德地图API（已注释，改用腾讯地图） -->
+    <%--<script src="https://webapi.amap.com/maps?v=2.0&key=c34c1fdbcbe4d043906c95993710fbcc"></script>--%>
+    
+    <!-- 腾讯地图API - 请将YOUR_TENCENT_KEY替换为你的腾讯地图Key -->
+    <script src="https://map.qq.com/api/gljs?v=1.exp&key=7A6BZ-UC5C3-D3Z3G-OCW32-ZTILV-G6BH5"></script>
     <style>
         .dashboard-container {
             min-height: 100vh;
@@ -212,12 +216,13 @@
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="text-lg font-medium text-gray-900">通知消息</h3>
                     <div class="flex items-center space-x-3">
+                        <%-- 简化版接口暂不按已读筛选，原下拉保留备查
                         <select id="notificationStatusFilter" class="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
                             <option value="ALL">全部</option>
                             <option value="UNREAD">未读</option>
                             <option value="READ">已读</option>
                         </select>
-                        
+                        --%>
                     </div>
                 
                 </div>
@@ -580,6 +585,46 @@
             window.location.href = "${pageContext.request.contextPath}/register";
         </c:if>
 
+        // 将后端返回的本地时间字符串解析为本地 Date，避免浏览器按 UTC 解释导致时区偏移
+        // 兼容：yyyy-MM-dd HH:mm:ss、带毫秒、带 T、部分带 Z/+08:00（去掉偏移后按本地墙钟解析，与 MyBatis/Jackson 常见输出一致）
+        function parseLocalDateTime(dateTime) {
+            if (!dateTime) return null;
+            if (typeof dateTime === 'number') {
+                const timestampDate = new Date(dateTime);
+                return isNaN(timestampDate.getTime()) ? null : timestampDate;
+            }
+            if (dateTime instanceof Date) {
+                return isNaN(dateTime.getTime()) ? null : dateTime;
+            }
+
+            const raw = String(dateTime).trim();
+            // 纯 UTC 瞬时（如 Jackson ISO8601 带 Z）：交给 Date，由 toLocaleString 显示为本机时间
+            if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/i.test(raw)) {
+                const utcDate = new Date(raw);
+                return isNaN(utcDate.getTime()) ? null : utcDate;
+            }
+
+            let normalized = raw.replace('T', ' ');
+            normalized = normalized.replace(/\.\d+/, '');
+            normalized = normalized.replace(/\s*Z$/i, '');
+            normalized = normalized.replace(/\s*[+-]\d{2}:?\d{2}$/, '');
+            normalized = normalized.trim();
+
+            const match = normalized.match(/^(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2})(?::(\d{2}))?$/);
+            if (match) {
+                const year = Number(match[1]);
+                const month = Number(match[2]) - 1;
+                const day = Number(match[3]);
+                const hour = Number(match[4]);
+                const minute = Number(match[5]);
+                const second = Number(match[6] || 0);
+                return new Date(year, month, day, hour, minute, second);
+            }
+
+            const fallbackDate = new Date(dateTime);
+            return isNaN(fallbackDate.getTime()) ? null : fallbackDate;
+        }
+
         $(document).ready(function() {
             // 初始化个人信息表单
             $('#studentNo').val('${sessionScope.user.studentNo}');
@@ -638,6 +683,8 @@
             // 初始加载数据
             loadLateReturns();
             loadNotifications();
+            // 定时刷新通知（每5分钟）
+            setInterval(loadNotifications, 5 * 60 * 1000);
 
             // 筛选按钮点击事件
             $('#filterBtn').click(function() {
@@ -1003,15 +1050,25 @@
                 return;
             }
 
-            // 按时间降序排序
-            lateReturns.sort((a, b) => new Date(b.lateTime) - new Date(a.lateTime));
+            // 按时间降序排序（按本地时间解析，避免时区偏移）
+            lateReturns.sort((a, b) => {
+                const dateA = parseLocalDateTime(a.lateTime);
+                const dateB = parseLocalDateTime(b.lateTime);
+                const timeA = dateA ? dateA.getTime() : 0;
+                const timeB = dateB ? dateB.getTime() : 0;
+                return timeB - timeA;
+            });
             
             lateReturns.forEach(function(record) {
                 try {
                     // console.log('渲染行：', record);
-                    var date = new Date(record.lateTime);
-                    var formattedDate = date.toLocaleDateString('zh-CN', {year: 'numeric', month: '2-digit', day: '2-digit'})
-                    var formattedTime = date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+                    var date = parseLocalDateTime(record.lateTime);
+                    var formattedDate = date
+                        ? date.toLocaleDateString('zh-CN', {year: 'numeric', month: '2-digit', day: '2-digit'})
+                        : '-';
+                    var formattedTime = date
+                        ? date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false })
+                        : '-';
 
                     var row = '<tr>' +
                         '<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">' +
@@ -1131,8 +1188,8 @@
                     const lateReturn = response.data;
 
                     // 显示晚归记录信息
-                    var date = new Date(lateReturn.lateTime);
-                    $('#detailLateTime').text(date.toLocaleString('zh-CN'));
+                    var date = parseLocalDateTime(lateReturn.lateTime);
+                    $('#detailLateTime').text(date ? date.toLocaleString('zh-CN', { hour12: false }) : '-');
                     $('#detailProcessStatus').text(getStatusText(lateReturn.processStatus));
                     $('#detailProcessResult').text(getResultText(lateReturn.processResult));
                     $('#detailProcessRemark').text(lateReturn.processRemark || '-');
@@ -1147,7 +1204,8 @@
 
                             if (explanation) {
                                 $('#explanationSection').show();
-                                $('#detailSubmitTime').text(new Date(explanation.submitTime).toLocaleString('zh-CN'));
+                                var submitTime = parseLocalDateTime(explanation.submitTime);
+                                $('#detailSubmitTime').text(submitTime ? submitTime.toLocaleString('zh-CN', { hour12: false }) : '-');
                                 $('#detailAuditStatus').text(getAuditStatusText(explanation.auditStatus));
                                 $('#detailDescription').text(explanation.description || '-');
                                 $('#detailAuditRemark').text(explanation.auditRemark || '-');
@@ -1227,220 +1285,389 @@
         let notificationCurrentPage = 1;
         const notificationPageSize = 3; // 每页显示3条通知
 
-        $(document).ready(function() {
-            $('#notificationStatusFilter').on('change', function() {
-                // 筛选条件改变时，重置到第一页
-                notificationCurrentPage = 1;
-                loadNotifications();
-            });
-        });
-        
+        // $(document).ready(function() {
+        //     $('#notificationStatusFilter').on('change', function() {
+        //         notificationCurrentPage = 1;
+        //         loadNotifications();
+        //     });
+        // });
+
+        //-----start------此部分内容为借鉴Kafka消费位移Offset实现的较为复杂的消息业务-------------------------------
         // 加载通知消息
+        // function loadNotifications() {
+        //     // 显示加载状态
+        //     $('#notificationLoading').removeClass('hidden');
+
+        //      // 获取状态筛选值
+        //      var readStatus = $('#notificationStatusFilter').val();
+
+        //     $.ajax({
+        //         url: '${pageContext.request.contextPath}/notification/special-user/page',
+        //         type: 'POST',
+        //         contentType: 'application/json',
+        //         data: JSON.stringify({
+        //             pageNum: notificationCurrentPage,
+        //             pageSize: notificationPageSize,
+        //             readStatus: readStatus,
+        //             targetId: '${sessionScope.user.studentNo}',
+        //             targetType: 'STUDENT'
+        //         }),
+        //         success: function(response) {
+        //             if (response.success) {
+        //                 const pageResult = response.data;
+                    
+        //                 // 保存总数到 notificationList 元素
+        //                 $('#notificationList').data('total', pageResult.total);
+        //                 updateNotificationList(pageResult.data);
+        //                 updateNotificationPagination(pageResult);
+        //             } else {
+        //                 console.error('加载通知失败:', response.message);
+        //                 $('#notificationList').html(`
+        //                     <div class="text-center text-red-500 py-4">
+        //                         加载失败：${response.message || '未知错误'}
+        //                     </div>
+        //                 `);
+        //             }
+        //         },
+        //         error: function(xhr, status, error) {
+        //             console.error('加载通知消息失败:', {
+        //                 status: status,
+        //                 error: error,
+        //                 response: xhr.responseText
+        //             });
+        //             $('#notificationList').html(`
+        //                 <div class="text-center text-red-500 py-4">
+        //                     加载失败，请稍后重试
+        //                 </div>
+        //             `);
+        //         },
+        //         complete: function() {
+        //             // 隐藏加载状态
+        //             $('#notificationLoading').addClass('hidden');
+        //         }
+        //     });
+        // }
+
+        // // 更新通知列表
+        // function updateNotificationList(notificationVOs) {
+        //     const notificationList = $('#notificationList');
+        //     notificationList.empty();
+            
+        //     if (!notificationVOs || notificationVOs.length === 0) {
+        //         notificationList.append(`
+        //             <div class="text-center text-gray-500 py-4">
+        //                 暂无通知
+        //             </div>
+        //         `);
+        //         return;
+        //     }
+
+        //     notificationVOs.forEach(function(notificationVO) {
+        //         // 格式化日期时间
+        //         var createTime = formatDateTime(notificationVO.createTime);
+                
+        //         // 根据阅读状态决定按钮显示
+        //         var buttonHtml = '';
+        //         if (notificationVO.readStatus === 'READ') {
+        //             // 已读状态：显示"已读"文本，不可点击
+        //             buttonHtml = '<span class="text-xs text-gray-400">已读</span>';
+        //         } else {
+        //             // 未读状态：显示"标记已读"按钮，可点击
+        //             buttonHtml = '<button onclick="markAsRead(\'' + notificationVO.noticeId + '\')" ' +
+        //                         'class="text-xs text-blue-600 hover:text-blue-800">' +
+        //                         '标记已读' +
+        //                         '</button>';
+        //         }
+
+        //         var notificationHtml = 
+        //             '<div class="border-l-4 pl-4 py-2 mb-4 hover:bg-gray-50" data-type="' + notificationVO.noticeType + '">' +
+        //                 '<div class="flex justify-between items-start">' +
+        //                     '<div>' +
+        //                         '<p class="text-sm font-medium text-gray-900">' + (notificationVO.title || '-') + '</p>' +
+        //                         '<p class="text-sm text-gray-500 mt-1">' + (notificationVO.content || '-') + '</p>' +
+        //                         '<p class="text-xs text-gray-400 mt-1">' + createTime + '</p>' +
+        //                     '</div>' +
+        //                     '<div>' +
+        //                         buttonHtml +
+        //                     '</div>' +
+        //                 '</div>' +
+        //             '</div>';
+        //         notificationList.append(notificationHtml);
+        //     });
+
+        //     // 应用通知类型样式
+        //     applyNotificationStyles();
+        // }
+
+        // // 添加日期时间格式化函数
+        // function formatDateTime(dateTime) {
+        //     if (!dateTime) return '';
+        //     let date;
+        //     // 兼容数字时间戳和字符串
+        //     if (typeof dateTime === 'number') {
+        //         date = new Date(dateTime);
+        //     } else {
+        //         date = new Date(dateTime);
+        //     }
+        //     if (isNaN(date.getTime())) return dateTime;
+        //     return date.toLocaleString('zh-CN', {
+        //         year: 'numeric',
+        //         month: '2-digit',
+        //         day: '2-digit',
+        //         hour: '2-digit',
+        //         minute: '2-digit',
+        //         second: '2-digit'
+        //     });
+        // }
+
+        // // 更新通知分页
+        // function updateNotificationPagination(pageResult) {
+        //     const total = pageResult.total;
+        //     const totalPages = Math.ceil(total / notificationPageSize);
+            
+        //     // 先移除已存在的分页控件
+        //     $('#notificationPagination').remove();
+            
+        //     // 创建新的分页控件
+        //     var paginationHtml =
+        //         '<div id="notificationPagination" class="flex justify-between items-center mt-4">' +
+        //             '<span class="text-sm text-gray-500">' +
+        //                 '共 ' + total + ' 条通知' +
+        //             '</span>' +
+        //             '<div class="flex space-x-2">' +
+        //                 '<button id="prevNotificationBtn" ' +
+        //                         'class="px-3 py-1 text-sm text-blue-600 hover:text-blue-800">' +
+        //                     '上一页' +
+        //                 '</button>' +
+        //                 '<span class="text-sm text-gray-500">' +
+        //                     notificationCurrentPage + ' / ' + totalPages +
+        //                 '</span>' +
+        //                 '<button id="nextNotificationBtn" ' +
+        //                         'class="px-3 py-1 text-sm text-blue-600 hover:text-blue-800">' +
+        //                     '下一页' +
+        //                 '</button>' +
+        //             '</div>' +
+        //         '</div>';
+            
+        //     $('#notificationList').append(paginationHtml);
+
+        //     // 更新按钮状态
+        //     updatePaginationButtonStates();
+        // }
+
+        // // 更新分页按钮状态
+        // function updatePaginationButtonStates() {
+        //     const totalPages = Math.ceil($('#notificationList').data('total') / notificationPageSize);
+            
+        //     // 更新上一页按钮状态
+        //     if (notificationCurrentPage === 1) {
+        //         $('#prevNotificationBtn')
+        //             .addClass('text-gray-400 cursor-not-allowed')
+        //             .removeClass('text-blue-600 hover:text-blue-800')
+        //             .prop('disabled', true);
+        //     } else {
+        //         $('#prevNotificationBtn')
+        //             .removeClass('text-gray-400 cursor-not-allowed')
+        //             .addClass('text-blue-600 hover:text-blue-800')
+        //             .prop('disabled', false);
+        //     }
+            
+        //     // 更新下一页按钮状态
+        //     if (notificationCurrentPage === totalPages) {
+        //         $('#nextNotificationBtn')
+        //             .addClass('text-gray-400 cursor-not-allowed')
+        //             .removeClass('text-blue-600 hover:text-blue-800')
+        //             .prop('disabled', true);
+        //     } else {
+        //         $('#nextNotificationBtn')
+        //             .removeClass('text-gray-400 cursor-not-allowed')
+        //             .addClass('text-blue-600 hover:text-blue-800')
+        //             .prop('disabled', false);
+        //     }
+        // }
+
+        // // 标记通知为已读
+        // function markAsRead(noticeId) {
+        //     // 获取当前学生学号
+        //     const studentNo = '${sessionScope.user.studentNo}';
+            
+        //     // 构造请求数据
+        //     const requestData = {
+        //         noticeIdList: [noticeId],  // 将单个noticeId封装成List
+        //         receiverId: studentNo,     // 从session获取的studentNo
+        //         targetType: 'STUDENT',     // 目标类型为STUDENT
+        //         readStatus: 'READ'         // 阅读状态为READ
+        //     };
+            
+        //     $.ajax({
+        //         url: '${pageContext.request.contextPath}/notification/mark-read',
+        //         type: 'POST',
+        //         contentType: 'application/json',
+        //         data: JSON.stringify(requestData),
+        //         success: function(response) {
+        //             if (response.success) {
+        //                 // 重新加载通知列表
+        //                 loadNotifications();
+        //             } else {
+        //                 alert('标记已读失败：' + response.message);
+        //             }
+        //         },
+        //         error: function() {
+        //             alert('标记已读失败，请稍后重试');
+        //         }
+        //     });
+        // }
+
+        // // 应用通知类型样式
+        // function applyNotificationStyles() {
+        //     $('[data-type]').each(function() {
+        //         const type = $(this).data('type');
+        //         let borderColor;
+        //         switch (type) {
+        //             case '系统通知':
+        //                 borderColor = 'border-blue-500';
+        //                 break;
+        //             case '晚归通知':
+        //                 borderColor = 'border-yellow-500';
+        //                 break;
+        //             case '预警通知':
+        //                 borderColor = 'border-red-500';
+        //                 break;
+        //             default:
+        //                 borderColor = 'border-gray-500';
+        //         }
+        //         $(this).addClass(borderColor);
+        //     });
+        // }
+
+    
+
+        // // 页面加载完成后初始化
+        // $(document).ready(function() {
+        //     // 初始加载通知
+        //     loadNotifications();
+            
+        //     // 定时刷新通知（每5分钟）
+        //     setInterval(loadNotifications, 5 * 60 * 1000);
+        // });
+        //-----end------此部分内容为借鉴Kafka消费位移Offset实现的较为复杂的消息业务-------------------------------
+
+        // ---------- 简化版：分页拉取定向通知 + 全体用户（ALL_USERS）通知，见 NotificationController.getSimplePageList ----------
         function loadNotifications() {
-            // 显示加载状态
             $('#notificationLoading').removeClass('hidden');
-
-             // 获取状态筛选值
-             var readStatus = $('#notificationStatusFilter').val();
-
             $.ajax({
-                url: '${pageContext.request.contextPath}/notification/special-user/page',
+                url: '${pageContext.request.contextPath}/notification/simple/page',
                 type: 'POST',
                 contentType: 'application/json',
                 data: JSON.stringify({
                     pageNum: notificationCurrentPage,
                     pageSize: notificationPageSize,
-                    readStatus: readStatus,
-                    targetId: '${sessionScope.user.studentNo}',
-                    targetType: 'STUDENT'
+                    targetId: '${sessionScope.user.studentNo}'
                 }),
                 success: function(response) {
                     if (response.success) {
                         const pageResult = response.data;
-                    
-                        // 保存总数到 notificationList 元素
                         $('#notificationList').data('total', pageResult.total);
-                        updateNotificationList(pageResult.data);
+                        updateNotificationListSimple(pageResult.data);
                         updateNotificationPagination(pageResult);
                     } else {
                         console.error('加载通知失败:', response.message);
-                        $('#notificationList').html(`
-                            <div class="text-center text-red-500 py-4">
-                                加载失败：${response.message || '未知错误'}
-                            </div>
-                        `);
+                        $('#notificationList').html(
+                            '<div class="text-center text-red-500 py-4">加载失败：' + (response.message || '未知错误') + '</div>'
+                        );
                     }
                 },
                 error: function(xhr, status, error) {
-                    console.error('加载通知消息失败:', {
-                        status: status,
-                        error: error,
-                        response: xhr.responseText
-                    });
-                    $('#notificationList').html(`
-                        <div class="text-center text-red-500 py-4">
-                            加载失败，请稍后重试
-                        </div>
-                    `);
+                    console.error('加载通知消息失败:', status, error, xhr.responseText);
+                    $('#notificationList').html(
+                        '<div class="text-center text-red-500 py-4">加载失败，请稍后重试</div>'
+                    );
                 },
                 complete: function() {
-                    // 隐藏加载状态
                     $('#notificationLoading').addClass('hidden');
                 }
             });
         }
 
-        // 更新通知列表
-        function updateNotificationList(notificationVOs) {
-            const notificationList = $('#notificationList');
-            notificationList.empty();
-            
-            if (!notificationVOs || notificationVOs.length === 0) {
-                notificationList.append(`
-                    <div class="text-center text-gray-500 py-4">
-                        暂无通知
-                    </div>
-                `);
-                return;
-            }
-
-            notificationVOs.forEach(function(notificationVO) {
-                // 格式化日期时间
-                var createTime = formatDateTime(notificationVO.createTime);
-                
-                // 根据阅读状态决定按钮显示
-                var buttonHtml = '';
-                if (notificationVO.readStatus === 'READ') {
-                    // 已读状态：显示"已读"文本，不可点击
-                    buttonHtml = '<span class="text-xs text-gray-400">已读</span>';
-                } else {
-                    // 未读状态：显示"标记已读"按钮，可点击
-                    buttonHtml = '<button onclick="markAsRead(\'' + notificationVO.noticeId + '\')" ' +
-                                'class="text-xs text-blue-600 hover:text-blue-800">' +
-                                '标记已读' +
-                                '</button>';
-                }
-
-                var notificationHtml = 
-                    '<div class="border-l-4 pl-4 py-2 mb-4 hover:bg-gray-50" data-type="' + notificationVO.noticeType + '">' +
-                        '<div class="flex justify-between items-start">' +
-                            '<div>' +
-                                '<p class="text-sm font-medium text-gray-900">' + (notificationVO.title || '-') + '</p>' +
-                                '<p class="text-sm text-gray-500 mt-1">' + (notificationVO.content || '-') + '</p>' +
-                                '<p class="text-xs text-gray-400 mt-1">' + createTime + '</p>' +
-                            '</div>' +
-                            '<div>' +
-                                buttonHtml +
-                            '</div>' +
-                        '</div>' +
-                    '</div>';
-                notificationList.append(notificationHtml);
-            });
-
-            // 应用通知类型样式
-            applyNotificationStyles();
-        }
-
-        // 添加日期时间格式化函数
-        function formatDateTime(dateTime) {
-            if (!dateTime) return '';
-            let date;
-            // 兼容数字时间戳和字符串
-            if (typeof dateTime === 'number') {
-                date = new Date(dateTime);
-            } else {
-                date = new Date(dateTime);
-            }
-            if (isNaN(date.getTime())) return dateTime;
+        function formatNotificationDateTime(dateTime) {
+            const date = parseLocalDateTime(dateTime);
+            if (!date) return dateTime || '';
             return date.toLocaleString('zh-CN', {
                 year: 'numeric',
                 month: '2-digit',
                 day: '2-digit',
                 hour: '2-digit',
                 minute: '2-digit',
-                second: '2-digit'
+                second: '2-digit',
+                hour12: false
             });
         }
 
-        // 更新通知分页
+        function updateNotificationListSimple(notifications) {
+            const notificationList = $('#notificationList');
+            notificationList.empty();
+            if (!notifications || notifications.length === 0) {
+                notificationList.append('<div class="text-center text-gray-500 py-4">暂无通知</div>');
+                return;
+            }
+            notifications.forEach(function(n) {
+                var createTime = formatNotificationDateTime(n.createTime);
+                var buttonHtml = '<button onclick="markAsRead(\'' + (n.noticeId || '') + '\')" ' +
+                    'class="text-xs text-blue-600 hover:text-blue-800">标记已读</button>';
+                var html =
+                    '<div class="border-l-4 pl-4 py-2 mb-4 hover:bg-gray-50" data-type="' + (n.noticeType || '') + '">' +
+                    '<div class="flex justify-between items-start">' +
+                    '<div>' +
+                    '<p class="text-sm font-medium text-gray-900">' + (n.title || '-') + '</p>' +
+                    '<p class="text-sm text-gray-500 mt-1">' + (n.content || '-') + '</p>' +
+                    '<p class="text-xs text-gray-400 mt-1">' + createTime + '</p>' +
+                    '</div>' +
+                    '<div>' + buttonHtml + '</div>' +
+                    '</div>' +
+                    '</div>';
+                notificationList.append(html);
+            });
+            applyNotificationStyles();
+        }
+
         function updateNotificationPagination(pageResult) {
             const total = pageResult.total;
-            const totalPages = Math.ceil(total / notificationPageSize);
-            
-            // 先移除已存在的分页控件
+            const totalPages = Math.ceil(total / notificationPageSize) || 1;
             $('#notificationPagination').remove();
-            
-            // 创建新的分页控件
             var paginationHtml =
                 '<div id="notificationPagination" class="flex justify-between items-center mt-4">' +
-                    '<span class="text-sm text-gray-500">' +
-                        '共 ' + total + ' 条通知' +
-                    '</span>' +
-                    '<div class="flex space-x-2">' +
-                        '<button id="prevNotificationBtn" ' +
-                                'class="px-3 py-1 text-sm text-blue-600 hover:text-blue-800">' +
-                            '上一页' +
-                        '</button>' +
-                        '<span class="text-sm text-gray-500">' +
-                            notificationCurrentPage + ' / ' + totalPages +
-                        '</span>' +
-                        '<button id="nextNotificationBtn" ' +
-                                'class="px-3 py-1 text-sm text-blue-600 hover:text-blue-800">' +
-                            '下一页' +
-                        '</button>' +
-                    '</div>' +
-                '</div>';
-            
+                '<span class="text-sm text-gray-500">共 ' + total + ' 条通知</span>' +
+                '<div class="flex space-x-2">' +
+                '<button id="prevNotificationBtn" class="px-3 py-1 text-sm text-blue-600 hover:text-blue-800">上一页</button>' +
+                '<span class="text-sm text-gray-500">' + notificationCurrentPage + ' / ' + totalPages + '</span>' +
+                '<button id="nextNotificationBtn" class="px-3 py-1 text-sm text-blue-600 hover:text-blue-800">下一页</button>' +
+                '</div></div>';
             $('#notificationList').append(paginationHtml);
-
-            // 更新按钮状态
             updatePaginationButtonStates();
         }
 
-        // 更新分页按钮状态
         function updatePaginationButtonStates() {
-            const totalPages = Math.ceil($('#notificationList').data('total') / notificationPageSize);
-            
-            // 更新上一页按钮状态
+            const totalPages = Math.ceil($('#notificationList').data('total') / notificationPageSize) || 1;
             if (notificationCurrentPage === 1) {
-                $('#prevNotificationBtn')
-                    .addClass('text-gray-400 cursor-not-allowed')
-                    .removeClass('text-blue-600 hover:text-blue-800')
-                    .prop('disabled', true);
+                $('#prevNotificationBtn').addClass('text-gray-400 cursor-not-allowed').removeClass('text-blue-600 hover:text-blue-800').prop('disabled', true);
             } else {
-                $('#prevNotificationBtn')
-                    .removeClass('text-gray-400 cursor-not-allowed')
-                    .addClass('text-blue-600 hover:text-blue-800')
-                    .prop('disabled', false);
+                $('#prevNotificationBtn').removeClass('text-gray-400 cursor-not-allowed').addClass('text-blue-600 hover:text-blue-800').prop('disabled', false);
             }
-            
-            // 更新下一页按钮状态
-            if (notificationCurrentPage === totalPages) {
-                $('#nextNotificationBtn')
-                    .addClass('text-gray-400 cursor-not-allowed')
-                    .removeClass('text-blue-600 hover:text-blue-800')
-                    .prop('disabled', true);
+            if (notificationCurrentPage >= totalPages) {
+                $('#nextNotificationBtn').addClass('text-gray-400 cursor-not-allowed').removeClass('text-blue-600 hover:text-blue-800').prop('disabled', true);
             } else {
-                $('#nextNotificationBtn')
-                    .removeClass('text-gray-400 cursor-not-allowed')
-                    .addClass('text-blue-600 hover:text-blue-800')
-                    .prop('disabled', false);
+                $('#nextNotificationBtn').removeClass('text-gray-400 cursor-not-allowed').addClass('text-blue-600 hover:text-blue-800').prop('disabled', false);
             }
         }
 
-        // 标记通知为已读
         function markAsRead(noticeId) {
-            // 获取当前学生学号
             const studentNo = '${sessionScope.user.studentNo}';
-            
-            // 构造请求数据
             const requestData = {
-                noticeIdList: [noticeId],  // 将单个noticeId封装成List
-                receiverId: studentNo,     // 从session获取的studentNo
-                targetType: 'STUDENT',     // 目标类型为STUDENT
-                readStatus: 'READ'         // 阅读状态为READ
+                noticeIdList: [noticeId],
+                receiverId: studentNo,
+                targetType: 'STUDENT',
+                readStatus: 'READ'
             };
-            
             $.ajax({
                 url: '${pageContext.request.contextPath}/notification/mark-read',
                 type: 'POST',
@@ -1448,7 +1675,6 @@
                 data: JSON.stringify(requestData),
                 success: function(response) {
                     if (response.success) {
-                        // 重新加载通知列表
                         loadNotifications();
                     } else {
                         alert('标记已读失败：' + response.message);
@@ -1460,38 +1686,19 @@
             });
         }
 
-        // 应用通知类型样式
         function applyNotificationStyles() {
             $('[data-type]').each(function() {
                 const type = $(this).data('type');
-                let borderColor;
+                var borderColor = 'border-gray-500';
                 switch (type) {
-                    case '系统通知':
-                        borderColor = 'border-blue-500';
-                        break;
-                    case '晚归通知':
-                        borderColor = 'border-yellow-500';
-                        break;
-                    case '预警通知':
-                        borderColor = 'border-red-500';
-                        break;
-                    default:
-                        borderColor = 'border-gray-500';
+                    case '系统通知': borderColor = 'border-blue-500'; break;
+                    case '晚归通知': borderColor = 'border-yellow-500'; break;
+                    case '预警通知': borderColor = 'border-red-500'; break;
+                    default: borderColor = 'border-gray-500';
                 }
                 $(this).addClass(borderColor);
             });
         }
-
-    
-
-        // 页面加载完成后初始化
-        $(document).ready(function() {
-            // 初始加载通知
-            loadNotifications();
-            
-            // 定时刷新通知（每5分钟）
-            setInterval(loadNotifications, 5 * 60 * 1000);
-        });
 
         //  生成alarmNo
         function generateAlarmNo() {
@@ -1511,7 +1718,8 @@
 
 
 
-
+        // ========== 高德地图定位功能（已注释，改用腾讯地图） ==========
+        /*
         // // 页面加载时初始化地图
         // $(document).ready(function() {
         //     initMapAndLocation();
@@ -1589,6 +1797,214 @@
             window.currentPosition = null;
           });
         });
+        */
+
+        // ========== 腾讯地图定位功能 v2版本 ==========
+        var studentMap = null;
+        var studentMarker = null;       // 旧版单点标记（作为兜底）
+        var studentMarkerLayer = null;  // GL 版本的 MultiMarker 图层（推荐）
+        var studentInfoWindow = null;
+
+        // 初始化腾讯地图并获取位置
+        function initTencentMapForStudent() {
+          // 显示加载状态
+          document.getElementById('location-info').innerHTML = 
+            '<span class="text-blue-500">正在获取位置信息...</span>';
+
+          // 检查腾讯地图API是否加载
+          if (typeof TMap === 'undefined') {
+            console.error('腾讯地图API未加载');
+            document.getElementById('location-info').innerHTML = 
+              '<span class="text-red-500">地图API加载失败，请检查网络连接和Key配置</span>';
+            // 设置默认位置，确保业务逻辑可以继续
+            window.currentPosition = {
+              latitude: 23.45345,
+              longitude: 113.48997,
+              accuracy: 1
+            };
+            return;
+          }
+
+          // 通过Ajax向后端获取IP定位的经纬度
+          $.ajax({
+            url: '${pageContext.request.contextPath}/student/location/ip',
+            type: 'GET',
+            timeout: 10000, // 10秒超时
+            success: function(response) {
+              if (response && response.success && response.data) {
+                var data = response.data;
+                var lat = data.lat;
+                var lng = data.lng;
+                
+                if (lat && lng) {
+                  console.log('IP定位成功: lat=' + lat + ', lng=' + lng);
+                  
+                  // 设置window.currentPosition（保持原有数据结构）
+                  window.currentPosition = {
+                    latitude: lat,
+                    longitude: lng,
+                    accuracy: 1  // 固定为1
+                  };
+
+                  // 初始化地图并显示位置
+                  initStudentMap(lat, lng);
+                  
+                  // 显示位置信息
+                  document.getElementById('location-info').innerHTML =
+                    '经度：' + lng.toFixed(6) + '<br>' +
+                    '纬度：' + lat.toFixed(6) + '<br>' +
+                    '定位精度：1米';
+                } else {
+                  // 数据格式错误，使用默认位置
+                  initStudentMapWithDefault('IP定位返回数据格式错误');
+                }
+              } else {
+                // 响应格式错误，使用默认位置
+                initStudentMapWithDefault('IP定位服务返回错误');
+              }
+            },
+            error: function(xhr, status, error) {
+              console.error('IP定位请求失败:', {
+                status: status,
+                error: error,
+                responseText: xhr.responseText
+              });
+              // IP定位失败，使用默认位置
+              initStudentMapWithDefault('IP定位服务不可用，显示默认位置');
+            }
+          });
+        }
+
+        // 初始化地图并显示位置（会在当前位置添加一个蓝色标志）
+        function initStudentMap(lat, lng) {
+          try {
+            var center = new TMap.LatLng(lat, lng);
+
+            // 1. 如果地图还没创建，先创建地图实例
+            if (!studentMap) {
+              studentMap = new TMap.Map(document.getElementById('map-container'), {
+                center: center,
+                zoom: 16,
+                pitch: 0,
+                rotation: 0
+              });
+            } else {
+              // 已有地图时，仅更新中心点
+              studentMap.setCenter(center);
+            }
+
+            // 2. 优先使用 GL 版本推荐的 MultiMarker 绘制一个蓝色标志
+            if (typeof TMap.MultiMarker !== 'undefined' && typeof TMap.MarkerStyle !== 'undefined') {
+              var position = new TMap.LatLng(lat, lng);
+
+              if (!studentMarkerLayer) {
+                // 首次创建标记图层
+                studentMarkerLayer = new TMap.MultiMarker({
+                  map: studentMap,
+                  styles: {
+                    'studentBlueMarker': new TMap.MarkerStyle({
+                      width: 25,
+                      height: 35,
+                      anchor: { x: 16, y: 32 },
+                      src: 'https://mapapi.qq.com/web/lbs/javascriptGL/demo/img/markerDefault.png' // 官方蓝色图标
+                    })
+                  },
+                  geometries: [{
+                    id: 'currentStudentPos',
+                    styleId: 'studentBlueMarker',
+                    position: position
+                  }]
+                });
+              } else {
+                // 已存在图层时，只更新几何信息的位置
+                studentMarkerLayer.updateGeometries([{
+                  id: 'currentStudentPos',
+                  position: position
+                }]);
+              }
+            } else {
+              // 3. 兜底：如果 MultiMarker 不可用，则使用旧版单点标记
+              var fallbackPos = new TMap.LatLng(lat, lng);
+
+              // 清除旧的标记
+              if (studentMarker) {
+                studentMarker.setMap(null);
+              }
+
+              studentMarker = new TMap.Marker({
+                position: fallbackPos,
+                map: studentMap,
+                title: '当前位置'
+              });
+            }
+
+            console.log('腾讯地图初始化成功，已添加当前位置标记');
+          } catch (error) {
+            console.error('初始化腾讯地图失败:', error);
+            document.getElementById('location-info').innerHTML = 
+              '<span class="text-red-500">地图初始化失败: ' + error.message + '</span>';
+          }
+        }
+
+        // 使用默认位置初始化地图
+        function initStudentMapWithDefault(message) {
+          // 默认位置（北京天安门）
+          var defaultLat = 39.916527;
+          var defaultLng = 116.397128;
+          
+          // 设置window.currentPosition（确保业务逻辑可以继续）
+          window.currentPosition = {
+            latitude: defaultLat,
+            longitude: defaultLng,
+            accuracy: 1
+          };
+
+          // 初始化地图
+          initStudentMap(defaultLat, defaultLng);
+          
+          // 显示提示信息
+          if (message) {
+            document.getElementById('location-info').innerHTML = 
+              '<span class="text-yellow-500">' + message + '（北京天安门）</span><br>' +
+              '经度：' + defaultLng.toFixed(6) + '<br>' +
+              '纬度：' + defaultLat.toFixed(6) + '<br>' +
+              '定位精度：1米';
+          }
+        }
+
+        // 页面加载完成后初始化地图
+        $(document).ready(function() {
+          // 等待腾讯地图API加载完成
+          if (typeof TMap !== 'undefined') {
+            initTencentMapForStudent();
+          } else {
+            // 如果API还未加载，等待一段时间后重试
+            var retryCount = 0;
+            var maxRetries = 100; // 最多重试100次（10秒）
+            
+            var checkInterval = setInterval(function() {
+              retryCount++;
+              
+              if (typeof TMap !== 'undefined') {
+                clearInterval(checkInterval);
+                console.log('腾讯地图API加载成功，重试次数:', retryCount);
+                initTencentMapForStudent();
+              } else if (retryCount >= maxRetries) {
+                clearInterval(checkInterval);
+                console.error('腾讯地图API加载超时');
+                // 即使API加载失败，也设置默认位置，确保业务逻辑可以继续
+                window.currentPosition = {
+                  latitude: 39.916527,
+                  longitude: 116.397128,
+                  accuracy: 1
+                };
+                document.getElementById('location-info').innerHTML = 
+                  '<span class="text-red-500">地图API加载超时，使用默认位置</span>';
+              }
+            }, 100);
+          }
+        });
+        // ========== 腾讯地图定位功能结束 ==========
 
         // 全局变量
         let alarmNo = null;
@@ -1637,7 +2053,9 @@
             $('#normal-alarm-btn, #emergency-alarm-btn').prop('disabled', true);
 
             // 建立WebSocket连接
-            const wsUrl = 'ws://' + window.location.host + '${pageContext.request.contextPath}/ws/location?alarmNo=' + alarmNo + '&businessType=ALARM_LOCATION';
+            const wsUrl = 'ws://' + window.location.host +
+                '${pageContext.request.contextPath}/ws/location?alarmNo=' + alarmNo +
+                '&businessType=ALARM_LOCATION';
             currentWebSocket = new WebSocket(wsUrl);
 
             // 连接建立时的处理
@@ -1667,7 +2085,7 @@
                     } else {
                         clearInterval(locationInterval);
                     }
-                }, 3000); // 每3秒发送一次
+                }, 10000); // 每10秒发送一次
 
                 // 保存interval ID，以便在连接关闭时清除
                 currentWebSocket.locationInterval = locationInterval;
@@ -1754,6 +2172,7 @@
         let chunkIndex = 0;
         let chunkCache = []; // 本地缓存分片
         let isRecordingStopped = false;
+        let lastChunkSent = false; // 标记最后一个分片是否已发送
         let lastChunkIndex = null; // 记录最后一个分片的索引
 
         // 开始录音和录像
@@ -1794,6 +2213,7 @@
                     chunkIndex = 0;
                     chunkCache = [];
                     lastChunkIndex = null;
+                    lastChunkSent = false; // 重置最后分片发送标志
                     console.log("最后一个分片已确认，状态已清理");
                 }
             };
@@ -1805,6 +2225,7 @@
         // 开始录音和录像
         function startRecording() {
             isRecordingStopped = false; // 每次开始录制前重置
+            lastChunkSent = false; // 重置最后分片标志
             chunkIndex = 0;
             lastChunkIndex = null;
 
@@ -1814,7 +2235,14 @@
 
             mediaRecorder.ondataavailable = function(event) {
                 if (event.data && event.data.size > 0) {
-                    let isLast = isRecordingStopped;
+                    // 如果已经发送过最后一个分片，忽略后续的数据
+                    if (lastChunkSent) {
+                        console.log("已发送最后一个分片，忽略后续数据: chunkIndex=" + chunkIndex);
+                        return;
+                    }
+
+                    // 只有在停止录制后第一次触发的数据才标记为最后一个分片
+                    let isLast = isRecordingStopped && !lastChunkSent;
                     let chunk = {
                         alarmNo,
                         sessionId,
@@ -1823,8 +2251,11 @@
                     };
                     chunkCache.push({ ...chunk, data: event.data }); // 本地缓存
                     sendChunk(chunk, event.data);
+                    
                     if (isLast) {
+                        lastChunkSent = true; // 标记已发送最后一个分片
                         lastChunkIndex = chunkIndex; // 记录最后一个分片的索引
+                        console.log("已发送最后一个分片: chunkIndex=" + chunkIndex);
                     }
                     chunkIndex++;
                 }

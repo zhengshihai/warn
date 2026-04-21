@@ -394,7 +394,8 @@ public class ReportServiceImpl implements ReportService {
         // 按小时整点划分晚归时间定义
         List<String> hourlyRangeList = getHourlyRanges(startTimeStr, endTimeStr);
 
-        // 按照一小时为单位段（目前前端页面暂时设为1小时）进行统计 如果需要统计其他类型的时间段，可直接使用mybatis查询
+        // 按照一小时为单位段（目前前端页面暂时设为1小时）进行统计
+        // 如果需要统计其他类型的时间段，可直接使用mybatis查询
         return countLateReturnByCustomRanges(hourlyRangeList, unjustifiedLateReturns);
     }
 
@@ -463,8 +464,9 @@ public class ReportServiceImpl implements ReportService {
         }
 
         for (LateReturn lr : lateReturns) {
-            if (lr.getLateTime() == null)
+            if (lr.getLateTime() == null) {
                 continue;
+            }
 
             LocalTime lateTime = lr.getLateTime().toInstant()
                     .atZone(ZoneId.systemDefault())

@@ -211,7 +211,8 @@ public class ReportsController {
         Map<String, Date> timeRange = DateUtils.resolveSingleDayRange(
                 reportChartDTO.getStartDate(), reportChartDTO.getEndDate());
 
-        List<TimeRangeLateReturnStatVO> timeRangeLateReturnStatVOList = reportService.calTimeLateReturnStat(
+        List<TimeRangeLateReturnStatVO> timeRangeLateReturnStatVOList =
+                reportService.calTimeLateReturnStat(
                 timeRange.get(DateUtils.START_TIME),
                 timeRange.get(DateUtils.END_TIME),
                 reportChartDTO.getCollege(),
@@ -291,17 +292,19 @@ public class ReportsController {
 
         try {
             // --- 1. 设置 HTTP 响应头 ---
-            response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"); // .xlsx 格式
+            // .xlsx 格式
+            response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
             String fileName = "报表统计_" + new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date()) + ".xlsx";
             // 对文件名进行URL编码，特别是包含中文时，避免乱码
-            String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8).replaceAll("\\+", "%20"); // 处理空格
+            // 处理空格
+            String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8).replaceAll("\\+", "%20");
             response.setHeader("Content-Disposition", "attachment; filename=\"" + encodedFileName + "\"");
-            response.setHeader("Pragma", "no-cache"); // 确保文件不被缓存
+            // 确保文件不被缓存
+            response.setHeader("Pragma", "no-cache");
             response.setHeader("Cache-Control", "no-cache");
             response.setDateHeader("Expires", 0);
 
             // --- 2. 调用 Service 层方法获取所有需要导出的统计数据 ---
-
             // 调用服务层生成Excel
             try (OutputStream outputStream = response.getOutputStream()) {
                 Workbook workbook = reportService.exportReportToExcel(

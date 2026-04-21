@@ -80,6 +80,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
                                 .addResourceLocations("file:" + basePath + "/");
         }
 
+        //JSP 视图解析器
         @Override
         public void configureViewResolvers(ViewResolverRegistry registry) {
                 InternalResourceViewResolver resolver = new InternalResourceViewResolver();

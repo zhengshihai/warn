@@ -121,7 +121,6 @@
             <if test="status != null">status = #{status},</if>
             <if test="password != null">password = #{password},</if>
             update_time = NOW(),
-         #  version = version + 1
             version = #{version} + 1
         </set>
         WHERE id = #{id}  AND version = #{version}

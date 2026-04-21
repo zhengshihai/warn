@@ -2,16 +2,20 @@ package com.tianhai.warn.service.impl;
 
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.Result;
 import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.MatchQuery;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.BulkResponse;
+import co.elastic.clients.elasticsearch.core.IndexResponse;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.indices.CreateIndexResponse;
+import co.elastic.clients.elasticsearch._types.mapping.Property;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.pagehelper.PageInfo;
-import com.tianhai.warn.component.MapperInvoker;
+import com.tianhai.warn.annotation.EsField;
+import com.tianhai.warn.component.ReceiverIdProviderRegistry;
 import com.tianhai.warn.constants.Constants;
 import com.tianhai.warn.dto.NotificationDTO;
 import com.tianhai.warn.enums.*;
@@ -37,11 +41,13 @@ import org.springframework.core.task.AsyncTaskExecutor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.lang.reflect.Field;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+
 
 /**
  * 通知信息服务实现类
@@ -51,6 +57,7 @@ public class NotificationServiceImpl implements NotificationService {
 
     private static final Logger logger = LoggerFactory.getLogger(NotificationServiceImpl.class);
 
+    private static final String CLASS_PACKAGE_NAME = "com.tianhai.warn.model";
     private static final String invalidRole = "invalidRole";
     private static final String INDEX_NAME = "notification";
     private static final Integer DEFAULT_BATCH_SIZE = 1000;
@@ -83,11 +90,11 @@ public class NotificationServiceImpl implements NotificationService {
     @Autowired
     private NotificationReceiverMapper notificationReceiverMapper;
 
-    @Autowired
-    private ElasticsearchClient elasticsearchClient;
+//    @Autowired
+//    private ElasticsearchClient elasticsearchClient;
 
-    @Autowired
-    private ObjectMapper objectMapper;
+//    @Autowired
+//    private ObjectMapper objectMapper;
 
     // 分页查询属于某个特定用户的通知
     @Override
@@ -401,6 +408,15 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
+    public List<Notification> selectSimplePageForTarget(String targetId) {
+        if (StringUtils.isBlank(targetId)) {
+            logger.error("selectSimplePageForTarget: targetId 不能为空");
+            throw new BusinessException(ResultCode.PARAMETER_ERROR);
+        }
+        return notificationMapper.selectSimplePageForTarget(targetId.trim());
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public int insert(Notification notification) {
         if (notification.getNoticeId() == null) {
@@ -418,12 +434,12 @@ public class NotificationServiceImpl implements NotificationService {
 
         logger.info("一共向notification和notification_receiver表插入： {} 行数据", notInsertRow + notInsertRow);
 
-        // 索引到Elasticsearch
-        try {
-            indexNotification(notification);
-        } catch (Exception e) {
-            logger.error("无法索引通知信息到Elasticsearch，可能是索引创建失败或网络问题", e);
-        }
+//        // 索引到Elasticsearch
+//        try {
+//            indexNotification(notification);
+//        } catch (Exception e) {
+//            logger.error("无法索引通知信息到Elasticsearch，可能是索引创建失败或网络问题", e);
+//        }
 
         return notInsertRow + notRecRow;
     }
@@ -784,15 +800,15 @@ public class NotificationServiceImpl implements NotificationService {
                         notificationDTO, Constants.STUDENT, now);
                 batchInsertNotifications(stuNotificationList);
 
-                // 异步方式为学生角色的通知建立ES索引
-                try {
-                    CompletableFuture.runAsync(
-                            () -> indexNotificationList(stuNotificationList),
-                            asyncTaskExecutor
-                    );
-                } catch (Exception e) {
-                    logger.error("无法索引学生通知信息到Elasticsearch，可能是索引创建失败或网络问题", e);
-                }
+//                // 异步方式为学生角色的通知建立ES索引
+//                try {
+//                    CompletableFuture.runAsync(
+//                            () -> indexNotificationList(stuNotificationList),
+//                            asyncTaskExecutor
+//                    );
+//                } catch (Exception e) {
+//                    logger.error("无法索引学生通知信息到Elasticsearch，可能是索引创建失败或网络问题", e);
+//                }
             }
 
             // 向notification_receiver表插入信息
@@ -835,15 +851,15 @@ public class NotificationServiceImpl implements NotificationService {
 
                 batchInsertNotifications(dorManNotificationList);
 
-                // 异步方式为宿管角色的通知建立ES索引
-                try {
-                    CompletableFuture.runAsync(
-                            () -> indexNotificationList(dorManNotificationList),
-                            asyncTaskExecutor
-                    );
-                } catch (Exception e) {
-                    logger.error("无法索引宿管通知信息到Elasticsearch，可能是索引创建失败或网络问题", e);
-                }
+//                // 异步方式为宿管角色的通知建立ES索引
+//                try {
+//                    CompletableFuture.runAsync(
+//                            () -> indexNotificationList(dorManNotificationList),
+//                            asyncTaskExecutor
+//                    );
+//                } catch (Exception e) {
+//                    logger.error("无法索引宿管通知信息到Elasticsearch，可能是索引创建失败或网络问题", e);
+//                }
             }
 
             // 向notification_receiver表插入信息
@@ -1001,15 +1017,15 @@ public class NotificationServiceImpl implements NotificationService {
         if (!allSysUserNotificationList.isEmpty()) {
             notificationMapper.insertBatch(allSysUserNotificationList);
 
-            // 异步方式为班级管理员角色的通知建立ES索引
-            try {
-                CompletableFuture.runAsync(
-                        () -> indexNotificationList(allSysUserNotificationList),
-                        asyncTaskExecutor
-                );
-            } catch (Exception e) {
-                logger.error("无法索引班级管理员通知信息到Elasticsearch，可能是索引创建失败或网络问题", e);
-            }
+//            // 异步方式为班级管理员角色的通知建立ES索引
+//            try {
+//                CompletableFuture.runAsync(
+//                        () -> indexNotificationList(allSysUserNotificationList),
+//                        asyncTaskExecutor
+//                );
+//            } catch (Exception e) {
+//                logger.error("无法索引班级管理员通知信息到Elasticsearch，可能是索引创建失败或网络问题", e);
+//            }
 
         } else {
             logger.info("通知列表为空，不执行插入");
@@ -1137,12 +1153,12 @@ public class NotificationServiceImpl implements NotificationService {
                 notificationDTO, specialRole, TargetScope.SPECIAL_ROLE.getCode());
         notificationMapper.insert(notification);
 
-        // 为该通知建立ES索引
-        try {
-            CompletableFuture.runAsync(() -> indexNotification(notification), asyncTaskExecutor);
-        } catch (Exception e) {
-            logger.error("无法索引通知信息到Elasticsearch，可能是索引创建失败或网络问题", e);
-        }
+//        // 为该通知建立ES索引
+//        try {
+//            CompletableFuture.runAsync(() -> indexNotification(notification), asyncTaskExecutor);
+//        } catch (Exception e) {
+//            logger.error("无法索引通知信息到Elasticsearch，可能是索引创建失败或网络问题", e);
+//        }
 
         List<NotificationReceiver> notRecList = buildNotRecList(
                 new ArrayList<>(receiverIdSet), notification.getNoticeId(), specialRole);
@@ -1212,13 +1228,13 @@ public class NotificationServiceImpl implements NotificationService {
         }
 
         // 删除ElasticSearch索引
-        try {
-            for (String noticeId : notificationDTO.getNoticeIdList()) {
-                deleteEsIndexByNotId(noticeId);
-            }
-        } catch (Exception e) {
-            logger.error("删除ElasticSearch索引失败", e);
-        }
+//        try {
+//            for (String noticeId : notificationDTO.getNoticeIdList()) {
+//                deleteEsIndexByNotId(noticeId);
+//            }
+//        } catch (Exception e) {
+//            logger.error("删除ElasticSearch索引失败", e);
+//        }
 
         // 删除notification表的记录
         int notDelRow = notificationMapper.deleteBatch(notQuery);
@@ -1248,13 +1264,13 @@ public class NotificationServiceImpl implements NotificationService {
         }
 
         // 删除ElasticSearch索引
-        try {
-            for (String noticeId : notificationDTO.getNoticeIdList()) {
-                deleteEsIndexByNotId(noticeId);
-            }
-        } catch (Exception e) {
-            logger.error("删除ElasticSearch索引失败", e);
-        }
+//        try {
+//            for (String noticeId : notificationDTO.getNoticeIdList()) {
+//                deleteEsIndexByNotId(noticeId);
+//            }
+//        } catch (Exception e) {
+//            logger.error("删除ElasticSearch索引失败", e);
+//        }
 
         // 删除notification表的记录
         int notDelRow = notificationMapper.deleteBatch(notQuery);
@@ -1274,716 +1290,960 @@ public class NotificationServiceImpl implements NotificationService {
         return notificationMapper.countAll();
     }
 
-    @Override
-    public void createIndex() {
-        // 创建索引映射 - 适配java.util.Date和字符串形式的时间
-        try {
-            // 判断索引是否存在
-            boolean esIndexExists = elasticsearchClient.indices().exists(e -> e.index(INDEX_NAME)).value();
-            if (esIndexExists) {
-                logger.info("索引已存在: {}", INDEX_NAME);
-                return;
-            }
+//    // 本项目设定只为notification表建立ES检索功能，所以这里直接直接为其建立ES文档
+//    @Override
+//    public void createIndex(String indexName, String className) {
+//        // 创建索引映射 - 适配java.util.Date和字符串形式的时间
+//        try {
+//            // 判断索引是否存在
+//            boolean esIndexExists = elasticsearchClient.indices().exists(e -> e.index(indexName)).value();
+//            if (esIndexExists) {
+//                logger.info("索引已存在: {}", indexName);
+//                return;
+//            }
+//
+//            // 创建索引
+//            CreateIndexResponse response = elasticsearchClient.indices().create(c -> c.index(indexName)
+//                    .mappings(m -> m.properties("noticeId", p -> p.keyword(k -> k))
+//                            .properties("title", p -> p.text(t -> t.analyzer("ik_max_word").searchAnalyzer("ik_smart")))
+//                            .properties("content", p -> p.text(t -> t.analyzer("ik_max_word").searchAnalyzer("ik_smart")))
+//                            .properties("noticeType", p -> p.keyword(k -> k))
+//                            .properties("targetType", p -> p.keyword(k -> k))
+//                            .properties("targetScope", p -> p.keyword(k -> k))
+//                    )
+//            );
+//
+//            if (response.acknowledged()) {
+//                logger.info("成功创建索引: {}", indexName);
+//            }
+//        } catch (Exception e) {
+//            logger.error("创建索引失败: {}", indexName, e);
+//            throw new SystemException(ResultCode.NOTIFICATION_INDEX_FAILED);
+//        }
+//    }
+//
+//    /**
+//     * 动态创建 ES 索引，并基于实体类字段上的 @EsField 注解生成 mapping
+//     *
+//     * @param indexName ES 索引名称（如 "notification"）
+//     * @param className 实体类名称（不带包名，如 "Notification"）
+//     */
+//    public void createIndexDynamically(String indexName, String className) {
+//        try {
+//            // 检查ES索引是否已存在，若存在则不重复创建
+//            boolean exists = elasticsearchClient.indices().exists(e -> e.index(indexName)).value();
+//            if (exists) {
+//                logger.info("该ES索引已存在: {}", indexName);
+//                return;
+//            }
+//
+//            // 通过类名动态加载实体类
+//            Class<?> clazz = Class.forName(CLASS_PACKAGE_NAME + "." + className);
+//
+//            // 遍历字段并构建字段映射（mapping）
+//            Map<String, Property> propertyMap = new HashMap<>();
+//            for (Field field : clazz.getDeclaredFields()) {
+//                EsField esField = field.getAnnotation(EsField.class);
+//                if (esField == null) {
+//                    continue; // 没注解就跳过
+//                }
+//
+//                Property esProperty = createEsPropertyFromAnnotation(esField);
+//                propertyMap.put(field.getName(), esProperty);
+//            }
+//
+//            // 创建索引并设置动态构造的 mappings
+//            CreateIndexResponse response = elasticsearchClient.indices().create(c -> c
+//                    .index(indexName)
+//                    .mappings(m -> m.properties(propertyMap))
+//            );
+//
+//            if (response.acknowledged()) {
+//                logger.info("动态方式成功创建ES索引: {}", indexName);
+//            }
+//        } catch (Exception e) {
+//            logger.error("创建ES索引失败: {}", indexName, e);
+//            throw new SystemException(ResultCode.NOTIFICATION_INDEX_FAILED);
+//        }
+//    }
+//
+//    /**
+//     * 将一个字段上的 @EsField 注解信息转换为对应的 Elasticsearch 字段映射（Property）
+//     *
+//     * 支持的字段类型包括：
+//     * - TEXT：支持全文检索，可配置 analyzer、searchAnalyzer
+//     * - KEYWORD：精确匹配，不分词
+//     * - INTEGER / LONG：整型字段
+//     * - DATE：日期字段，可设置 format
+//     * - BOOLEAN：布尔值字段
+//     *
+//     * 注意：
+//     * - Elasticsearch Java Client 的 DSL 构造器要求 lambda 表达式返回 builder 本身，而不是 build() 出来的对象
+//     * - Property.of(...) 接受的 lambda 返回值必须是 ObjectBuilder 类型（如 t -> t.xxx().yyy() 返回 t 本身）
+//     *
+//     * @param esField 从字段读取的注解对象，包含类型、分词器等设置
+//     * @return 对应的 Property 映射配置，用于构造 Elasticsearch 索引映射
+//     */
+//    private Property createEsPropertyFromAnnotation(EsField esField) {
+//        EsFieldType type = esField.type();
+//
+//        return switch (type) {
+//            case TEXT -> Property.of(p -> p.text(t -> {
+//                if (!esField.analyzer().isEmpty()) {
+//                    t.analyzer(esField.analyzer());
+//                }
+//                if (!esField.searchAnalyzer().isEmpty()) {
+//                    t.searchAnalyzer(esField.searchAnalyzer());
+//                }
+//                return t;
+//            }));
+//
+//            case KEYWORD -> Property.of(p -> p.keyword(k -> k));
+//
+//            case INTEGER -> Property.of(p -> p.integer(i -> i));
+//
+//            case LONG -> Property.of(p -> p.long_(l -> l));
+//
+//            case DATE -> Property.of(p -> p.date(d -> {
+//                if (!esField.format().isEmpty()) {
+//                    d.format(esField.format());
+//                }
+//                return d;
+//            }));
+//
+//            case BOOLEAN -> Property.of(p -> p.boolean_(b -> b));
+//        };
+//    }
+//
+//    /**
+//     * ES索引通知信息 //todo 需要实现定期同步，必须先执行这个方法
+//     * @param notification      通知信息
+//     */
+//    @Override
+//    public void indexNotification(Notification notification) {
+//        if (StringUtils.isBlank(notification.getNoticeId())) {
+//            logger.error("notificationId无效，无法为该通知建立ES索引");
+//            throw new BusinessException(ResultCode.PARAMETER_ERROR);
+//        }
+//
+//        // 转换为Map进行索引
+//        Map<String, Object> document = convertToMap(notification);
+//        try {
+//            IndexResponse response = elasticsearchClient.index(i -> i
+//                    .index(INDEX_NAME)
+//                    .id(notification.getNoticeId())
+//                    .document(document)
+//            );
+//
+//            // 只有成功写入 ES 才更新数据库状态
+//            if (response.result() == Result.Created || response.result() == Result.Updated) {
+//                markAsIndexed(notification.getNoticeId());
+//                logger.info("成功索引通知信息，ID: {}", notification.getNoticeId());
+//            } else {
+//                logger.error("ES索引操作未成功，ID: {}, result: {}", notification.getNoticeId(), response.result().jsonValue());
+//                throw new Exception();
+//            }
+//        } catch (Exception e) {
+//            logger.error("索引通知信息失败，ID: {}", notification.getNoticeId(), e);
+//            throw new SystemException(ResultCode.NOTIFICATION_INDEX_FAILED);
+//        }
+//    }
+//
+//    /**
+//     * ES索引通知信息列表
+//     *
+//     * @param notificationList  通知信息列表
+//     */
+//    @Override
+//    public void indexNotificationList(List<Notification> notificationList) {
+//        logger.info("即将批量索引通知信息，数量：{}", notificationList.size());
+//        try {
+//            BulkRequest.Builder builder = new BulkRequest.Builder();
+//
+//            for (Notification notification : notificationList) {
+//                Map<String, Object> document = convertToMap(notification);
+//                builder.operations(operation -> operation.index(idx -> idx.index(INDEX_NAME)
+//                        .id(notification.getNoticeId())
+//                        .document(document)));
+//            }
+//
+//            BulkResponse result = elasticsearchClient.bulk(builder.build());
+//
+//            if (result.errors()) {
+//                logger.error("批量索引通知信息失败");
+//                result.items().forEach(item -> {
+//                    if (item.error() != null) {
+//                        logger.error("索引失败，ID: {}, 错误: {}", item.id(), item.error().reason());
+//                    }
+//                });
+//            } else {
+//                // 批量更新数据库中的索引状态
+//                List<String> noticeIds = notificationList.stream()
+//                        .map(Notification::getNoticeId)
+//                        .collect(Collectors.toList());
+//                markBatchAsIndexed(noticeIds);
+//                logger.info("成功批量索引通知信息，数量: {}", notificationList.size());
+//            }
+//        } catch (Exception e) {
+//            logger.error("批量索引通知信息失败，可能是批量索引过程出错或者更新索引状态出错", e);
+//            throw new SystemException(ResultCode.NOTIFICATION_INDEX_FAILED);
+//        }
+//    }
+//
+//    /**
+//     * 使用ES查询通知列表
+//     * 前端仅使用以下字段参与 Elasticsearch（ES）查询
+//     * titleLike（通知标题模糊匹配）， contentLike（通知内容模糊匹配），noticeType（通知类型精确匹配）
+//     *
+//     * @param query     查询条件
+//     * @return          分页结果
+//     */
+//    @Override
+//    public PageResult<NotificationVO> searchNotificationListPageByEs(NotificationQuery query) {
+//        // 校验检索人的身份信息是否有效
+//        checkSearcherRoleAndNo(query.getTargetType(), query.getTargetId());
+//
+//        SearchResponse<Map> response;
+//        try {
+//            // 构建查询
+//            BoolQuery.Builder boolQueryBuilder = new BoolQuery.Builder();
+//
+//            // 关键词搜索
+//            if (StringUtils.isNotBlank(query.getTitleLike())) {
+//                boolQueryBuilder.must(m ->
+//                        m.match(mt -> mt.field("title").query(query.getTitleLike())));
+//            }
+//            if (StringUtils.isNotBlank(query.getContentLike())) {
+//                boolQueryBuilder.must(m ->
+//                        m.match(mt -> mt.field("content").query(query.getContentLike())));
+//            }
+//            if (StringUtils.isNotBlank(query.getNoticeType())) {
+//                boolQueryBuilder.filter(f ->  // noticeType为keyword类型
+//                        f.term(t -> t.field("noticeType.keyword").value(query.getNoticeType())));
+//            }
+//
+//            // 执行搜索 - 获取所有匹配的通知
+//            response = elasticsearchClient.search(s -> s
+//                    .index(INDEX_NAME)
+//                    .query(boolQueryBuilder.build()._toQuery())
+//                    .size(1000) // 获取更多结果用于后续过滤
+//                    .sort(sortField ->
+//                            sortField.field(f -> f
+//                                    .field("createTime")
+//                                    .order(SortOrder.Desc)
+//                            )
+//                    )
+//                    // 高亮配置
+//                    .highlight(h -> h.preTags("<em>").postTags("</em>")
+//                            .fields("title", f -> f)
+//                            .fields("content", f -> f)),
+//
+//                    Map.class);
+//        } catch (Exception e) {
+//            logger.error("使用Elasticsearch查询通知列表失败", e);
+//            throw new SystemException(ResultCode.NOTIFICATION_ELASTICSEARCH_FAILED);
+//        }
+//
+//        try {
+//            // 转换为基础Notification列表
+//            List<Notification> allNotificationList = response.hits().hits().stream()
+//                    .map(hit -> {
+//                        Map<String, Object> source = hit.source();
+//                        if (source == null) {
+//                            logger.warn("ES查询返回的hit中source为null，跳过该记录，id: {}", hit.id());
+//                            return null;
+//                        }
+//
+//                        Notification notification = convertMapToNotification(hit.source());
+//                        Map<String, List<String>> highlightMap = hit.highlight();
+//
+//                        if (highlightMap != null) {
+//                            if (highlightMap.containsKey("title")) {
+//                                notification.setTitle(highlightMap.get("title").get(0)); // 使用高亮片段替换标题
+//                            }
+//                            if (highlightMap.containsKey("content")) {
+//                                notification.setContent(highlightMap.get("content").get(0)); // 使用高亮片段替换内容
+//                            }
+//                        }
+//                        return notification;
+//                    }).collect(Collectors.toList());
+//
+//            logger.info("使用ES查询到尚未过滤的 {} 条通知", allNotificationList.size());
+//
+//            // 根据用户角色和业务标识ID进行过滤
+//            List<Notification> filteredEsNotificationList = filterEsNotificationByUser(
+//                    allNotificationList, query.getTargetType(), query.getTargetId());
+//            logger.info("过滤ES的通知后剩余 {} 条通知", filteredEsNotificationList.size());
+//
+//            // 手动实现分页
+//            return translateEsPageResult(filteredEsNotificationList, query);
+//        } catch (Exception e) {
+//            logger.error("转换ES查询结果为通知列表失败", e);
+//            throw new SystemException(ResultCode.NOTIFICATION_CONVERT_FAILED);
+//        }
+//    }
+//
+//    /**
+//     * 检查搜索者的角色和业务标识ID是否有效
+//     * @param targetType        搜索者的目标类型（如学生、宿管等）
+//     * @param targetId          搜索者的业务标识ID（如学号、工号等）
+//     */
+//    private void checkSearcherRoleAndNo(String targetType, String targetId) {
+//        if (targetType.equalsIgnoreCase(UserRole.STUDENT.getCode())) {
+//            Student student = studentService.selectByStudentNo(targetId);
+//            if (student == null) {
+//                logger.error("无效的学生业务标识ID: {}", targetId);
+//                throw new BusinessException(ResultCode.PARAMETER_ERROR);
+//            }
+//        }
+//
+//        if (targetType.equalsIgnoreCase(UserRole.DORMITORY_MANAGER.getCode())) {
+//            DormitoryManager dormitoryManager =
+//                    dormitoryManagerService.selectByManagerId(targetId);
+//            if (dormitoryManager == null
+//                    || dormitoryManager.getStatus().equalsIgnoreCase(Constants.OFF_DUTY)) {
+//                logger.error("无效的宿管业务标识ID: {}", targetId);
+//                throw new BusinessException(ResultCode.PARAMETER_ERROR);
+//            }
+//        }
+//
+//        if (targetType.equalsIgnoreCase(JobRole.COUNSELOR.getCode())) {
+//            SysUser sysUser = sysUserService.selectBySysUserNo(targetId);
+//            if (sysUser == null
+//                    || sysUser.getStatus().equalsIgnoreCase(Constants.DISABLE_STR)) {
+//                logger.error("无效的班级管理员业务标识ID: {}", targetId);
+//                throw new BusinessException(ResultCode.PARAMETER_ERROR);
+//            }
+//        }
+//    }
+//
+//    /**
+//     * 转换为Notification对象
+//     * @param source            源Map数据
+//     * @return                  Notification对象
+//     */
+//    private Notification convertMapToNotification(Map<String, Object> source) {
+//        Notification notification = new Notification();
+//
+//        if (source.get("noticeId") != null) {
+//            notification.setNoticeId(source.get("noticeId").toString());
+//        }
+//        if (source.get("title") != null) {
+//            notification.setTitle(source.get("title").toString());
+//        }
+//        if (source.get("content") != null) {
+//            notification.setContent(source.get("content").toString());
+//        }
+//        if (source.get("noticeType") != null) {
+//            notification.setNoticeType(source.get("noticeType").toString());
+//        }
+//        if (source.get("targetType") != null) {
+//            notification.setTargetType(source.get("targetType").toString());
+//        }
+//        if (source.get("targetId") != null) {
+//            notification.setTargetId(source.get("targetId").toString());
+//        }
+//        if (source.get("targetScope") != null) {
+//            notification.setTargetScope(source.get("targetScope").toString());
+//        }
+//
+//        // 将字符串格式转换回java.util.Date
+//        if (source.get("createTime") != null) {
+//            try {
+//                notification.setCreateTime(DATE_FORMAT.parse(source.get("createTime").toString()));
+//            } catch (Exception e) {
+//                logger.warn("无法解析createTime: {}", source.get("createTime"), e);
+//            }
+//        }
+//        if (source.get("updateTime") != null) {
+//            try {
+//                notification.setUpdateTime(DATE_FORMAT.parse(source.get("updateTime").toString()));
+//            } catch (Exception e) {
+//                logger.warn("无法解析updateTime: {}", source.get("updateTime"), e);
+//            }
+//        }
+//
+//        return notification;
+//    }
+//
+//    /**
+//     * 过滤ES查询结果中的通知列表
+//     *
+//     * @param sourceList        源通知列表
+//     * @param searcherRole      搜索者角色（这里具体到职位角色）
+//     * @param searcherNo        搜索者业务标识ID
+//     * @return                  过滤后的通知列表
+//     */
+//    private List<Notification> filterEsNotificationByUser(List<Notification> sourceList,
+//                                                          String searcherRole,
+//                                                          String searcherNo) {
+//        return sourceList.stream()
+//                .filter(notification -> {
+//                    String targetScope = notification.getTargetScope();
+//                    String targetType = notification.getTargetType();
+//                    String targetId = notification.getTargetId();
+//
+//                    // 匹配的特定角色的通知
+//                    boolean isSpecialRoleMatch = searcherRole.equalsIgnoreCase(targetType) &&
+//                            TargetScope.SPECIAL_ROLE.getCode().equalsIgnoreCase(targetScope);
+//
+//                    // 全体用户的通知
+//                    boolean isAllUsers = TargetScope.ALL_USERS.getCode().equalsIgnoreCase(targetScope);
+//
+//                    // 匹配的特定用户的通知
+//                    boolean isSpecialUserMatch = searcherNo.equals(targetId) &&
+//                            TargetScope.SPECIAL_USER.getCode().equalsIgnoreCase(targetScope);
+//
+//                    return isSpecialRoleMatch || isAllUsers || isSpecialUserMatch;
+//                })
+//                .collect(Collectors.toList());
+//    }
+//
+//
+//    /**
+//     * 实现对ES的结果进行转换和分页
+//     *
+//     * 结合notification_receiver表，把List<Notification> notificationList 转换为List<NotificationVO>
+//     * @param notificationList      通知列表
+//     * @param query                 查询条件
+//     * @return                      分页结果
+//     */
+//    private PageResult<NotificationVO> translateEsPageResult(List<Notification> notificationList,
+//                                                             NotificationQuery query) {
+//        int total = notificationList.size();
+//        int startIndex = (query.getPageNum() - 1) * query.getPageSize();
+//        int endIndex = Math.min(startIndex + query.getPageSize(), total);
+//
+//        List<Notification> pageNotificationList;
+//        if (startIndex >= total) {
+//            pageNotificationList = new ArrayList<>();
+//        } else {
+//            pageNotificationList = notificationList.subList(startIndex, endIndex);
+//        }
+//
+//        // 转换为NotificationVO并添加阅读状态
+//        // 该方法后面两个参数，用于筛选该用户有阅读权限的通知
+//        List<NotificationVO> notificationVOs = convertToNotificationVOList(
+//                pageNotificationList, query.getTargetType(), query.getTargetId());
+//
+//        // 构造分页结果
+//        PageResult<NotificationVO> result = new PageResult<>();
+//        result.setData(notificationVOs);
+//        result.setTotal(total);
+//        result.setPageNum(query.getPageNum());
+//        result.setPageSize(query.getPageSize());
+//
+//        return result;
+//    }
+//
+//    /**
+//     * 转换为NotificationVO并添加阅读状态
+//     *
+//     * 此处英文前端需要展示通知阅读状态，所以需要将Notification包装成NotificationVO
+//     * @param sourNotificationList              通知列表
+//     * @param selfTargetType                通知接收者的目标类型
+//     * @param selfTargetId                  通知接收者的业务标识ID
+//     * @return                              转换后的NotificationVO列表
+//     */
+//    private List<NotificationVO> convertToNotificationVOList(List<Notification> sourNotificationList,
+//                                                             String selfTargetType,
+//                                                             String selfTargetId) {
+//        // 结合notification_receiver表，异步筛选取未读的通知列表
+//        NotificationQuery notReadQueryWrapper = NotificationQuery.builder()
+//                .targetType(selfTargetType)
+//                .targetId(selfTargetId)
+//                .readStatus("UNREAD")
+//                .build();
+//        CompletableFuture<List<Notification>> notReadFuture = CompletableFuture.supplyAsync(
+//                () -> distinguishReadOrUnread(sourNotificationList, notReadQueryWrapper),
+//                asyncTaskExecutor
+//        );
+//        CompletableFuture<List<NotificationVO>> notReadVOFuture = notReadFuture.thenApply(
+//                notReadNotificationList ->
+//                        notReadNotificationList.stream()
+//                                .map(notification -> {
+//                                    NotificationVO notificationVO = new NotificationVO();
+//                                    BeanUtils.copyProperties(notification, notificationVO);
+//                                    notificationVO.setReadStatus("UNREAD");
+//                                    return notificationVO;
+//                                })
+//                                .collect(Collectors.toList())
+//        );
+//
+//        // 结合notification_receiver表，异步筛选取已读的通知列表
+//        NotificationQuery readQueryWrapper = NotificationQuery.builder()
+//                .targetType(selfTargetType)
+//                .targetId(selfTargetId)
+//                .readStatus("READ")
+//                .build();
+//        CompletableFuture<List<Notification>> readFuture = CompletableFuture.supplyAsync(
+//                () -> distinguishReadOrUnread(sourNotificationList, readQueryWrapper),
+//                asyncTaskExecutor
+//        );
+//        CompletableFuture<List<NotificationVO>> readVOFuture = readFuture.thenApply(
+//                notReadNotificationList ->
+//                        notReadNotificationList.stream()
+//                                .map(notification -> {
+//                                    NotificationVO notificationVO = new NotificationVO();
+//                                    BeanUtils.copyProperties(notification, notificationVO);
+//                                    notificationVO.setReadStatus("READ");
+//                                    return notificationVO;
+//                                })
+//                                .collect(Collectors.toList())
+//        );
+//
+//        // 合并结果
+//        List<NotificationVO> allNotificationVOList = Collections.emptyList();
+//        try {
+//            allNotificationVOList = notReadVOFuture.thenCombine(readVOFuture,
+//                    (unreadVOList, readVOList) -> {
+//                        List<NotificationVO> combinedList = new ArrayList<>();
+//                        combinedList.addAll(unreadVOList);
+//                        combinedList.addAll(readVOList);
+//                        return combinedList;
+//                    }).get();
+//            logger.info("通过ES成功获取未读和已读状态的通知列表，数量: {}", allNotificationVOList.size());
+//
+//        } catch (InterruptedException e) {
+//            Thread.currentThread().interrupt();
+//            logger.error("通过ES获取未读/已读状态通知的任务被中断", e);
+//            throw new SystemException(ResultCode.ERROR);
+//        } catch (ExecutionException e) {
+//            logger.error("执行ES获取未读/已读状态通知的任务发生错误", e);
+//            throw new SystemException(ResultCode.ERROR);
+//        }
+//
+//        return allNotificationVOList;
+//    }
+//
+//    /**
+//     * 重建ES索引
+//     */
+//    @Override
+//    public void rebuildIndex(String indexName, String className) {
+//        // 删除现有索引
+//        try {
+//            if (validateIndexExists(indexName)) {
+//                elasticsearchClient.indices().delete(document -> document.index(indexName));
+//                logger.info("成功删除现有索引: {}", indexName);
+//            }
+//        } catch (Exception e) {
+//            logger.error("删除现有索引失败: {}", indexName, e);
+//            throw new SystemException(ResultCode.NOTIFICATION_INDEX_FAILED);
+//        }
+//
+//        // 创建索引
+//        createIndex(indexName, className);
+//
+//        // 获取该索引对应的总文档数
+//        int totalDocCount;
+//        try {
+//            totalDocCount = countDocuments(indexName);
+//        } catch (Exception e) {
+//            logger.error("数据库发生异常，无法获取该索引对应的总文档数, indexName:{}", indexName);
+//            return;
+//        }
+//        if (totalDocCount == 0) {
+//            logger.info("索引 {} 中没有文档，跳过索引重建", indexName);
+//            return;
+//        }
+//
+//        // 为ES索引异步执行全量同步
+//        CompletableFuture.runAsync(() -> {
+//            try {
+//                performFullSyncForEsIndex(totalDocCount, indexName);
+//            } catch (Exception e) {
+//                logger.error("重建ES索引时发生错误", e);
+//                deleteEsIndexByIndexName(INDEX_NAME); // 回滚操作
+//                throw new SystemException(ResultCode.INDEX_BUILD_FAILED);
+//            }
+//        }, asyncTaskExecutor);
+//
+//
+//    }
+//
+//
+//    /**
+//     * 统计数据表记录数
+//     * 根据索引名统计该索引对应的数据库表有多少条记录（多少个文档）
+//     * @param indexName     索引名（如：notification） 这里对应表名（如果表名有英文下划线，需要另外处理）
+//     * @return      文档数
+//     */
+//    private int countDocuments(String indexName) {
+//        //本项目只为notification表实现ES索引
+////        return MapperInvoker.countAllFunction.apply(indexName);
+//        return notificationMapper.countAll();
+//    }
+//
+//    /**
+//     * 执行全量同步
+//     * @param totalCount            总行数（总文档数）
+//     * @param indexName             索引名（数据库表名）
+//     */
+//    private void performFullSyncForEsIndex(int totalCount, String indexName) {
+//        int batchSize = DEFAULT_BATCH_SIZE;
+//        int totalBatches = (int) Math.ceil((double) totalCount / batchSize); // 向上取整
+//
+//        for (int batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
+//            int offset = batchIndex * batchSize;
+//            int limit = Math.min(batchSize, totalCount - offset);
+//
+//            // 执行分页查询
+//            // 【注】本项目设定只为notification表建立ES检索，如果有为多张表建立ES检索，
+//            // 则需要建立indexName和表名或者接口的映射关系，实现方案参考本类的countDocuments方法
+//            List<Notification> batchList = null;
+//            try {
+//                batchList = notificationMapper.selectBatchWithOffset(offset, limit);
+//            } catch (Exception e) {
+//                logger.error("查询批次数据失败，批次索引：{}，偏移量：{}，限制：{}", batchIndex, offset, limit, e);
+//
+//            }
+//
+//            // 为当前批次的数据建立ES索引
+//            try {
+//                indexNotificationList(batchList);
+//                logger.info("批次 {}/{} 同步完成建立ES索引，记录数：{}",
+//                        batchIndex + 1, totalBatches, batchList.size());
+//            } catch (Exception e) {
+//                logger.error("批次 {} 同步失败", batchIndex, e);
+//                throw new RuntimeException(e);
+//            }
+//        }
+//
+//        logger.info("建立ES索引全量同步任务已启动，共 {} 个批次", totalBatches);
+//    }
+//
+//
+//
+//    /**
+//     * 判断ES索引是否存在
+//     * @param       indexName   索引名
+//     * @return      true 如果索引存在，false 如果索引不存在
+//     */
+//    @Override
+//    public boolean validateIndexExists(String indexName) {
+//        try {
+//            return elasticsearchClient.indices().exists(e -> e.index(indexName)).value();
+//        } catch (Exception e) {
+//            logger.error("检查ES索引是否存在时发生错误", e);
+//            return false;
+//        }
+//    }
+//
+//
+//    /**
+//     * 将Notification对象转换为Map
+//     * @param notification      通知对象
+//     * @return                  转换后的Map
+//     */
+//    private Map<String, Object> convertToMap(Notification notification) {
+//        Map<String, Object> map = new HashMap<>();
+//        map.put("noticeId", notification.getNoticeId());
+//        map.put("title", notification.getTitle());
+//        map.put("content", notification.getContent());
+//        map.put("noticeType", notification.getNoticeType());
+//        map.put("targetType", notification.getTargetType());
+//        map.put("targetId", notification.getTargetId());
+//        map.put("targetScope", notification.getTargetScope());
+//        map.put("createTime", notification.getCreateTime());
+//        map.put("updateTime", notification.getUpdateTime());
+//
+//        return map;
+//    }
+//
+//    /**
+//     * 删除ES文档
+//     * @param noticeId    通知业务ID（ES文档的id）
+//     */
+//    @Override
+//    public void deleteEsIndexByNotId(String noticeId) {
+//        if (StringUtils.isBlank(noticeId)) {
+//            logger.info("通知业务id（文档id）为空，跳过删除ES索引操作");
+//            return;
+//        }
+//
+//        try {
+//            elasticsearchClient.delete(d -> d.index(INDEX_NAME).id(noticeId));
+//            logger.info("成功删除通知ES文档, notificationId：{}", noticeId);
+//        } catch (Exception e) {
+//            logger.error("无法删除ES文档, notificationId: {}", noticeId);
+//            throw new SystemException(ResultCode.NOTIFICATION_INDEX_DELETE_FAILED);
+//        }
+//    }
+//
+//    /**
+//     * 批量删除ES的通知索引的文档
+//     * @param noticeIdList      通知业务ID列表（ES文档id列表）
+//     */
+//    public void deleteEsIndexByNotIdList(List<String> noticeIdList) {
+//        if (noticeIdList == null || noticeIdList.isEmpty()) {
+//            logger.info("通知业务id列表为空，跳过批量删除ES索引操作");
+//            return;
+//        }
+//
+//        try {
+//            BulkRequest.Builder bulkRequest = new BulkRequest.Builder();
+//            for (String noticeId : noticeIdList) {
+//                bulkRequest.operations(op -> op.delete(d -> d.index(INDEX_NAME).id(noticeId)));
+//            }
+//
+//            BulkResponse response = elasticsearchClient.bulk(bulkRequest.build());
+//
+//            if (response.errors()) {
+//                logger.error("批量删除ES索引文档失败");
+//                response.items().forEach(item -> {
+//                    if (item.error() != null) {
+//                        logger.error("删除失败，ID: {}, 错误: {}", item.id(), item.error().reason());
+//                    }
+//                });
+//            } else {
+//                logger.info("成功批量删除通知ES文档，数量: {}", noticeIdList.size());
+//            }
+//        } catch (Exception e) {
+//            logger.error("批量删除ES索引文档失败", e);
+//            throw new SystemException(ResultCode.NOTIFICATION_INDEX_DELETE_FAILED);
+//        }
+//    }
+//
+//    /**
+//     * ES全文检索通知列表（此处不返回通知的阅读状态）
+//     * @param keyword       检索关键词
+//     * @return              通知列表
+//     */
+//    @Override
+//    public List<Notification> fullTextSearchWithoutLimited(String keyword) {
+//        List<Notification> notificationList = fullTextSearch(keyword);
+//        logger.info("执行ES全文检索，检索到 {} 条通知", notificationList.size());
+//
+//        return notificationList;
+//    }
+//
+//    /**
+//     * ES全文检索通知（仅限当前职位角色和业务标识ID）
+//     * @param keyword           检索关键词
+//     * @param searcherRole      检索者职位角色（具体到用户角色）
+//     * @param searcherNo        检索者业务标识ID（如学号、工号等）
+//     * @return                  通知信息列表
+//     */
+//    @Override
+//    public List<Notification> fullTextSearchWithRoleLimited(String keyword,
+//                                                            String searcherRole,
+//                                                            String searcherNo) {
+//        List<Notification> notificationList = fullTextSearch(keyword);
+//
+//        List<Notification> filterList = filterEsNotificationByUser(notificationList, searcherRole, searcherNo);
+//
+//        logger.info("执行ES全文检索，检索到 {} 条通知，经过角色和业务标识ID过滤后剩余 {} 条通知",
+//                notificationList.size(), filterList.size());
+//
+//        return filterList;
+//    }
+//
+//    /**
+//     * 执行全文检索
+//     * @param keyword       检索关键词
+//     * @return              通知列表
+//     */
+//    private List<Notification> fullTextSearch(String keyword) {
+//        // 构建全文搜索查询
+//        BoolQuery.Builder boolQueryBuilder = new BoolQuery.Builder();
+//        boolQueryBuilder.should(MatchQuery.of(m ->
+//                m.field("title").query(keyword))._toQuery());
+//        boolQueryBuilder.should(MatchQuery.of(m ->
+//                m.field("content").query(keyword))._toQuery());
+//
+//        SearchResponse<Map> response = null;
+//        try {
+//             response = elasticsearchClient.search(s -> s
+//                    .index(INDEX_NAME)
+//                    .query(boolQueryBuilder.build()._toQuery())
+//                    .size(100), Map.class);
+//        } catch (Exception e) {
+//            logger.error("执行全文检索时发生错误", e);
+//            throw new SystemException(ResultCode.NOTIFICATION_ELASTICSEARCH_FAILED);
+//        }
+//
+//        return response.hits().hits().stream()
+//                .map(hit -> convertMapToNotification(hit.source()))
+//                .toList();
+//    }
+//
+//    /**
+//     * 删除ES索引（通过索引名）
+//     * @param indexName     索引名
+//     * @return              是否删除成功
+//     */
+//    @Override
+//    public boolean deleteEsIndexByIndexName(String indexName) {
+//        if (StringUtils.isBlank(indexName)) {
+//            logger.warn("索引名为空，跳过删除操作");
+//            return true;
+//        }
+//
+//        try {
+//            // 检查索引是否存在
+//            boolean exists = elasticsearchClient.indices().exists(e -> e.index(indexName)).value();
+//
+//            if (!exists) {
+//                logger.warn("索引 {} 不存在，跳过删除操作", indexName);
+//                return true;
+//            }
+//
+//            // 删除索引
+//            elasticsearchClient.indices().delete(d -> d.index(indexName));
+//            logger.info("成功删除ES索引: {}", indexName);
+//
+//        } catch (Exception e) {
+//            logger.error("删除ES索引失败，索引名: {}", indexName, e);
+//            throw new SystemException(ResultCode.INDEX_DELETE_FAILED);
+//        }
+//
+//        return true;
+//    }
+//
+//    @Override
+//    public void updateEsIndexed(String noticeId, Integer esIndexed) {
+//        try {
+//            if (StringUtils.isBlank(noticeId)) {
+//                logger.warn("通知ID为空，无法更新ES索引状态");
+//                return;
+//            }
+//
+//            if (esIndexed == null) {
+//                logger.warn("ES索引状态为空，无法更新");
+//                return;
+//            }
+//
+//            int result = notificationMapper.updateEsIndexed(noticeId, esIndexed);
+//            if (result > 0) {
+//                logger.info("成功更新通知 {} 的ES索引状态为: {}", noticeId, esIndexed);
+//            } else {
+//                logger.warn("未找到通知 {}，无法更新ES索引状态", noticeId);
+//            }
+//        } catch (Exception e) {
+//            logger.error("更新ES索引状态失败，通知ID: {}, 状态: {}", noticeId, esIndexed, e);
+//            throw new SystemException(ResultCode.NOTIFICATION_UPDATE_FAILED);
+//        }
+//    }
+//
+//    @Override
+//    @Transactional(rollbackFor = Exception.class)
+//    public void updateBatchEsIndexed(List<String> noticeIdList, Integer esIndexed) {
+//        try {
+//            if (noticeIdList == null || noticeIdList.isEmpty()) {
+//                logger.warn("通知ID列表为空，无法批量更新ES索引状态");
+//                return;
+//            }
+//
+//            if (esIndexed == null) {
+//                logger.warn("ES索引状态为空，无法批量更新");
+//                return;
+//            }
+//
+//            // 过滤掉空的通知ID
+//            List<String> validNoticeIds = noticeIdList.stream()
+//                    .filter(StringUtils::isNotBlank)
+//                    .collect(Collectors.toList());
+//
+//            if (validNoticeIds.isEmpty()) {
+//                logger.warn("没有有效的通知ID，跳过批量更新");
+//                return;
+//            }
+//
+//            int result = notificationMapper.updateBatchEsIndexed(validNoticeIds, esIndexed);
+//            logger.info("成功批量更新 {} 个通知的ES索引状态为: {}", result, esIndexed);
+//
+//        } catch (Exception e) {
+//            logger.error("批量更新ES索引状态失败，通知ID列表: {}, 状态: {}", noticeIdList, esIndexed, e);
+//            throw new SystemException(ResultCode.NOTIFICATION_UPDATE_FAILED);
+//        }
+//    }
+//
+//    @Override
+//    public List<Notification> selectUnindexedNotifications() {
+//        try {
+//            List<Notification> notifications = notificationMapper.selectUnindexedNotifications();
+//            logger.info("查询到 {} 个未索引的通知", notifications.size());
+//            return notifications;
+//        } catch (Exception e) {
+//            logger.error("查询未索引的通知失败", e);
+//            throw new SystemException(ResultCode.NOTIFICATION_QUERY_FAILED);
+//        }
+//    }
+//
+//    @Override
+//    public List<Notification> selectBatchUnindexed(int batchSize) {
+//        try {
+//            if (batchSize <= 0) {
+//                logger.warn("批次大小必须大于0，当前值: {}", batchSize);
+//                return new ArrayList<>();
+//            }
+//
+//            List<Notification> notifications = notificationMapper.selectBatchUnindexed(batchSize);
+//            logger.info("查询到 {} 个未索引的通知（批次大小: {}）", notifications.size(), batchSize);
+//            return notifications;
+//        } catch (Exception e) {
+//            logger.error("分批次查询未索引的通知失败，批次大小: {}", batchSize, e);
+//            throw new SystemException(ResultCode.NOTIFICATION_QUERY_FAILED);
+//        }
+//    }
+//
+//    @Override
+//    public int countUnindexedNotifications() {
+//        try {
+//            int count = notificationMapper.countUnindexedNotifications();
+//            logger.info("未索引的通知数量: {}", count);
+//            return count;
+//        } catch (Exception e) {
+//            logger.error("统计未索引的通知数量失败", e);
+//            throw new SystemException(ResultCode.NOTIFICATION_QUERY_FAILED);
+//        }
+//    }
+//
+//    @Override
+//    public List<Notification> selectIndexedNotifications() {
+//        try {
+//            List<Notification> notifications = notificationMapper.selectIndexedNotifications();
+//            logger.info("查询到 {} 个已索引的通知", notifications.size());
+//            return notifications;
+//        } catch (Exception e) {
+//            logger.error("查询已索引的通知失败", e);
+//            throw new SystemException(ResultCode.NOTIFICATION_QUERY_FAILED);
+//        }
+//    }
+//
+//    /**
+//     * 标记通知为已索引
+//     * @param noticeId 通知ID
+//     */
+//    public void markAsIndexed(String noticeId) {
+//        updateEsIndexed(noticeId, 1);
+//    }
+//
+//    /**
+//     * 标记通知为未索引
+//     * @param noticeId 通知ID
+//     */
+//    public void markAsUnindexed(String noticeId) {
+//        updateEsIndexed(noticeId, 0);
+//    }
+//
+//    /**
+//     * 批量标记通知为已索引
+//     * @param noticeIdList 通知ID列表
+//     */
+//    public void markBatchAsIndexed(List<String> noticeIdList) {
+//        updateBatchEsIndexed(noticeIdList, 1);
+//    }
+//
+//    /**
+//     * 批量标记通知为未索引
+//     * @param noticeIdList 通知ID列表
+//     */
+//    public void markBatchAsUnindexed(List<String> noticeIdList) {
+//        updateBatchEsIndexed(noticeIdList, 0);
+//    }
 
-            // 创建索引
-            CreateIndexResponse response = elasticsearchClient.indices().create(c -> c.index(INDEX_NAME)
-                    .mappings(m -> m.properties("noticeId", p -> p.keyword(k -> k))
-                            .properties("title", p -> p.text(t -> t.analyzer("ik_max_word").searchAnalyzer("ik_smart")))
-                            .properties("content", p -> p.text(t -> t.analyzer("ik_max_word").searchAnalyzer("ik_smart")))
-                            .properties("noticeType", p -> p.keyword(k -> k))
-                            .properties("targetType", p -> p.keyword(k -> k))
-                            .properties("targetScope", p -> p.keyword(k -> k))
-                    )
-            );
 
-            if (response.acknowledged()) {
-                logger.info("成功创建索引: {}", INDEX_NAME);
-            }
-        } catch (Exception e) {
-            logger.error("创建索引失败: {}", INDEX_NAME, e);
-            throw new SystemException(ResultCode.NOTIFICATION_INDEX_FAILED);
-        }
-    }
-
-    /**
-     * ES索引通知信息 //todo 需要实现定期同步，必须先执行这个方法
-     * @param notification      通知信息
-     */
-    @Override
-    public void indexNotification(Notification notification) {
-        if (StringUtils.isBlank(notification.getNoticeId())) {
-            logger.error("notificationId无效，无法为该通知建立ES索引");
-            throw new BusinessException(ResultCode.PARAMETER_ERROR);
-        }
-
-        // 转换为Map进行索引
-        Map<String, Object> document = convertToMap(notification);
-        try {
-            elasticsearchClient.index(i -> i.index(INDEX_NAME)
-                    .id(notification.getNoticeId())
-                    .document(document)
-            );
-
-            logger.info("成功索引通知信息，ID: {}", notification.getNoticeId());
-        } catch (Exception e) {
-            logger.error("索引通知信息失败，ID: {}", notification.getNoticeId(), e);
-            throw new SystemException(ResultCode.NOTIFICATION_INDEX_FAILED);
-        }
-    }
-
-    /**
-     * ES索引通知信息列表
-     *
-     * @param notificationList  通知信息列表
-     */
-    @Override
-    public void indexNotificationList(List<Notification> notificationList) {
-        logger.info("即将批量索引通知信息，数量：{}", notificationList.size());
-        try {
-            BulkRequest.Builder builder = new BulkRequest.Builder();
-
-            for (Notification notification : notificationList) {
-                Map<String, Object> document = convertToMap(notification);
-                builder.operations(operation -> operation.index(idx -> idx.index(INDEX_NAME)
-                        .id(notification.getNoticeId())
-                        .document(document)));
-            }
-
-            BulkResponse result = elasticsearchClient.bulk(builder.build());
-
-            if (result.errors()) {
-                logger.error("批量索引通知信息失败");
-                result.items().forEach(item -> {
-                    if (item.error() != null) {
-                        logger.error("索引失败，ID: {}, 错误: {}", item.id(), item.error().reason());
-                    }
-                });
-            } else {
-                logger.info("成功批量索引通知信息，数量: {}", notificationList.size());
-            }
-        } catch (Exception e) {
-            logger.error("批量索引通知信息失败", e);
-            throw new SystemException(ResultCode.NOTIFICATION_INDEX_FAILED);
-        }
-    }
-
-    /**
-     * 使用ES查询通知列表
-     * 前端仅使用以下字段参与 Elasticsearch（ES）查询
-     * titleLike（通知标题模糊匹配）， contentLike（通知内容模糊匹配），noticeType（通知类型精确匹配）
-     *
-     * @param query     查询条件
-     * @return          分页结果
-     */
-    @Override
-    public PageResult<NotificationVO> searchNotificationListPageByEs(NotificationQuery query) {
-        // 校验检索人的身份信息是否有效
-        checkSearcherRoleAndNo(query.getTargetType(), query.getTargetId());
-
-        SearchResponse<Map> response;
-        try {
-            // 构建查询
-            BoolQuery.Builder boolQueryBuilder = new BoolQuery.Builder();
-
-            // 关键词搜索
-            if (StringUtils.isNotBlank(query.getTitleLike())) {
-                boolQueryBuilder.must(m ->
-                        m.match(mt -> mt.field("title").query(query.getTitleLike())));
-            }
-            if (StringUtils.isNotBlank(query.getContentLike())) {
-                boolQueryBuilder.must(m ->
-                        m.match(mt -> mt.field("content").query(query.getContentLike())));
-            }
-            if (StringUtils.isNotBlank(query.getNoticeType())) {
-                boolQueryBuilder.filter(f ->  // noticeType为keyword类型
-                        f.term(t -> t.field("noticeType.keyword").value(query.getNoticeType())));
-            }
-
-            // 执行搜索 - 获取所有匹配的通知
-            response = elasticsearchClient.search(s -> s
-                    .index(INDEX_NAME)
-                    .query(boolQueryBuilder.build()._toQuery())
-                    .size(1000) // 获取更多结果用于后续过滤
-                    .sort(sortField ->
-                            sortField.field(f -> f
-                                    .field("createTime")
-                                    .order(SortOrder.Desc)
-                            )
-                    )
-                    // 高亮配置
-                    .highlight(h -> h.preTags("<em>").postTags("</em>")
-                            .fields("title", f -> f)
-                            .fields("content", f -> f)),
-
-                    Map.class);
-        } catch (Exception e) {
-            logger.error("使用Elasticsearch查询通知列表失败", e);
-            throw new SystemException(ResultCode.NOTIFICATION_ELASTICSEARCH_FAILED);
-        }
-
-        try {
-            // 转换为基础Notification列表
-            List<Notification> allNotificationList = response.hits().hits().stream()
-                    .map(hit -> {
-                        Map<String, Object> source = hit.source();
-                        if (source == null) {
-                            logger.warn("ES查询返回的hit中source为null，跳过该记录，id: {}", hit.id());
-                            return null;
-                        }
-
-                        Notification notification = convertMapToNotification(hit.source());
-                        Map<String, List<String>> highlightMap = hit.highlight();
-
-                        if (highlightMap != null) {
-                            if (highlightMap.containsKey("title")) {
-                                notification.setTitle(highlightMap.get("title").get(0)); // 使用高亮片段替换标题
-                            }
-                            if (highlightMap.containsKey("content")) {
-                                notification.setContent(highlightMap.get("content").get(0)); // 使用高亮片段替换内容
-                            }
-                        }
-                        return notification;
-                    }).collect(Collectors.toList());
-
-            logger.info("使用ES查询到尚未过滤的 {} 条通知", allNotificationList.size());
-
-            // 根据用户角色和业务标识ID进行过滤
-            List<Notification> filteredEsNotificationList = filterEsNotificationByUser(
-                    allNotificationList, query.getTargetType(), query.getTargetId());
-            logger.info("过滤ES的通知后剩余 {} 条通知", filteredEsNotificationList.size());
-
-            // 手动实现分页
-            return translateEsPageResult(filteredEsNotificationList, query);
-        } catch (Exception e) {
-            logger.error("转换ES查询结果为通知列表失败", e);
-            throw new SystemException(ResultCode.NOTIFICATION_CONVERT_FAILED);
-        }
-    }
-
-    /**
-     * 检查搜索者的角色和业务标识ID是否有效
-     * @param targetType        搜索者的目标类型（如学生、宿管等）
-     * @param targetId          搜索者的业务标识ID（如学号、工号等）
-     */
-    private void checkSearcherRoleAndNo(String targetType, String targetId) {
-        if (targetType.equalsIgnoreCase(UserRole.STUDENT.getCode())) {
-            Student student = studentService.selectByStudentNo(targetId);
-            if (student == null) {
-                logger.error("无效的学生业务标识ID: {}", targetId);
-                throw new BusinessException(ResultCode.PARAMETER_ERROR);
-            }
-        }
-
-        if (targetType.equalsIgnoreCase(UserRole.DORMITORY_MANAGER.getCode())) {
-            DormitoryManager dormitoryManager =
-                    dormitoryManagerService.selectByManagerId(targetId);
-            if (dormitoryManager == null
-                    || dormitoryManager.getStatus().equalsIgnoreCase(Constants.OFF_DUTY)) {
-                logger.error("无效的宿管业务标识ID: {}", targetId);
-                throw new BusinessException(ResultCode.PARAMETER_ERROR);
-            }
-        }
-
-        if (targetType.equalsIgnoreCase(JobRole.COUNSELOR.getCode())) {
-            SysUser sysUser = sysUserService.selectBySysUserNo(targetId);
-            if (sysUser == null
-                    || sysUser.getStatus().equalsIgnoreCase(Constants.DISABLE_STR)) {
-                logger.error("无效的班级管理员业务标识ID: {}", targetId);
-                throw new BusinessException(ResultCode.PARAMETER_ERROR);
-            }
-        }
-    }
-
-    /**
-     * 转换为Notification对象
-     * @param source            源Map数据
-     * @return                  Notification对象
-     */
-    private Notification convertMapToNotification(Map<String, Object> source) {
-        Notification notification = new Notification();
-
-        if (source.get("noticeId") != null) {
-            notification.setNoticeId(source.get("noticeId").toString());
-        }
-        if (source.get("title") != null) {
-            notification.setTitle(source.get("title").toString());
-        }
-        if (source.get("content") != null) {
-            notification.setContent(source.get("content").toString());
-        }
-        if (source.get("noticeType") != null) {
-            notification.setNoticeType(source.get("noticeType").toString());
-        }
-        if (source.get("targetType") != null) {
-            notification.setTargetType(source.get("targetType").toString());
-        }
-        if (source.get("targetId") != null) {
-            notification.setTargetId(source.get("targetId").toString());
-        }
-        if (source.get("targetScope") != null) {
-            notification.setTargetScope(source.get("targetScope").toString());
-        }
-
-        // 将字符串格式转换回java.util.Date
-        if (source.get("createTime") != null) {
-            try {
-                notification.setCreateTime(DATE_FORMAT.parse(source.get("createTime").toString()));
-            } catch (Exception e) {
-                logger.warn("无法解析createTime: {}", source.get("createTime"), e);
-            }
-        }
-        if (source.get("updateTime") != null) {
-            try {
-                notification.setUpdateTime(DATE_FORMAT.parse(source.get("updateTime").toString()));
-            } catch (Exception e) {
-                logger.warn("无法解析updateTime: {}", source.get("updateTime"), e);
-            }
-        }
-
-        return notification;
-    }
-
-    /**
-     * 过滤ES查询结果中的通知列表
-     *
-     * @param sourceList        源通知列表
-     * @param searcherRole      搜索者角色（这里具体到职位角色）
-     * @param searcherNo        搜索者业务标识ID
-     * @return                  过滤后的通知列表
-     */
-    private List<Notification> filterEsNotificationByUser(List<Notification> sourceList,
-                                                          String searcherRole,
-                                                          String searcherNo) {
-        return sourceList.stream()
-                .filter(notification -> {
-                    String targetScope = notification.getTargetScope();
-                    String targetType = notification.getTargetType();
-                    String targetId = notification.getTargetId();
-
-                    // 匹配的特定角色的通知
-                    boolean isSpecialRoleMatch = searcherRole.equalsIgnoreCase(targetType) &&
-                            TargetScope.SPECIAL_ROLE.getCode().equalsIgnoreCase(targetScope);
-
-                    // 全体用户的通知
-                    boolean isAllUsers = TargetScope.ALL_USERS.getCode().equalsIgnoreCase(targetScope);
-
-                    // 匹配的特定用户的通知
-                    boolean isSpecialUserMatch = searcherNo.equals(targetId) &&
-                            TargetScope.SPECIAL_USER.getCode().equalsIgnoreCase(targetScope);
-
-                    return isSpecialRoleMatch || isAllUsers || isSpecialUserMatch;
-                })
-                .collect(Collectors.toList());
-    }
-
-
-    /**
-     * 实现对ES的结果进行转换和分页
-     *
-     * 结合notification_receiver表，把List<Notification> notificationList 转换为List<NotificationVO>
-     * @param notificationList      通知列表
-     * @param query                 查询条件
-     * @return                      分页结果
-     */
-    private PageResult<NotificationVO> translateEsPageResult(List<Notification> notificationList,
-                                                             NotificationQuery query) {
-        int total = notificationList.size();
-        int startIndex = (query.getPageNum() - 1) * query.getPageSize();
-        int endIndex = Math.min(startIndex + query.getPageSize(), total);
-
-        List<Notification> pageNotificationList;
-        if (startIndex >= total) {
-            pageNotificationList = new ArrayList<>();
-        } else {
-            pageNotificationList = notificationList.subList(startIndex, endIndex);
-        }
-
-        // 转换为NotificationVO并添加阅读状态
-        // 该方法后面两个参数，用于筛选该用户有阅读权限的通知
-        List<NotificationVO> notificationVOs = convertToNotificationVOList(
-                pageNotificationList, query.getTargetType(), query.getTargetId());
-
-        // 构造分页结果
-        PageResult<NotificationVO> result = new PageResult<>();
-        result.setData(notificationVOs);
-        result.setTotal(total);
-        result.setPageNum(query.getPageNum());
-        result.setPageSize(query.getPageSize());
-
-        return result;
-    }
-
-    /**
-     * 转换为NotificationVO并添加阅读状态
-     *
-     * 此处英文前端需要展示通知阅读状态，所以需要将Notification包装成NotificationVO
-     * @param sourNotificationList              通知列表
-     * @param selfTargetType                通知接收者的目标类型
-     * @param selfTargetId                  通知接收者的业务标识ID
-     * @return                              转换后的NotificationVO列表
-     */
-    private List<NotificationVO> convertToNotificationVOList(List<Notification> sourNotificationList,
-                                                             String selfTargetType,
-                                                             String selfTargetId) {
-        // 结合notification_receiver表，异步筛选取未读的通知列表
-        NotificationQuery notReadQueryWrapper = NotificationQuery.builder()
-                .targetType(selfTargetType)
-                .targetId(selfTargetId)
-                .readStatus("UNREAD")
-                .build();
-        CompletableFuture<List<Notification>> notReadFuture = CompletableFuture.supplyAsync(
-                () -> distinguishReadOrUnread(sourNotificationList, notReadQueryWrapper),
-                asyncTaskExecutor
-        );
-        CompletableFuture<List<NotificationVO>> notReadVOFuture = notReadFuture.thenApply(
-                notReadNotificationList ->
-                        notReadNotificationList.stream()
-                                .map(notification -> {
-                                    NotificationVO notificationVO = new NotificationVO();
-                                    BeanUtils.copyProperties(notification, notificationVO);
-                                    notificationVO.setReadStatus("UNREAD");
-                                    return notificationVO;
-                                })
-                                .collect(Collectors.toList())
-        );
-
-        // 结合notification_receiver表，异步筛选取已读的通知列表
-        NotificationQuery readQueryWrapper = NotificationQuery.builder()
-                .targetType(selfTargetType)
-                .targetId(selfTargetId)
-                .readStatus("READ")
-                .build();
-        CompletableFuture<List<Notification>> readFuture = CompletableFuture.supplyAsync(
-                () -> distinguishReadOrUnread(sourNotificationList, readQueryWrapper),
-                asyncTaskExecutor
-        );
-        CompletableFuture<List<NotificationVO>> readVOFuture = readFuture.thenApply(
-                notReadNotificationList ->
-                        notReadNotificationList.stream()
-                                .map(notification -> {
-                                    NotificationVO notificationVO = new NotificationVO();
-                                    BeanUtils.copyProperties(notification, notificationVO);
-                                    notificationVO.setReadStatus("READ");
-                                    return notificationVO;
-                                })
-                                .collect(Collectors.toList())
-        );
-
-        // 合并结果
-        List<NotificationVO> allNotificationVOList = Collections.emptyList();
-        try {
-            allNotificationVOList = notReadVOFuture.thenCombine(readVOFuture,
-                    (unreadVOList, readVOList) -> {
-                        List<NotificationVO> combinedList = new ArrayList<>();
-                        combinedList.addAll(unreadVOList);
-                        combinedList.addAll(readVOList);
-                        return combinedList;
-                    }).get();
-            logger.info("通过ES成功获取未读和已读状态的通知列表，数量: {}", allNotificationVOList.size());
-
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            logger.error("通过ES获取未读/已读状态通知的任务被中断", e);
-            throw new SystemException(ResultCode.ERROR);
-        } catch (ExecutionException e) {
-            logger.error("执行ES获取未读/已读状态通知的任务发生错误", e);
-            throw new SystemException(ResultCode.ERROR);
-        }
-
-        return allNotificationVOList;
-    }
-
-    /**
-     * 重建ES索引
-     */
-    @Override // todo 这里可以用事务管理吗
-    public void rebuildIndex(String indexName) {
-        try {
-            // 删除现有索引
-            if (validateIndexExists(indexName)) {
-                elasticsearchClient.indices().delete(document -> document.index(indexName));
-                logger.info("成功删除现有索引: {}", indexName);
-            }
-
-            // 创建索引
-            createIndex();
-
-            // 获取该索引对应的总文档数
-            int totalDocCount;
-            try {
-                totalDocCount = countDocuments(indexName);
-            } catch (Exception e) {
-                logger.error("数据库发生异常，无法获取该索引对应的总文档数, indexName:{}", indexName);
-                return;
-            }
-            if (totalDocCount == 0) {
-                logger.info("索引 {} 中没有文档，跳过索引重建", indexName);
-                return;
-            }
-
-            // 为ES索引异步执行全量同步
-            CompletableFuture.runAsync(() -> {
-                try {
-                    performFullSyncForEsIndex(totalDocCount, indexName);
-                } catch (Exception e) {
-                    logger.error("重建ES索引时发生错误", e);
-                }
-            }, asyncTaskExecutor);
-
-            // 从数据库重新同步数据
-//            List<Notification> allNotifications = notificationMapper.selectAllNotificationMainInfo();
-//            indexNotificationList(allNotifications);
-
-            logger.info("成功重建ES索引: {}", indexName);
-        } catch (Exception e) {
-            logger.error("重建ES索引失败", e);
-            throw new SystemException(ResultCode.INDEX_BUILD_FAILED);
-        }
-    }
-
-
-    /**
-     * 统计数据表记录数
-     * 根据索引名统计该索引对应的数据库表有多少条记录（多少个文档）
-     * @param indexName     索引名（如：notification） 这里对应表名（如果表名有英文下划线，需要另外处理）
-     * @return      文档数
-     */
-    private int countDocuments(String indexName) {
-        //本项目只为notification表实现ES索引
-//        return MapperInvoker.countAllFunction.apply(indexName);
-        return notificationMapper.countAll();
-    }
-
-    /**
-     * 执行全量同步 todo 异步线程异常的处理，分布式事务处理
-     * @param totalCount            总行数（总文档数）
-     * @param indexName             索引名（数据库表名）
-     */
-    private void performFullSyncForEsIndex(int totalCount, String indexName) {
-
-
-        int batchSize = DEFAULT_BATCH_SIZE;
-        int totalBatches = (int) Math.ceil((double) totalCount / batchSize); // 向上取整
-
-        for (int batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
-            int offset = batchIndex * batchSize;
-            int limit = Math.min(batchSize, totalCount - offset);
-
-            // 执行分页查询
-            // 【注】本项目设定只为notification表建立ES检索，如果有为多张表建立ES检索，
-            // 则需要建立indexName和表名或者接口的映射关系，实现方案参考本类的countDocuments方法
-            List<Notification> batchList = null;
-            try {
-                batchList = notificationMapper.selectBatchWithOffset(offset, limit);
-            } catch (Exception e) {
-                logger.error("查询批次数据失败，批次索引：{}，偏移量：{}，限制：{}", batchIndex, offset, limit, e);
-
-            }
-
-            // 异步为当前批次的数据建立ES索引
-            final int currentBatchIndex = batchIndex;
-            final List<Notification> currentBatchList = batchList;
-            CompletableFuture.runAsync(() -> {
-                try {
-                    indexNotificationList(currentBatchList);
-                    logger.info("批次 {}/{} 同步完成建立ES索引，记录数：{}",
-                            currentBatchIndex, totalBatches, currentBatchList.size());
-                } catch (Exception e) {
-                    logger.error("批次 {} 同步失败", currentBatchIndex, e);
-                    deleteEsIndexByIndexName(INDEX_NAME);
-                }
-            }, asyncTaskExecutor);
-        }
-
-        logger.info("建立ES索引全量同步任务已启动，共 {} 个批次", totalBatches);
-    }
-
-
-
-    /**
-     * 判断ES索引是否存在
-     * @param       indexName   索引名
-     * @return      true 如果索引存在，false 如果索引不存在
-     */
-    @Override
-    public boolean validateIndexExists(String indexName) {
-        try {
-            return elasticsearchClient.indices().exists(e -> e.index(indexName)).value();
-        } catch (Exception e) {
-            logger.error("检查ES索引是否存在时发生错误", e);
-            return false;
-        }
-    }
-
-
-    /**
-     * 将Notification对象转换为Map
-     * @param notification      通知对象
-     * @return                  转换后的Map
-     */
-    private Map<String, Object> convertToMap(Notification notification) {
-        Map<String, Object> map = new HashMap<>();
-        map.put("noticeId", notification.getNoticeId());
-        map.put("title", notification.getTitle());
-        map.put("content", notification.getContent());
-        map.put("noticeType", notification.getNoticeType());
-        map.put("targetType", notification.getTargetType());
-        map.put("targetId", notification.getTargetId());
-        map.put("targetScope", notification.getTargetScope());
-        map.put("createTime", notification.getCreateTime());
-        map.put("updateTime", notification.getUpdateTime());
-
-        return map;
-    }
-
-    /**
-     * 删除ES文档
-     * @param noticeId    通知业务ID（ES文档的id）
-     */
-    @Override
-    public void deleteEsIndexByNotId(String noticeId) {
-        if (StringUtils.isBlank(noticeId)) {
-            logger.info("通知业务id（文档id）为空，跳过删除ES索引操作");
-            return;
-        }
-
-        try {
-            elasticsearchClient.delete(d -> d.index(INDEX_NAME).id(noticeId));
-            logger.info("成功删除通知ES文档, notificationId：{}", noticeId);
-        } catch (Exception e) {
-            logger.error("无法删除ES文档, notificationId: {}", noticeId);
-            throw new SystemException(ResultCode.NOTIFICATION_INDEX_DELETE_FAILED);
-        }
-    }
-
-    /**
-     * 批量删除ES的通知索引的文档
-     * @param noticeIdList      通知业务ID列表（ES文档id列表）
-     */
-    public void deleteEsIndexByNotIdList(List<String> noticeIdList) {
-        if (noticeIdList == null || noticeIdList.isEmpty()) {
-            logger.info("通知业务id列表为空，跳过批量删除ES索引操作");
-            return;
-        }
-
-        try {
-            BulkRequest.Builder bulkRequest = new BulkRequest.Builder();
-            for (String noticeId : noticeIdList) {
-                bulkRequest.operations(op -> op.delete(d -> d.index(INDEX_NAME).id(noticeId)));
-            }
-
-            BulkResponse response = elasticsearchClient.bulk(bulkRequest.build());
-
-            if (response.errors()) {
-                logger.error("批量删除ES索引文档失败");
-                response.items().forEach(item -> {
-                    if (item.error() != null) {
-                        logger.error("删除失败，ID: {}, 错误: {}", item.id(), item.error().reason());
-                    }
-                });
-            } else {
-                logger.info("成功批量删除通知ES文档，数量: {}", noticeIdList.size());
-            }
-        } catch (Exception e) {
-            logger.error("批量删除ES索引文档失败", e);
-            throw new SystemException(ResultCode.NOTIFICATION_INDEX_DELETE_FAILED);
-        }
-    }
-
-    /**
-     * ES全文检索通知列表（此处不返回通知的阅读状态）
-     * @param keyword       检索关键词
-     * @return              通知列表
-     */
-    @Override
-    public List<Notification> fullTextSearchWithoutLimited(String keyword) {
-        List<Notification> notificationList = fullTextSearch(keyword);
-        logger.info("执行ES全文检索，检索到 {} 条通知", notificationList.size());
-
-        return notificationList;
-    }
-
-    /**
-     * ES全文检索通知（仅限当前职位角色和业务标识ID）
-     * @param keyword           检索关键词
-     * @param searcherRole      检索者职位角色（具体到用户角色）
-     * @param searcherNo        检索者业务标识ID（如学号、工号等）
-     * @return                  通知信息列表
-     */
-    @Override
-    public List<Notification> fullTextSearchWithRoleLimited(String keyword,
-                                                            String searcherRole,
-                                                            String searcherNo) {
-        List<Notification> notificationList = fullTextSearch(keyword);
-
-        List<Notification> filterList = filterEsNotificationByUser(notificationList, searcherRole, searcherNo);
-
-        logger.info("执行ES全文检索，检索到 {} 条通知，经过角色和业务标识ID过滤后剩余 {} 条通知",
-                notificationList.size(), filterList.size());
-
-        return filterList;
-    }
-
-    /**
-     * 执行全文检索
-     * @param keyword       检索关键词
-     * @return              通知列表
-     */
-    private List<Notification> fullTextSearch(String keyword) {
-        // 构建全文搜索查询
-        BoolQuery.Builder boolQueryBuilder = new BoolQuery.Builder();
-        boolQueryBuilder.should(MatchQuery.of(m ->
-                m.field("title").query(keyword))._toQuery());
-        boolQueryBuilder.should(MatchQuery.of(m ->
-                m.field("content").query(keyword))._toQuery());
-
-        SearchResponse<Map> response = null;
-        try {
-             response = elasticsearchClient.search(s -> s
-                    .index(INDEX_NAME)
-                    .query(boolQueryBuilder.build()._toQuery())
-                    .size(100), Map.class);
-        } catch (Exception e) {
-            logger.error("执行全文检索时发生错误", e);
-            throw new SystemException(ResultCode.NOTIFICATION_ELASTICSEARCH_FAILED);
-        }
-
-        return response.hits().hits().stream()
-                .map(hit -> convertMapToNotification(hit.source()))
-                .toList();
-    }
-
-    /**
-     * 删除ES索引（通过索引名）
-     * @param indexName     索引名
-     * @return              是否删除成功
-     */
-    @Override
-    public boolean deleteEsIndexByIndexName(String indexName) {
-        if (StringUtils.isBlank(indexName)) {
-            logger.warn("索引名为空，跳过删除操作");
-            return true;
-        }
-
-        try {
-            // 检查索引是否存在
-            boolean exists = elasticsearchClient.indices().exists(e -> e.index(indexName)).value();
-
-            if (!exists) {
-                logger.warn("索引 {} 不存在，跳过删除操作", indexName);
-                return true;
-            }
-
-            // 删除索引
-            elasticsearchClient.indices().delete(d -> d.index(indexName));
-            logger.info("成功删除ES索引: {}", indexName);
-
-        } catch (Exception e) {
-            logger.error("删除ES索引失败，索引名: {}", indexName, e);
-            throw new SystemException(ResultCode.INDEX_DELETE_FAILED);
-        }
-
-        return true;
-    }
 }
 

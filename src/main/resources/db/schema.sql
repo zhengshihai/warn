@@ -67,7 +67,7 @@ CREATE TABLE `application` (
    KEY `idx_audit_status` (`audit_status`)
 ) ENGINE=InnoDB AUTO_INCREMENT=21 DEFAULT CHARSET=utf8mb4  COMMENT='晚归申请表';
 
--- 班级管理员表
+-- 系统管理员-班级管理员表
 CREATE TABLE IF NOT EXISTS sys_user (
     id INT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID',
     password VARCHAR(100) NOT NULL COMMENT '密码',
@@ -82,7 +82,7 @@ CREATE TABLE IF NOT EXISTS sys_user (
     update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     UNIQUE KEY uk_email (email),
     UNIQUE KEY uk_sys_user_no (sys_user_no)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='系统用户表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='系统管理员表';
 
 -- 系统日志表
 CREATE TABLE `system_log` (
@@ -132,6 +132,7 @@ CREATE TABLE IF NOT EXISTS notification (
             COMMENT '接受通知的对象范围  allUsers, specialRole, specialUser',
         create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
         update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+        es_indexed TINYINT DEFAULT 0 COMMENT '是否已索引到ES，0-未索引，1-已索引',
         KEY idx_target (target_type, target_id),
         KEY idx_notice_id (notice_id),
         KEY idx_type (notice_type)
@@ -296,23 +297,23 @@ CREATE TABLE alarm_record (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='报警记录表';
 
 -- 报警处理记录表
-CREATE TABLE alarm_process_record (
-      id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID',
-      alarm_no VARCHAR(20) NOT NULL COMMENT '报警记录ID',
-      handler_type TINYINT NOT NULL COMMENT '处理方类型：1-学校安保，2-警方，3-医疗',
-      handler_id VARCHAR(50) COMMENT '处理方ID',
-      handler_name VARCHAR(50) COMMENT '处理人姓名',
-      process_status TINYINT NOT NULL COMMENT '处理状态：0-待处理，1-处理中，2-已处理，3-已关闭',
-      process_result TEXT COMMENT '处理结果',
-      process_time DATETIME COMMENT '处理时间',
-      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-      -- FOREIGN KEY (alarm_no) REFERENCES alarm_record(alarm_no),
-      INDEX idx_alarm_no (alarm_no),
-      INDEX idx_handler_type (handler_type),
-      INDEX idx_handler_id (handler_id),
-      INDEX idx_process_status (process_status)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='报警处理记录表';
+# CREATE TABLE alarm_process_record (
+#       id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID',
+#       alarm_no VARCHAR(20) NOT NULL COMMENT '报警记录ID',
+#       handler_type TINYINT NOT NULL COMMENT '处理方类型：1-学校安保，2-警方，3-医疗',
+#       handler_id VARCHAR(50) COMMENT '处理方ID',
+#       handler_name VARCHAR(50) COMMENT '处理人姓名',
+#       process_status TINYINT NOT NULL COMMENT '处理状态：0-待处理，1-处理中，2-已处理，3-已关闭',
+#       process_result TEXT COMMENT '处理结果',
+#       process_time DATETIME COMMENT '处理时间',
+#       created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+#       updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+#       -- FOREIGN KEY (alarm_no) REFERENCES alarm_record(alarm_no),
+#       INDEX idx_alarm_no (alarm_no),
+#       INDEX idx_handler_type (handler_type),
+#       INDEX idx_handler_id (handler_id),
+#       INDEX idx_process_status (process_status)
+# ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='报警处理记录表';
 
 -- 位置轨迹表
 CREATE TABLE location_track (
@@ -348,20 +349,20 @@ CREATE TABLE alarm_config (
     UNIQUE KEY uk_api_provider (api_provider)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='报警配置表';
 
--- 报警处理方配置表
-CREATE TABLE alarm_handler_config (
-      id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID',
-      handler_type TINYINT NOT NULL COMMENT '处理方类型：1-学校安保，2-警方，3-医疗',
-      handler_name VARCHAR(50) NOT NULL COMMENT '处理方名称',
-      api_url VARCHAR(255) NOT NULL COMMENT '接口地址',
-      api_key VARCHAR(100) COMMENT '接口密钥',
-      timeout INT NOT NULL DEFAULT 5000 COMMENT '超时时间(毫秒)',
-      priority INT NOT NULL DEFAULT 0 COMMENT '优先级',
-      is_active TINYINT NOT NULL DEFAULT 1 COMMENT '是否启用：0-禁用，1-启用',
-      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-      updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-      UNIQUE KEY uk_handler_type (handler_type)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='报警处理方配置表';
+# -- 报警处理方配置表
+# CREATE TABLE alarm_handler_config (
+#       id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID',
+#       handler_type TINYINT NOT NULL COMMENT '处理方类型：1-学校安保，2-警方，3-医疗',
+#       handler_name VARCHAR(50) NOT NULL COMMENT '处理方名称',
+#       api_url VARCHAR(255) NOT NULL COMMENT '接口地址',
+#       api_key VARCHAR(100) COMMENT '接口密钥',
+#       timeout INT NOT NULL DEFAULT 5000 COMMENT '超时时间(毫秒)',
+#       priority INT NOT NULL DEFAULT 0 COMMENT '优先级',
+#       is_active TINYINT NOT NULL DEFAULT 1 COMMENT '是否启用：0-禁用，1-启用',
+#       created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+#       updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+#       UNIQUE KEY uk_handler_type (handler_type)
+# ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='报警处理方配置表';
 
 -- 原视频表 （这里的原视频是指将webm格式的视频转为mp4格式后的视频，相对于它的切片来说是原视频）
 CREATE TABLE alarm_videos (
@@ -395,3 +396,18 @@ CREATE TABLE alarm_video_slices (
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '记录最后更新时间',
       UNIQUE KEY idx_video_slice (video_id, slice_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='视频切片信息表，存储视频被切成的小片段数据';
+
+-- 超级管理员表
+CREATE TABLE `super_admin` (
+       `id` int NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+       `name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '管理员名称',
+       `password` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '密码（加密存储）',
+       `email` varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT '邮箱地址',
+       `enabled` tinyint(1) NOT NULL DEFAULT '1' COMMENT '是否启用（0：禁用，1：启用）',
+       `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+       `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+       `last_login_time` datetime DEFAULT NULL COMMENT '最后登录时间',
+       `version` int DEFAULT '0' COMMENT '乐观锁版本号',
+       PRIMARY KEY (`id`) USING BTREE,
+       UNIQUE KEY `uk_email` (`email`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4  COMMENT='超级管理员表';

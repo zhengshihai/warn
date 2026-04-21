@@ -22,7 +22,8 @@ public class AlarmConstants {
     public static final Integer ONE_CLICK_ALARM_TYPE = 1;
     public static final Integer INTERFACE_ALARM_TYPE = 2;
 
-    public static final String ALARM_LBS_MAP = "ALARM_LBS_MAP"; // 高德地图API标识符
+    public static final String GAODE_ALARM_LBS_MAP = "GAODE_ALARM_LBS_MAP"; // 高德地图API标识符
+    public static final String TENCENT_ALARM_LBS_MAP = "TENCENT_ALARM_LBS_MAP"; // 腾讯地图API标识符
     public static final Integer ALARM_CONFIG_ACTIVE = 1; // 报警配置启用状态
     public static final Integer ALARM_CONFIG_INACTIVE = 0; // 报警配置禁用状态
     public static final Integer ALARM_ONE_CLICK_RATE_LIMIT = 30;// 一键报警在半小时内次数最多不超过30次

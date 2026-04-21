@@ -447,5 +447,16 @@
         ORDER BY lateReturnCount DESC
     </select>
 
+    <!-- 按月统计学生晚归次数（按学号分组） -->
+    <select id="countLateReturnsByStudentNoInPeriod" resultType="java.util.HashMap">
+        SELECT
+            lr.student_no as studentNo,
+            COUNT(lr.id) as lateCount
+        FROM late_return lr
+        WHERE lr.late_time >= #{startTime}
+          AND lr.late_time &lt;= #{endTime}
+        GROUP BY lr.student_no
+    </select>
+
     
 </mapper> 

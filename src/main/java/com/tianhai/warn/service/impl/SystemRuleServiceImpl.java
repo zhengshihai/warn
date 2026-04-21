@@ -56,4 +56,21 @@ public class SystemRuleServiceImpl implements SystemRuleService {
     public int updateRuleValue(String ruleKey, String ruleValue) {
         return systemRuleMapper.updateRuleValue(ruleKey, ruleValue);
     }
+
+    @Override
+    public void saveOrUpdateByRuleKey(String ruleKey, String ruleValue, String description) {
+        SystemRule existingRule = systemRuleMapper.selectByRuleKey(ruleKey);
+
+        if (existingRule != null) {
+            // 规则已存在，更新
+            systemRuleMapper.updateRuleValue(ruleKey, ruleValue);
+        } else {
+            // 规则不存在，插入
+            SystemRule newRule = new SystemRule();
+            newRule.setRuleKey(ruleKey);
+            newRule.setRuleValue(ruleValue);
+            newRule.setDescription(description);
+            systemRuleMapper.insert(newRule);
+        }
+    }
 }

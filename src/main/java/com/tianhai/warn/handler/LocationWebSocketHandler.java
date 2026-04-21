@@ -3,14 +3,15 @@ package com.tianhai.warn.handler;
 import com.alibaba.fastjson.JSON;
 import com.tianhai.warn.constants.AlarmConstants;
 import com.tianhai.warn.dto.LocationUpdateDTO;
-import com.tianhai.warn.exception.BusinessException;
-import org.apache.rocketmq.client.producer.DefaultMQProducer;
-import org.apache.rocketmq.client.producer.SendResult;
-import org.apache.rocketmq.common.message.Message;
+// import com.tianhai.warn.exception.BusinessException; // 已注释：不再使用 RocketMQ
+import com.tianhai.warn.service.LocationTrackService;
+// import org.apache.rocketmq.client.producer.DefaultMQProducer; // 已注释：不再使用 RocketMQ
+// import org.apache.rocketmq.client.producer.SendResult; // 已注释：不再使用 RocketMQ
+// import org.apache.rocketmq.common.message.Message; // 已注释：不再使用 RocketMQ
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
+// import org.springframework.beans.factory.annotation.Qualifier; // 已注释：不再使用 RocketMQ
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
@@ -34,9 +35,13 @@ public class LocationWebSocketHandler extends TextWebSocketHandler {
     private static final Map<String, Integer> SESSION_TIMEOUTS = new ConcurrentHashMap<>();
     private static final int MAX_MESSAGE_SIZE = 1024 * 1024; // 1MB
 
+    // 已注释：改为直接调用服务，不使用 RocketMQ
+    // @Autowired
+    // @Qualifier("locationProducer")
+    // private DefaultMQProducer defaultMQProducer;
+
     @Autowired
-    @Qualifier("locationProducer")
-    private DefaultMQProducer defaultMQProducer;
+    private LocationTrackService locationTrackService;
 
     public LocationWebSocketHandler() {
         // 启动心跳检查
@@ -127,8 +132,16 @@ public class LocationWebSocketHandler extends TextWebSocketHandler {
                 return;
             }
 
-            // 发送到RocketMQ
-            sendToRocketMQ(locationUpdateDTO);
+            // 已修改：直接处理位置信息，不使用 RocketMQ
+            // sendToRocketMQ(locationUpdateDTO);
+            
+            // 直接调用服务处理位置信息
+            String locationJson = JSON.toJSONString(locationUpdateDTO);
+            locationTrackService.handleLocationMessage(locationJson);
+            logger.info("位置信息已直接处理: alarmNo={}, lat={}, lng={}", 
+                locationUpdateDTO.getAlarmNo(), 
+                locationUpdateDTO.getLatitude(), 
+                locationUpdateDTO.getLongitude());
 
             // 发送确认消息
             session.sendMessage(new TextMessage("Message received"));
@@ -196,6 +209,8 @@ public class LocationWebSocketHandler extends TextWebSocketHandler {
         }
     }
 
+    // 已注释：改为直接调用服务，不使用 RocketMQ
+    /*
     private void sendToRocketMQ(LocationUpdateDTO locationUpdateDTO) {
         try {
             Message message = new Message(
@@ -210,6 +225,7 @@ public class LocationWebSocketHandler extends TextWebSocketHandler {
             throw new BusinessException("发送消息失败");
         }
     }
+    */
 
     private boolean isValidLocationMessage(LocationUpdateDTO dto) {
         if (dto == null) {

@@ -77,7 +77,9 @@ public class JsonTypeHandler extends BaseTypeHandler<List<String>> {
      * @return 反序列化后的 List<String>，如果为空或格式错误，返回 null 或抛出异常
      */
     private List<String> parseJosn(String json) {
-        if (json == null || json.trim().isEmpty()) return null;
+        if (json == null || json.trim().isEmpty()) {
+            return null;
+        }
 
         try {
             // 使用 Jackson 反序列化为 List<String>，通过 TypeReference 保留泛型类型

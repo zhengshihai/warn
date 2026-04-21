@@ -498,6 +498,29 @@ public class LateReturnServiceImpl implements LateReturnService {
     }
 
     @Override
+    public Map<String, Integer> countLateReturnsByStudentNoInPeriod(Date startTime, Date endTime) {
+        Map<String, Map<String, Object>> resultMap = lateReturnMapper.countLateReturnsByStudentNoInPeriod(startTime,
+                endTime);
+        Map<String, Integer> countMap = new HashMap<>();
+
+        if (resultMap != null) {
+            for (Map.Entry<String, Map<String, Object>> entry : resultMap.entrySet()) {
+                String studentNo = entry.getKey();
+                Map<String, Object> valueMap = entry.getValue();
+                Object lateCountObj = valueMap.get("lateCount");
+                if (lateCountObj != null) {
+                    int lateCount = lateCountObj instanceof Number
+                            ? ((Number) lateCountObj).intValue()
+                            : Integer.parseInt(lateCountObj.toString());
+                    countMap.put(studentNo, lateCount);
+                }
+            }
+        }
+
+        return countMap;
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class)
     public int insertBatch(List<LateReturn> lateReturnList) {
         if (lateReturnList == null || lateReturnList.isEmpty()) {

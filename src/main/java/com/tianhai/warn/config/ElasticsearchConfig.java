@@ -32,7 +32,7 @@ import java.security.KeyStore;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateFactory;
 
-@Configuration
+//@Configuration
 public class ElasticsearchConfig {
     private static final Logger log = LoggerFactory.getLogger(ElasticsearchConfig.class);
 
@@ -51,75 +51,78 @@ public class ElasticsearchConfig {
 //    @Value("${elasticsearch.scheme}")
 //    private String scheme;
 
-    private String host = "127.0.0.1";
+//    private String host = "127.0.0.1";
+private String host = "8.148.184.250";
     private int port = 9200;
     private String username = null; // 生产环境要使用https
     private String password = null;
     private String scheme = "http";
     private String caCertPathStr = "F:/ElasticSearch/elasticsearch-8.11.0/config/certs/http_ca.crt";
 
-    @Bean
-    public ElasticsearchClient elasticsearchClient()  {
-        // 生产环境下的https + 用户认证 + 证书验证
-        // 1 加载CA根证书（http_ca.cart）用于验证服务端身份
-//        SSLContext sslContext = null;
-//        try {
-//            Path caCertPath = Paths.get(caCertPathStr);
-//            CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
-//            Certificate trustedCa = certificateFactory.generateCertificate(Files.newInputStream(caCertPath));
-//            KeyStore trustStore = KeyStore.getInstance("pkcs12");
-//            trustStore.load(null, null);
-//            trustStore.setCertificateEntry("ca", trustedCa);
+    // 简化业务 放弃使用ES
+//    @Bean
+//    public ElasticsearchClient elasticsearchClient()  {
+//        // 生产环境下的https + 用户认证 + 证书验证
+//        // 1 加载CA根证书（http_ca.cart）用于验证服务端身份
+////        SSLContext sslContext = null;
+////        try {
+////            Path caCertPath = Paths.get(caCertPathStr);
+////            CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
+////            Certificate trustedCa = certificateFactory.generateCertificate(Files.newInputStream(caCertPath));
+////            KeyStore trustStore = KeyStore.getInstance("pkcs12");
+////            trustStore.load(null, null);
+////            trustStore.setCertificateEntry("ca", trustedCa);
+////
+////            sslContext = SSLContexts.custom()
+////                    .loadTrustMaterial(trustStore, null)
+////                    .build();
+////        } catch (Exception e) {
+////            log.error("加载CA证书失败，证书路径：{}", caCertPathStr, e);
+////        }
+////
+////        BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+////        credentialsProvider.setCredentials(AuthScope.ANY,
+////                new UsernamePasswordCredentials(username, password));
+////
+////        SSLContext finalSslContext = sslContext;
+////        RestClientBuilder builder = RestClient.builder(new HttpHost(host, port, scheme))
+////                .setHttpClientConfigCallback(httpAsyncClientBuilder -> {
+////                    httpAsyncClientBuilder.setSSLContext(finalSslContext);
+////                    httpAsyncClientBuilder.setDefaultCredentialsProvider(credentialsProvider);
+////                    httpAsyncClientBuilder.setKeepAliveStrategy(((httpResponse, httpContext) -> 30 * 1000));
+////
+////                    return httpAsyncClientBuilder;
+////                });
+////        RestClient restClient = builder.build();
+////        ElasticsearchTransport transport = new RestClientTransport(restClient, new JacksonJsonpMapper());
+////
+////        return new ElasticsearchClient(transport);
 //
-//            sslContext = SSLContexts.custom()
-//                    .loadTrustMaterial(trustStore, null)
-//                    .build();
-//        } catch (Exception e) {
-//            log.error("加载CA证书失败，证书路径：{}", caCertPathStr, e);
+//
+//        // 简化业务 放弃使用ES
+//        //开发环境下的http + 无用户认证 + 无证书验证
+//        RestClientBuilder builder = RestClient.builder(new HttpHost(host, port, scheme))
+//                .setHttpClientConfigCallback(httpClientBuilder -> {
+//            // 配置连接保持活跃
+//            httpClientBuilder.setKeepAliveStrategy((response, context) -> 30 * 1000); // 30秒
+//
+//            return httpClientBuilder;
+//        });
+//
+//        // 配置用户名和密码
+//        if (username != null && !username.isEmpty()) {
+//            BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+//            credentialsProvider.setCredentials(AuthScope.ANY,
+//                    new UsernamePasswordCredentials(username, password));
+//            builder.setHttpClientConfigCallback(httpClientBuilder ->
+//                    httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider));
 //        }
 //
-//        BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-//        credentialsProvider.setCredentials(AuthScope.ANY,
-//                new UsernamePasswordCredentials(username, password));
-//
-//        SSLContext finalSslContext = sslContext;
-//        RestClientBuilder builder = RestClient.builder(new HttpHost(host, port, scheme))
-//                .setHttpClientConfigCallback(httpAsyncClientBuilder -> {
-//                    httpAsyncClientBuilder.setSSLContext(finalSslContext);
-//                    httpAsyncClientBuilder.setDefaultCredentialsProvider(credentialsProvider);
-//                    httpAsyncClientBuilder.setKeepAliveStrategy(((httpResponse, httpContext) -> 30 * 1000));
-//
-//                    return httpAsyncClientBuilder;
-//                });
 //        RestClient restClient = builder.build();
 //        ElasticsearchTransport transport = new RestClientTransport(restClient, new JacksonJsonpMapper());
 //
 //        return new ElasticsearchClient(transport);
-
-
-        //开发环境下的http + 无用户认证 + 无证书验证
-        RestClientBuilder builder = RestClient.builder(new HttpHost(host, port, scheme))
-                .setHttpClientConfigCallback(httpClientBuilder -> {
-            // 配置连接保持活跃
-            httpClientBuilder.setKeepAliveStrategy((response, context) -> 30 * 1000); // 30秒
-
-            return httpClientBuilder;
-        });
-
-        // 配置用户名和密码
-        if (username != null && !username.isEmpty()) {
-            BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-            credentialsProvider.setCredentials(AuthScope.ANY,
-                    new UsernamePasswordCredentials(username, password));
-            builder.setHttpClientConfigCallback(httpClientBuilder ->
-                    httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider));
-        }
-
-        RestClient restClient = builder.build();
-        ElasticsearchTransport transport = new RestClientTransport(restClient, new JacksonJsonpMapper());
-
-        return new ElasticsearchClient(transport);
-    }
+//    }
 
     @Bean
     public ObjectMapper objectMapper() {

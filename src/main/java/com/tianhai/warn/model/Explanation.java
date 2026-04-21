@@ -17,10 +17,10 @@ public class Explanation implements Serializable {
     private String studentNo;
     private String description;
     private String attachmentUrl;
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Shanghai")
     private Date submitTime;
     private Integer auditStatus; // 0待审核,1通过,2驳回
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "Asia/Shanghai")
     private Date auditTime;
     private String auditPerson;
     private String auditRemark;

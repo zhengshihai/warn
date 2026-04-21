@@ -103,12 +103,16 @@ public class VideoProcessServiceImpl implements VideoProcessService {
 
         // 保存视频切片信息到mysql （此处切片的fileSizeBytes在切片完成后才更新）
         String outputFileDirStr = new File(mp4VideoPathStr).getParent();
-        List<AlarmVideoSlice> alarmVideoSliceList = saveSlicedVideoInfo(alarmNo, studentNo, outputFileDirStr, videoMetaData);
+        List<AlarmVideoSlice> alarmVideoSliceList =
+                saveSlicedVideoInfo(alarmNo, studentNo, outputFileDirStr, videoMetaData);
 
-        // 使用HLS开始异步切片
+        // 使用HLS开始异步切片（切片完成后再更新文件大小）
         asyncTaskExecutor.execute(() -> {
             try {
                 splitVideoIntoChunksHls(mp4VideoPathStr, alarmNo, studentNo);
+                // 切片操作完成后，更新切片的fileSizeBytes属性
+                updateFileSizeBytes(alarmVideoSliceList, outputFileDirStr, alarmNo);
+                logger.info("视频切片和文件大小更新完成: alarmNo={}", alarmNo);
             } catch (Exception e) {
                 logger.error("处理视频切片失败，源视频路径：{}, 开始删除数据库的视频切片信息", mp4VideoPathStr, e);
 
@@ -119,19 +123,19 @@ public class VideoProcessServiceImpl implements VideoProcessService {
             }
         });
 
-        // 切片操作完成后，更新切片的fileSizeBytes属性
-        updateFileSizeBytes(alarmVideoSliceList, outputFileDirStr, alarmNo);
+        // 已修改：updateFileSizeBytes 已移到异步任务内部，切片完成后执行
+        // updateFileSizeBytes(alarmVideoSliceList, outputFileDirStr, alarmNo);
 
-        // 保存列表到mysql todo
+        // 保存列表到mysql
         alarmVideoSliceService.addAlarmVideoSliceBatch(alarmVideoSliceList);
     }
 
     /**
-     * 转换视频格式并保存在新路径 todo 这里有bug无法转成mp4格式
+     * 转换视频格式并保存在新路径
      * @param alarmNo              报警号
      * @param studentNo            学号
      * @param webmVideoPathStr     原webm视频绝对路径
-     * @param webmVideoName        原始webm视频文件名（不含后缀）
+     * @param webmVideoName        原始webm视频文件名（含.webm后缀）
      * @return                     转换后的mp4视频的绝对路径
      */
     private String convertWebmToMp4(String alarmNo,
@@ -150,6 +154,11 @@ public class VideoProcessServiceImpl implements VideoProcessService {
             }
         }
 
+        // 去掉原本的".webm"后缀
+        if (webmVideoName != null && webmVideoName.endsWith(".webm")) {
+            webmVideoName = webmVideoName.substring(0, webmVideoName.length() - 5);
+        }
+
         // 构造mp4输出路径
         File outputMp4File = new File(targetDir, webmVideoName + ".mp4");
         String outputMp4Path = outputMp4File.getAbsolutePath();
@@ -163,7 +172,8 @@ public class VideoProcessServiceImpl implements VideoProcessService {
             grabber.start();
 
             recorder.setFormat("mp4");
-            recorder.setVideoCodec(avcodec.AV_CODEC_ID_H264); // 使用H.264编码
+            // 使用H.264编码
+            recorder.setVideoCodec(avcodec.AV_CODEC_ID_H264);
             recorder.setFrameRate(grabber.getFrameRate());
             recorder.setImageWidth(grabber.getImageWidth());
             recorder.setImageHeight(grabber.getImageHeight());
@@ -181,11 +191,13 @@ public class VideoProcessServiceImpl implements VideoProcessService {
             grabber.stop();
 
         } catch (Exception e) {
-            logger.error("转换webm视频到mp4格式失败， repWebmVideoPathStr: {}, 错误信息: {}", repWebmVideoPathStr, e.getMessage());
+            logger.error("转换webm视频到mp4格式失败， repWebmVideoPathStr: {}, 错误信息: {}",
+                    repWebmVideoPathStr, e.getMessage());
             throw new SystemException(ResultCode.VIDEO_CHANGE_FORMAT_FAILED);
         }
 
-        logger.info("视频格式转换成功，原视频绝对路径 repWebmVideoPathStr: {}, 转换后视频绝对路径: {}", webmVideoPathStr, outputMp4Path);
+        logger.info("视频格式转换成功，原视频绝对路径 repWebmVideoPathStr: {}, 转换后视频绝对路径: {}",
+                webmVideoPathStr, outputMp4Path);
         return outputMp4Path;
     }
 
@@ -203,6 +215,8 @@ public class VideoProcessServiceImpl implements VideoProcessService {
         if (student == null) {
             logger.warn("查不到该学号对应的学生信息, studentNo: {}", studentNo);
             studentName = "<未知学生>";
+        } else {
+            studentName = student.getName();
         }
 
         String titleTemplate = "学生%s的报警视频 学号%s 报警时间%s";
@@ -216,14 +230,16 @@ public class VideoProcessServiceImpl implements VideoProcessService {
 
         // 构造AlarmVideo对象
         AlarmVideo alarmVideo = AlarmVideo.builder()
-                .videoId(videoId) // VI为video前缀
+                // VI为video前缀
+                .videoId(videoId)
                 .alarmNo(alarmNo)
                 .studentNo(studentNo)
                 .title(title)
                 .filePath(videoPathStr)
                 .durationSec(videoMetaData.getDurationSec())
                 .fileSizeBytes(videoMetaData.getFileSizeBytes())
-                .format("mp4") // 项目设定转换后的视频格式为mp4
+                // 项目设定转换后的视频格式为mp4
+                .format("mp4")
                 .resolution(videoMetaData.getResolution())
                 .bitrate(videoMetaData.getBitrate())
                 .createdAt(now)
@@ -232,7 +248,8 @@ public class VideoProcessServiceImpl implements VideoProcessService {
 
         // 保存原视频信息到数据库
         alarmVideoService.addAlarmVideo(alarmVideo);
-        logger.info("保存mp4视频信息到alarm_videos表成功，alarmNo: {}, studentNo: {}, videoPath: {}", alarmNo, studentNo, videoPathStr);
+        logger.info("保存mp4视频信息到alarm_videos表成功，alarmNo: {}, studentNo: {}, videoPath: {}",
+                alarmNo, studentNo, videoPathStr);
 
         return videoMetaData;
     }
@@ -318,7 +335,8 @@ public class VideoProcessServiceImpl implements VideoProcessService {
 
             frameRate = grabber.getFrameRate();
             durationMicro = grabber.getLengthInTime();
-            totalSlices = (int) Math.ceil(TimeUnit.MICROSECONDS.toSeconds(durationMicro) * 1.0 / SLICE_DURATION_SECONDS);
+            totalSlices = (int) Math.ceil(
+                    TimeUnit.MICROSECONDS.toSeconds(durationMicro) * 1.0 / SLICE_DURATION_SECONDS);
             logger.info("预计会产生{}个视频切片文件", totalSlices);
         } catch (Exception e) {
             logger.error("分析视频元数据失败，视频路径: {}", sourceVideoPathStr, e);
@@ -354,7 +372,8 @@ public class VideoProcessServiceImpl implements VideoProcessService {
                 long currentTime = grabber.getTimestamp();
 
                 // 切换到新切片
-                if (recorder == null || (currentTime - sliceStartTime) > TimeUnit.SECONDS.toMicros(SLICE_DURATION_SECONDS)) {
+                if (recorder == null ||
+                        (currentTime - sliceStartTime) > TimeUnit.SECONDS.toMicros(SLICE_DURATION_SECONDS)) {
                     // 关闭旧的切片
                     try {
                         if (recorder != null) {

@@ -14,9 +14,10 @@
         <result column="target_scope" property="targetScope"/>
         <result column="create_time" property="createTime" jdbcType="TIMESTAMP"/>
         <result column="update_time" property="updateTime" jdbcType="TIMESTAMP"/>
+<!--        <result column="es_indexed" property="esIndexed" jdbcType="INTEGER"/>-->
     </resultMap>
     
-    <!-- 通用查询结果列 -->
+    <!-- 通用查询结果列（已移除 es_indexed 字段，简化业务不再使用ES） -->
     <sql id="Base_Column_List">
         id, notice_id, title, content, notice_type, target_type, target_id, target_scope, create_time, update_time
     </sql>
@@ -50,6 +51,11 @@
             <if test="targetScope != null and targetScope != ''">
                 AND target_scope = #{targetScope}
             </if>
+
+            <!-- 精确匹配：ES索引状态（已移除，简化业务不再使用ES） -->
+            <!-- <if test="esIndexed != null">
+                AND es_indexed = #{esIndexed}
+            </if> -->
             
             <!-- 模糊查询：通知标题 -->
             <if test="titleLike != null and titleLike != ''">
@@ -97,6 +103,19 @@
         </choose>
     
     </select>
+
+    <!-- 学生端简化列表：target_id 命中 或 全体通知（与 TargetScope.ALL_USERS 的 code「allusers」及管理员发布的 ALL_USERS 兼容） -->
+    <select id="selectSimplePageForTarget" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM notification n
+        WHERE (
+            n.target_id = #{targetId}
+            OR n.target_scope = 'ALL_USERS'
+            OR n.target_scope = 'allusers'
+        )
+        ORDER BY n.create_time DESC
+    </select>
+
     <select id="selectAllNotificationMainInfo" resultType="com.tianhai.warn.model.Notification">
         SELECT notice_id, notice_type, title, content
         FROM notification
@@ -112,7 +131,7 @@
         SELECT count(*) FROM notification
     </select>
 
-    <!-- 插入通知信息 -->
+    <!-- 插入通知信息（已移除 es_indexed 字段） -->
     <insert id="insert" parameterType="com.tianhai.warn.model.Notification">
         INSERT INTO notification (
             notice_id,
@@ -137,7 +156,7 @@
         )
     </insert>
 
-    <!-- 批量插入通知信息 -->
+    <!-- 批量插入通知信息（已移除 es_indexed 字段） -->
     <insert id="insertBatch" parameterType="java.util.List">
         INSERT INTO notification (
         notice_id,
@@ -202,8 +221,79 @@
             <if test="createTimeEnd != null">
                 AND create_time &lt;= #{createTimeEnd}
             </if>
+            <!-- ES索引状态条件已移除（简化业务不再使用ES） -->
+            <!-- <if test="esIndexed != null">
+                AND es_indexed = #{esIndexed}
+            </if> -->
         </where>
     </delete>
 
+     <!-- 更新语句（已移除 es_indexed 字段） -->
+    <update id="update" parameterType="com.tianhai.warn.model.Notification">
+        UPDATE notification 
+        SET title = #{title},
+            content = #{content},
+            notice_type = #{noticeType},
+            target_type = #{targetType},
+            target_id = #{targetId},
+            target_scope = #{targetScope},
+            update_time = #{updateTime}
+        WHERE notice_id = #{noticeId}
+    </update>
+
+      <!-- 更新ES索引状态（已注释，简化业务不再使用ES） -->
+    <!-- <update id="updateEsIndexed">
+        UPDATE notification 
+        SET es_indexed = #{esIndexed},
+            update_time = NOW()
+        WHERE notice_id = #{noticeId}
+    </update> -->
+
+      <!-- 批量更新ES索引状态（已注释，简化业务不再使用ES） -->
+    <!-- <update id="updateBatchEsIndexed">
+        UPDATE notification 
+        SET es_indexed = #{esIndexed},
+            update_time = NOW()
+        WHERE notice_id IN
+        <foreach collection="noticeIdList" item="noticeId" open="(" separator="," close=")">
+            #{noticeId}
+        </foreach>
+    </update> -->
+
+      <!-- 查询未索引的通知（已注释，简化业务不再使用ES） -->
+    <select id="selectUnindexedNotifications" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM notification 
+        <!-- WHERE es_indexed = 0 OR es_indexed IS NULL -->
+        WHERE 1 = 0
+        ORDER BY create_time DESC
+    </select>
+
+       <!-- 分批次查询未索引的通知（已注释，简化业务不再使用ES） -->
+    <select id="selectBatchUnindexed" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM notification 
+        <!-- WHERE es_indexed = 0 OR es_indexed IS NULL -->
+        WHERE 1 = 0
+        ORDER BY create_time DESC
+        LIMIT #{batchSize}
+    </select>
+
+    <!-- 统计未索引的通知数量（已注释，简化业务不再使用ES） -->
+    <select id="countUnindexedNotifications" resultType="int">
+        SELECT COUNT(*)
+        FROM notification 
+        <!-- WHERE es_indexed = 0 OR es_indexed IS NULL -->
+        WHERE 1 = 0
+    </select>
+
+    <!-- 查询已索引的通知（已注释，简化业务不再使用ES） -->
+    <select id="selectIndexedNotifications" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>
+        FROM notification 
+        <!-- WHERE es_indexed = 1 -->
+        WHERE 1 = 0
+        ORDER BY create_time DESC
+    </select>
 
 </mapper> 

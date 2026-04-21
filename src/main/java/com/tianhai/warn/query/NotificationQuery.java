@@ -77,4 +77,9 @@ public class NotificationQuery extends BaseQuery{
      */
     private Date createTimeEnd;
 
+    /**
+     * ES索引状态 0-未索引，1-已索引
+     */
+    private Integer esIndexed;
+
 }

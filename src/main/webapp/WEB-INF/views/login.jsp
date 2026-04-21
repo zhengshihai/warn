@@ -64,8 +64,8 @@
                     <select name="role" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
                         <option value="student">学生</option>
                         <option value="dormitorymanager">宿管</option>
-                        <option value="systemuser">班级管理员</option>
-                        <option value="superadmin">超级管理员</option>
+                        <option value="systemuser">系统管理员-班级管理员</option>
+                        <option value="superadmin">系统管理员-超级管理员</option>
                     </select>
                 </div>
                 

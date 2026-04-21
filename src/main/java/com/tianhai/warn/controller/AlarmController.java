@@ -10,7 +10,6 @@ import com.tianhai.warn.enums.ResultCode;
 import com.tianhai.warn.exception.BusinessException;
 import com.tianhai.warn.exception.SystemException;
 import com.tianhai.warn.model.AlarmConfig;
-import com.tianhai.warn.model.LocationTrack;
 import com.tianhai.warn.service.AlarmConfigService;
 import com.tianhai.warn.service.AlarmService;
 import com.tianhai.warn.service.LocationTrackService;
@@ -77,12 +76,15 @@ public class AlarmController {
         return Result.success("取消一键报警成功");
     }
 
+
+
+    // win环境下可在cmd中通过curl ifconfig.me命令获取本机公网IP
     // 获取高德地图配置信息
     @GetMapping("/config/map")
     @ResponseBody
     @RequirePermission(roles = { Constants.STUDENT, Constants.DORMITORY_MANAGER, Constants.SYSTEM_USER })
     public Result<AlarmConfig> getMapConfig() {
-        AlarmConfig mapConfig = alarmConfigService.selectByApiProvider(AlarmConstants.ALARM_LBS_MAP);
+        AlarmConfig mapConfig = alarmConfigService.selectByApiProvider(AlarmConstants.GAODE_ALARM_LBS_MAP);
 
         if (mapConfig == null || !Objects.equals(mapConfig.getIsActive(), AlarmConstants.ALARM_CONFIG_ACTIVE)) {
             logger.error("高德地图API配置未启用或不存在");

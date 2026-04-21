@@ -1,17 +1,23 @@
 package com.tianhai.warn.annotation;
 
+import com.tianhai.warn.enums.EsFieldType;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * 通知对象的用户角色类型注解
- *
  * @author Zheng
  */
-@Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface ReceiverRole {
-    String value(); // 用户角色编码，例如学生角色就是Constants.STUDENT
+@Target(ElementType.FIELD)
+public @interface EsField {
+    EsFieldType type() default EsFieldType.KEYWORD;
+
+    String analyzer() default "";
+
+    String searchAnalyzer() default "";
+
+    String format() default "";
 }

@@ -378,19 +378,19 @@ public class VerificationServiceImpl implements VerificationService,
     @Override
     public void validateNotification(Notification notification) {
         // 校验通知对象业务id是否合规
-        if (StringUtils.isBlank(notification.getTargetId())) {
-            logger.error("缺少通知对象的业务标识id, notification: {}", notification);
-            throw new BusinessException(ResultCode.PARAMETER_ERROR);
-        }
+//        if (StringUtils.isBlank(notification.getTargetId())) {
+//            logger.error("缺少通知对象的业务标识id, notification: {}", notification);
+//            throw new BusinessException(ResultCode.PARAMETER_ERROR);
+//        }
         // 校验通知对象角色（具体到职位角色）是否合规
-        if (StringUtils.isBlank(notification.getTargetType())) {
-            logger.error("缺少通知对象的用户角色或职位角色, notification: {}", notification);
-            throw new BusinessException(ResultCode.PARAMETER_ERROR);
-        }
-        if (!JobRole.isValidRole(notification.getTargetType())) {
-            logger.error("通知对象的职位角色不合规, notification: {}", notification);
-            throw new BusinessException(ResultCode.PARAMETER_ERROR);
-        }
+//        if (StringUtils.isBlank(notification.getTargetType())) {
+//            logger.error("缺少通知对象的用户角色或职位角色, notification: {}", notification);
+//            throw new BusinessException(ResultCode.PARAMETER_ERROR);
+//        }
+//        if (!JobRole.isValidRole(notification.getTargetType())) {
+//            logger.error("通知对象的职位角色不合规, notification: {}", notification);
+//            throw new BusinessException(ResultCode.PARAMETER_ERROR);
+//        }
 
         // 校验其他通知属性是否合规
         if (StringUtils.isBlank(notification.getTitle())) {
@@ -401,13 +401,13 @@ public class VerificationServiceImpl implements VerificationService,
             logger.error("缺少通知内容content");
             throw new BusinessException(ResultCode.PARAMETER_ERROR);
         }
-        if (StringUtils.isBlank(notification.getTargetScope())) {
-            logger.error("缺少接收通知的对象范围targetScope");
-            throw new BusinessException(ResultCode.PARAMETER_ERROR);
-        }
-        if (!TargetScope.isValidRole(notification.getTargetScope())) {
-            logger.error("接受通知的对象范围不合规, targetScope:{}", notification.getTargetScope());
-        }
+//        if (StringUtils.isBlank(notification.getTargetScope())) {
+//            logger.error("缺少接收通知的对象范围targetScope");
+//            throw new BusinessException(ResultCode.PARAMETER_ERROR);
+//        }
+//        if (!TargetScope.isValidRole(notification.getTargetScope())) {
+//            logger.error("接受通知的对象范围不合规, targetScope:{}", notification.getTargetScope());
+//        }
 
     }
 

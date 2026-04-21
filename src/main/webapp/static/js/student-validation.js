@@ -119,16 +119,16 @@ function validateStudentForm() {
     }
 
     // 检查学号格式
-    if (!Validation.isStudentNo(studentNo)) {
-        alert('学号格式不正确（8-12位数字）');
-        return false;
-    }
+    // if (!Validation.isStudentNo(studentNo)) {
+    //     alert('学号格式不正确（8-12位数字）');
+    //     return false;
+    // }
 
     // 检查宿舍号格式
-    if (!Validation.isDormitory(dormitory)) {
-        alert('宿舍号格式不正确（如：1-101）');
-        return false;
-    }
+    // if (!Validation.isDormitory(dormitory)) {
+    //     alert('宿舍号格式不正确（如：1-101）');
+    //     return false;
+    // }
 
     return true;
 } 

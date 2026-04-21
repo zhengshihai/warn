@@ -186,11 +186,11 @@ public class ExplanationServiceImpl implements ExplanationService {
 
         // 异步处理
         // 发布事件： 如果当前审核人未能确定晚归说明，则触发事件：转发给下一审核人
-        boolean needToForward = Constants.AUDIT_ACTION_FORWARD.equalsIgnoreCase(
-                auditActionDTO.getProcessStatus());
-        if (needToForward) {
-            applicationEventPublisher.publishEvent(new AuditEvent(this, auditActionDTO));
-        }
+//        boolean needToForward = Constants.AUDIT_ACTION_FORWARD.equalsIgnoreCase(
+//                auditActionDTO.getProcessStatus());
+//        if (needToForward) {
+//            applicationEventPublisher.publishEvent(new AuditEvent(this, auditActionDTO));
+//        }
 
         return explanationUpdate + lateReturnUpdate;
     }

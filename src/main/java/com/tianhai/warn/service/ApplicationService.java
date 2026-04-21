@@ -61,6 +61,17 @@ public interface ApplicationService {
     void auditApplication(Long id, Integer auditStatus, String auditPerson, String auditRemark);
 
     /**
+     * 根据申请ID审核晚归申请
+     * 
+     * @param applicationId 申请ID
+     * @param auditStatus   审核状态（1通过，2拒绝）
+     * @param auditPerson   审核人
+     * @param auditRemark   审核备注
+     */
+    void auditApplicationByApplicationId(String applicationId, Integer auditStatus, String auditPerson,
+            String auditRemark);
+
+    /**
      * 提交晚归申请
      * 
      * @param studentNo          学号
@@ -117,8 +128,9 @@ public interface ApplicationService {
 
     /**
      * 批量更新晚归申请
-     * @param applicationList   新的晚归申请
-     * @return                  更新行数
+     * 
+     * @param applicationList 新的晚归申请
+     * @return 更新行数
      */
     int updateBatch(@Param("applicationList") List<Application> applicationList);
 }

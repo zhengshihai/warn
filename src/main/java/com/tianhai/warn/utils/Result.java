@@ -7,15 +7,22 @@ import lombok.Getter;
 import java.io.Serial;
 import java.io.Serializable;
 
+/**
+ * @author Zheng
+ */
 @Getter
 public class Result<T> implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
 
-    private Integer code; // 状态码
-    private String message; // 提示信息
-    private T data; // 数据
-    private boolean success; // 是否成功
+    // 状态码
+    private Integer code;
+    // 提示信息
+    private String message;
+    // 数据
+    private T data;
+    // 是否成功
+    private boolean success;
 
     // 成功静态方法
     public static <T> Result<T> success() {

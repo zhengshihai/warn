@@ -6,6 +6,7 @@ import com.tianhai.warn.model.Notification;
 import com.tianhai.warn.query.NotificationQuery;
 import com.tianhai.warn.utils.PageResult;
 import com.tianhai.warn.vo.NotificationVO;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 import java.util.Map;
@@ -29,6 +30,11 @@ public interface NotificationService {
      * @return                  通知信息列表
      */
     List<Notification> selectByCondition(NotificationQuery notificationQuery);
+
+    /**
+     * 简化分页查询：某业务 ID 定向通知 + 全体用户通知
+     */
+    List<Notification> selectSimplePageForTarget(String targetId);
 
 
     /**
@@ -69,68 +75,110 @@ public interface NotificationService {
 
 // ------------------------------以下为Elasticsearch接口---------------------------------------------------
 
-    /**
-     * 索引通知文档
-     * @param notification      通知信息
-     */
-    void indexNotification(Notification notification);
-
-    /**
-     * 索引通知列表
-     * @param notificationList  通知信息列表
-     */
-    void indexNotificationList(List<Notification> notificationList);
-
-    /**
-     * 根据文档ID删除ES索引
-     * @param indexId    诸如notificationId的文档id
-     */
-    void deleteEsIndexByNotId(String indexId);
-
-    /**
-     * 使用Elasticsearch查询通知列表
-     * @param notificationQuery     查询条件
-     * @return                      分页结果
-     */
-    PageResult<NotificationVO> searchNotificationListPageByEs(NotificationQuery notificationQuery);
-
-    /**
-     * ES全文检索通知（包括检索其他角色）
-     * @param keyword       检索关键词
-     * @return              通知信息列表
-     */
-    List<Notification> fullTextSearchWithoutLimited(String keyword);
-
-    /**
-     * ES全文检索通知（仅限当前职位角色和业务标识ID）
-     * @param keyword           检索关键词
-     * @param searcherRole      检索者职位角色（具体到用户角色）
-     * @param searcherNo        检索者业务标识ID（如学号、工号等）
-     * @return                  通知信息列表
-     */
-    List<Notification> fullTextSearchWithRoleLimited(String keyword, String searcherRole, String searcherNo);
-
-    /**
-     * 重建通知ES索引
-     * @param indexName  ES索引名称
-     */
-    void rebuildIndex(String indexName);
-
-    /**
-     * 创建通知索引
-     */
-    void createIndex();
-
-    /**
-     * 检查通知索引是否存在
-     * @param indexName  ES索引名称
-     * @return      存在为true
-     */
-    boolean validateIndexExists(String indexName);
-
-    /**
-     * 删除指定名称的ES索引
-     * @param indexName     ES索引名称
-     */
-    boolean deleteEsIndexByIndexName(String indexName);
+//    /**
+//     * 索引通知文档
+//     * @param notification      通知信息
+//     */
+//    void indexNotification(Notification notification);
+//
+//    /**
+//     * 索引通知列表
+//     * @param notificationList  通知信息列表
+//     */
+//    void indexNotificationList(List<Notification> notificationList);
+//
+//    /**
+//     * 根据文档ID删除ES索引
+//     * @param indexId    诸如notificationId的文档id
+//     */
+//    void deleteEsIndexByNotId(String indexId);
+//
+//    /**
+//     * 使用Elasticsearch查询通知列表
+//     * @param notificationQuery     查询条件
+//     * @return                      分页结果
+//     */
+//    PageResult<NotificationVO> searchNotificationListPageByEs(NotificationQuery notificationQuery);
+//
+//    /**
+//     * ES全文检索通知（包括检索其他角色）
+//     * @param keyword       检索关键词
+//     * @return              通知信息列表
+//     */
+//    List<Notification> fullTextSearchWithoutLimited(String keyword);
+//
+//    /**
+//     * ES全文检索通知（仅限当前职位角色和业务标识ID）
+//     * @param keyword           检索关键词
+//     * @param searcherRole      检索者职位角色（具体到用户角色）
+//     * @param searcherNo        检索者业务标识ID（如学号、工号等）
+//     * @return                  通知信息列表
+//     */
+//    List<Notification> fullTextSearchWithRoleLimited(String keyword, String searcherRole, String searcherNo);
+//
+//    /**
+//     * 重建通知ES索引
+//     * @param indexName  ES索引名称
+//     * @param className  ES索引对应的类名
+//     */
+//    void rebuildIndex(String indexName, String className);
+//
+//    /**
+//     * 创建通知索引
+//     * @param indexName  ES索引名称
+//     * @param className  ES索引对应的类名
+//     */
+//    void createIndex(String indexName, String className);
+//
+//    /**
+//     * 检查通知索引是否存在
+//     * @param indexName  ES索引名称
+//     * @return      存在为true
+//     */
+//    boolean validateIndexExists(String indexName);
+//
+//    /**
+//     * 删除指定名称的ES索引
+//     * @param indexName     ES索引名称
+//     */
+//    boolean deleteEsIndexByIndexName(String indexName);
+//
+//    /**
+//     * 更新ES索引状态
+//     * @param noticeId 通知ID
+//     * @param esIndexed 索引状态
+//     */
+//    void updateEsIndexed(@Param("noticeId") String noticeId, @Param("esIndexed") Integer esIndexed);
+//
+//    /**
+//     * 批量更新ES索引状态
+//     * @param noticeIdList 通知ID列表
+//     * @param esIndexed 索引状态
+//     */
+//    void updateBatchEsIndexed(@Param("noticeIdList") List<String> noticeIdList, @Param("esIndexed") Integer esIndexed);
+//
+//    /**
+//     * 查询未索引的通知
+//     * @return 未索引的通知列表
+//     */
+//    List<Notification> selectUnindexedNotifications();
+//
+//    /**
+//     * 分批次查询未索引的通知
+//     * @param batchSize 批次大小
+//     * @return 未索引的通知列表
+//     */
+//    List<Notification> selectBatchUnindexed(@Param("batchSize") int batchSize);
+//
+//    /**
+//     * 统计未索引的通知数量
+//     * @return 未索引的通知数量
+//     */
+//    int countUnindexedNotifications();
+//
+//    /**
+//     * 查询已索引的通知
+//     * @return 已索引的通知列表
+//     */
+//    List<Notification> selectIndexedNotifications();
 }

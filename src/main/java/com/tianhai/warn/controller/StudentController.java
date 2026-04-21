@@ -16,6 +16,7 @@ import com.tianhai.warn.utils.PageResult;
 import com.tianhai.warn.utils.Result;
 import com.tianhai.warn.utils.RoleObjectCaster;
 import com.tianhai.warn.utils.SessionUtils;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -26,8 +27,9 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Objects;
+import java.util.Map;
 
 /**
  * 学生信息控制器
@@ -88,7 +90,6 @@ public class StudentController {
         return Result.success(studentList);
     }
 
-
     /**
      * 添加学生
      */
@@ -102,7 +103,6 @@ public class StudentController {
             return "error";
         }
     }
-
 
     /**
      * 学生更新学生信息
@@ -164,13 +164,13 @@ public class StudentController {
         if (newStudentInfo.getId() <= 0) {
             // 密码脱敏
             newStudentInfo.setPassword(null);
-            logger.error("提交的学生的id不合法， newStudentInfo: {}",newStudentInfo);
+            logger.error("提交的学生的id不合法， newStudentInfo: {}", newStudentInfo);
             throw new BusinessException(ResultCode.PARAMETER_ERROR);
         }
 
         int affectedRow = studentService.updatePersonalInfoBySuperAdmin(newStudentInfo);
         if (affectedRow <= 0) {
-            logger.error("超级管理员更新学生信息失败， newStudentInfo: {}",newStudentInfo);
+            logger.error("超级管理员更新学生信息失败， newStudentInfo: {}", newStudentInfo);
             throw new SystemException(ResultCode.ERROR);
         }
 
@@ -208,7 +208,6 @@ public class StudentController {
 
         return Result.success();
     }
-
 
     /**
      * 根据条件查询学生
@@ -309,5 +308,52 @@ public class StudentController {
         if (!errors.isEmpty()) {
             throw new BusinessException(String.join("; ", errors));
         }
+    }
+
+    /**
+     * 获取IP定位信息（通过腾讯地图IP定位API）
+     * 用于前端地图定位功能
+     */
+    @GetMapping("/location/ip")
+    @ResponseBody
+    @RequirePermission(roles = { Constants.STUDENT })
+    @LogOperation("获取IP定位信息")
+    public Result<Map<String, Object>> getLocationByIP(HttpServletRequest request) {
+        // 获取客户端IP地址
+        String clientIP = getClientIP(request);
+        Map<String, Object> locationResult = studentService.getLocationByIP(clientIP);
+        return Result.success(locationResult);
+    }
+
+    /**
+     * 获取客户端真实IP地址
+     */
+    private String getClientIP(HttpServletRequest request) {
+        String ip = request.getHeader("X-Forwarded-For");
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("X-Real-IP");
+        }
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("Proxy-Client-IP");
+        }
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("WL-Proxy-Client-IP");
+        }
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getRemoteAddr();
+        }
+
+        // 处理多个IP的情况，取第一个IP
+        if (ip != null && ip.contains(",")) {
+            ip = ip.split(",")[0].trim();
+        }
+
+        // 如果是本地IP，返回127.0.0.1（开发环境）
+        if ("0:0:0:0:0:0:0:1".equals(ip) || "127.0.0.1".equals(ip)) {
+            // 开发环境可能无法获取真实IP，返回空让API使用默认IP定位
+            return "";
+        }
+
+        return ip;
     }
 }

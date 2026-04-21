@@ -42,7 +42,6 @@ public class LogAspect {
     @Autowired
     private SystemLogService systemLogService;
 
-
     @Around("@annotation(logOperation)")
     public Object log(ProceedingJoinPoint joinPoint, LogOperation logOperation) throws Throwable {
         logger.debug("开始记录操作日志: {}", logOperation.value());

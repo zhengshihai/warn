@@ -1,4 +1,4 @@
-package com.tianhai.warn.service.impl;
+package com.tianhai.warn.component;
 
 import com.tianhai.warn.annotation.ReceiverRole;
 import com.tianhai.warn.constants.Constants;

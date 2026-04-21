@@ -82,15 +82,13 @@ public class LateReturnFaceDataHandler extends IJobHandler{
         // 将晚归人脸数据保存在late_return表
         if (lateReturnFaceDTOList == null || lateReturnFaceDTOList.isEmpty()) {
             logger.info("没有获取到晚归人脸数据");
-//            return ReturnT.SUCCESS;
+            return;
         } else {
             logger.info("获取到晚归人脸数据，数量: {}", lateReturnFaceDTOList.size());
         }
 
         int saveLateReturnRows = saveLateReturnData(lateReturnFaceDTOList);
         logger.info("成功保存晚归人脸数据到数据库，保存行数: {}", saveLateReturnRows);
-
-//        return ReturnT.SUCCESS;
     }
 
     // 保存晚归人脸数据到数据库

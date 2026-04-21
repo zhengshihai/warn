@@ -30,6 +30,9 @@ public class MediaWebSocketHandler extends AbstractWebSocketHandler {
 
     private static final Map<String, Long> LAST_ACTIVE_TIME = new ConcurrentHashMap<>();
 
+    // 记录已经触发过合并的sessionId，防止重复处理
+    private static final Map<String, Boolean> PROCESSED_SESSIONS = new ConcurrentHashMap<>();
+
     private static final int MAX_MESSAGE_SIZE = 10 * 1024 * 1024; // 10MB
 
     private static final int SESSION_TIMEOUT = 5 * 60; // 5分钟
@@ -64,14 +67,13 @@ public class MediaWebSocketHandler extends AbstractWebSocketHandler {
     protected void handleBinaryMessage(WebSocketSession session, BinaryMessage message) throws Exception {
         // 此处BinaryMessage的二进制结构
         /*
-            ┌──────────────┬─────────────────────┬────────────────────────┐
-            │ HeaderLength │ Header(JSON String) │ Chunk (音视频二进制)    |
-            │    (4B)      │    (N bytes)        │     (剩余全部 Byte)     |
-            └──────────────┴─────────────────────┴────────────────────────┘
+         * ┌──────────────┬─────────────────────┬────────────────────────┐
+         * │ HeaderLength │ Header(JSON String) │ Chunk (音视频二进制) |
+         * │ (4B) │ (N bytes) │ (剩余全部 Byte) |
+         * └──────────────┴─────────────────────┴────────────────────────┘
          */
         ByteBuffer buffer = message.getPayload();
         buffer.mark();
-
 
         // 读取头部长度
         // 1. 读取头部长度
@@ -94,7 +96,8 @@ public class MediaWebSocketHandler extends AbstractWebSocketHandler {
         JSONObject header = JSONObject.parseObject(headerJson);
 
         String alarmNo = header.getString("alarmNo");
-        String sessionId = header.getString("sessionId"); // todo 这里可以考虑使用studentNo
+        // todo 这里可以考虑使用studentNo
+        String sessionId = header.getString("sessionId");
         int chunkIndex = header.getIntValue("chunkIndex");
         boolean isLastChunk = header.getBooleanValue("isLastChunk");
 
@@ -110,9 +113,19 @@ public class MediaWebSocketHandler extends AbstractWebSocketHandler {
         resp.put("chunkIndex", chunkIndex);
         session.sendMessage(new TextMessage(resp.toJSONString()));
 
-        // 如果是最后一个音视频分片数据，则触发合并
+        // 如果是最后一个音视频分片数据，则触发合并（防止重复处理）
         if (isLastChunk) {
-            fileService.mergeMediaChunks(alarmNo, sessionId);
+            String sessionKey = alarmNo + "_" + sessionId;
+            // 使用putIfAbsent确保只有第一次才会触发合并
+            Boolean alreadyProcessed = PROCESSED_SESSIONS.putIfAbsent(sessionKey, true);
+            if (alreadyProcessed == null) {
+                // 首次处理，触发合并
+                logger.info("首次收到最后一个分片，开始合并音视频数据: alarmNo={}, sessionId={}", alarmNo, sessionId);
+                fileService.mergeMediaChunks(alarmNo, sessionId);
+            } else {
+                // 已经处理过，跳过
+                logger.warn("重复收到最后一个分片，跳过合并操作，防止重复处理: alarmNo={}, sessionId={}", alarmNo, sessionId);
+            }
         }
     }
 
@@ -122,6 +135,12 @@ public class MediaWebSocketHandler extends AbstractWebSocketHandler {
         if (alarmNo != null) {
             SESSIONS.remove(alarmNo);
             LAST_ACTIVE_TIME.remove(alarmNo);
+
+            // 清理该alarmNo相关的所有已处理记录
+            String prefix = alarmNo + "_";
+            PROCESSED_SESSIONS.keySet().removeIf(key -> key.startsWith(prefix));
+            logger.debug("已清理alarmNo={}相关的已处理记录", alarmNo);
+
             logger.info("音视频WebSocket连接已关闭，alarmNo: {}, 远程地址：{}, 原因: {}",
                     alarmNo, session.getRemoteAddress(), status.getReason());
         } else {

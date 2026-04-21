@@ -95,7 +95,6 @@ public class RegisterController {
         }
     }
 
-
     // 发送邮箱验证码
     @PostMapping("/send-email-code")
     @ResponseBody
@@ -116,7 +115,6 @@ public class RegisterController {
         // 2. 调用服务层发送邮箱验证码
         return registerService.sendEmailCaptcha(email);
     }
-
 
     // 注册接口
     @PostMapping("/do-register")
@@ -145,7 +143,7 @@ public class RegisterController {
         // 3. 调用服务层处理注册
         Map<String, Object> registerInfoMap;
         try {
-             registerInfoMap = registerService.register(registerDTO);
+            registerInfoMap = registerService.register(registerDTO);
         } catch (Exception e) {
             logger.error("注册失败，跳转回注册页面");
             return "register";
@@ -157,7 +155,7 @@ public class RegisterController {
 
         // 5. 根据角色跳转到不同的页面
         Object user = userFactory.createUser(registerDTO);
-        //这里的role 是student , systemuser, dormitorymanager, superadmin
+        // 这里的role 是student , systemuser, dormitorymanager, superadmin
         String roleCode = userFactory.getRoleCode(registerDTO.getRole());
         String pagePath = userFactory.getPagePath(registerDTO.getRole());
 

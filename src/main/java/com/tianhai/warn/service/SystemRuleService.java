@@ -71,4 +71,14 @@ public interface SystemRuleService {
      * @return 影响行数
      */
     int updateRuleValue(String ruleKey, String ruleValue);
+
+    /**
+     * 根据规则键保存或更新系统规则
+     * 如果规则不存在则插入，存在则更新
+     * 
+     * @param ruleKey     规则键
+     * @param ruleValue   规则值
+     * @param description 规则描述
+     */
+    void saveOrUpdateByRuleKey(String ruleKey, String ruleValue, String description);
 }

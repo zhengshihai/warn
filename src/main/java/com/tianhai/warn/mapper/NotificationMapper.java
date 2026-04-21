@@ -17,6 +17,11 @@ public interface NotificationMapper {
     List<Notification> selectByQuery(NotificationQuery query);
 
     /**
+     * 简化分页：定向给某 targetId 的通知，或全体用户（ALL_USERS / 历史 allusers）通知
+     */
+    List<Notification> selectSimplePageForTarget(@Param("targetId") String targetId);
+
+    /**
      * 插入通知信息
      * @param notification 通知
      * @return             插入行数
@@ -56,4 +61,43 @@ public interface NotificationMapper {
      * @return      通知总数量
      */
     int countAll();
+
+    /**
+     * 更新ES索引状态
+     * @param noticeId 通知ID
+     * @param esIndexed 索引状态
+     */
+    int updateEsIndexed(@Param("noticeId") String noticeId, @Param("esIndexed") Integer esIndexed);
+
+    /**
+     * 批量更新ES索引状态
+     * @param noticeIdList 通知ID列表
+     * @param esIndexed 索引状态
+     */
+    int updateBatchEsIndexed(@Param("noticeIdList") List<String> noticeIdList, @Param("esIndexed") Integer esIndexed);
+
+    /**
+     * 查询未索引的通知
+     * @return 未索引的通知列表
+     */
+    List<Notification> selectUnindexedNotifications();
+
+    /**
+     * 分批次查询未索引的通知
+     * @param batchSize 批次大小
+     * @return 未索引的通知列表
+     */
+    List<Notification> selectBatchUnindexed(@Param("batchSize") int batchSize);
+
+    /**
+     * 统计未索引的通知数量
+     * @return 未索引的通知数量
+     */
+    int countUnindexedNotifications();
+
+    /**
+     * 查询已索引的通知
+     * @return 已索引的通知列表
+     */
+    List<Notification> selectIndexedNotifications();
 }

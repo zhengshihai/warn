@@ -22,6 +22,27 @@ import java.util.Date;
 
 /**
  * 登录拦截器
+ *
+ * 用户请求 → 拦截器preHandle
+ *        ↓
+ * 1. 是否是登录/静态资源？→ 放行
+ * 2. 有Session吗？→ 无 → 跳登录
+ * 3. SessionUUID == 请求头UUID？→ 不等 → 跳登录
+ *        ↓
+ * 全部通过 → 正常访问
+ *
+ * 校验逻辑：
+ * 用户登录成功 → 服务器生成一个唯一的 loginUUID，存入 Session
+ * 前端把这个 UUID 保存在本地，每次请求都在请求头带上：X-Login-UUID
+ * 拦截器比对：
+ * Session 里的 UUID
+ * 请求头里的 UUID
+ * 必须一致才算登录有效！
+ *
+ * 防止盗用 Cookie 登录
+ * 防止会话劫持
+ * 防止重复登录、异地登录
+ * 比单纯的 Session 校验安全 10 倍
  */
 @Component
 public class LoginInterceptor implements HandlerInterceptor {

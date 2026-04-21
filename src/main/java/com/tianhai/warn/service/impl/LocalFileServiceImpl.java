@@ -1,18 +1,19 @@
 package com.tianhai.warn.service.impl;
 
-import com.tianhai.warn.constants.AlarmConstants;
+// import com.tianhai.warn.constants.AlarmConstants; // 已注释：不再使用 RocketMQ
 import com.tianhai.warn.enums.ResultCode;
 import com.tianhai.warn.exception.BusinessException;
 import com.tianhai.warn.exception.SystemException;
-import com.tianhai.warn.mq.RocketMQMessageSender;
+// import com.tianhai.warn.mq.RocketMQMessageSender; // 已注释：不再使用 RocketMQ
 import com.tianhai.warn.service.FileService;
+import com.tianhai.warn.service.VideoProcessService;
 import com.tianhai.warn.utils.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.env.Environment;
+// import org.springframework.core.env.Environment; // 未使用
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
@@ -144,6 +145,11 @@ public class LocalFileServiceImpl implements FileService {
                 logger.info("设置PDF Content-Type: application/pdf");
                 headers.setContentType(MediaType.APPLICATION_PDF);
                 break;
+            case "mp4":
+                // 视频文件（报警视频统一转码为mp4）
+                logger.info("设置视频 Content-Type: video/mp4");
+                headers.setContentType(MediaType.parseMediaType("video/mp4"));
+                break;
             case "doc":
             case "docx":
             case "xls":
@@ -186,9 +192,10 @@ public class LocalFileServiceImpl implements FileService {
     }
 
     // 保存音视频分片数据
-    @Override // todo 有bug 会剩余最后一些切片没保存
+    @Override
     public void saveMediaChunk(String alarmNo, String sessionId, int chunkIndex, ByteBuffer chunkData) {
-        logger.info("开始保存前端传来的.chunk格式的音视频数据，alarmNo: {}, sessionId: {}, chunkIndex: {}", alarmNo, sessionId, chunkIndex);
+        logger.info("开始保存前端传来的.chunk格式的音视频数据，alarmNo: {}, sessionId: {}, chunkIndex: {}", alarmNo, sessionId,
+                chunkIndex);
         File chunkFile = null;
         try {
             File dir = new File(videoStoragePath, alarmNo + File.separator + sessionId);
@@ -214,51 +221,109 @@ public class LocalFileServiceImpl implements FileService {
         File dir = new File(videoStoragePath, alarmNo + File.separator + sessionId);
         File[] chunkFiles = dir.listFiles((d, fileName) -> fileName.endsWith(".chunk"));
 
-        if (chunkFiles == null || chunkFiles.length == 0)
+        if (chunkFiles == null || chunkFiles.length == 0) {
             return;
+        }
 
         Arrays.sort(chunkFiles, Comparator.comparingInt(
                 file -> Integer.parseInt(file.getName().replace(".chunk", ""))));
 
         // 新增：合并后文件放到 one-click/media/video/ALxxx/ 目录下
         String mergedWebmVideoFileName = alarmNo + "_" + sessionId + ".webm";
-        File mergedWebmVideo = new File(videoStoragePath + File.separator + alarmNo, mergedWebmVideoFileName);
+        File mergedWebmVideo = new File(videoStoragePath + File.separator + alarmNo,
+                mergedWebmVideoFileName);
 
         try (FileOutputStream fos = new FileOutputStream(mergedWebmVideo)) {
             for (File chunk : chunkFiles) {
                 Files.copy(chunk.toPath(), fos);
             }
+            // 确保缓冲区刷新到磁盘
+            fos.flush();
+            fos.getFD().sync(); // 强制同步到磁盘，确保数据完整写入
             logger.info("音视频分片数据合并成功，合并后的文件: {}", mergedWebmVideo.getAbsolutePath());
         } catch (IOException e) {
+            logger.error("合并音视频分片失败: alarmNo={}, sessionId={}", alarmNo, sessionId, e);
             throw new SystemException(ResultCode.VIDEO_CHUNK_MERGE_FAILED);
         }
 
         // 删除分片文件
         for (File chunk : chunkFiles) {
-            chunk.delete();
+            if (!chunk.delete()) {
+                logger.warn("删除分片文件失败: {}", chunk.getAbsolutePath());
+            }
         }
 
-        // 处理webm格式的文件，包括转换格式视频，视频切片，持久化视频信息
-        String targetVideoFormat = "mp4";
+        /*
+         * 等待500毫秒，添加短暂延迟
+         * 确保文件系统完成写入操作，这对于 Windows 系统尤其重要，因为文件句柄释放可能有延迟
+         */
+        try {
+            Thread.sleep(500);
+            logger.debug("等待文件系统同步完成: {}", mergedWebmVideo.getAbsolutePath());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            logger.warn("等待文件同步被中断: alarmNo={}, sessionId={}", alarmNo, sessionId);
+        }
+
+        // 验证文件是否可读
         String mergedVideoPath = mergedWebmVideo.getAbsolutePath();
-        sendWebmVideoRQMessage(mergedVideoPath, targetVideoFormat, alarmNo, sessionId);
+        if (!mergedWebmVideo.exists()) {
+            logger.error("合并后的webm文件不存在: alarmNo={}, sessionId={}, path={}",
+                    alarmNo, sessionId, mergedVideoPath);
+            return;
+        }
+        if (!mergedWebmVideo.canRead()) {
+            logger.error("合并后的webm文件无法读取: alarmNo={}, sessionId={}, path={}",
+                    alarmNo, sessionId, mergedVideoPath);
+            return;
+        }
+        if (mergedWebmVideo.length() == 0) {
+            logger.error("合并后的webm文件大小为0: alarmNo={}, sessionId={}, path={}",
+                    alarmNo, sessionId, mergedVideoPath);
+            return;
+        }
+
+        logger.info("文件验证成功: 大小={}字节, 路径={}", mergedWebmVideo.length(), mergedVideoPath);
+
+        // 已修改：直接处理视频，不使用 RocketMQ
+        // String targetVideoFormat = "mp4";
+        // sendWebmVideoRQMessage(mergedVideoPath, targetVideoFormat, alarmNo,
+        // sessionId);
+
+        // 直接调用服务处理视频文件
+        try {
+            videoProcessService.handleVideoFile(mergedVideoPath);
+            logger.info("视频处理任务已启动: alarmNo={}, sessionId={}, webmPath={}",
+                    alarmNo, sessionId, mergedVideoPath);
+        } catch (Exception e) {
+            logger.error("视频处理失败: alarmNo={}, sessionId={}, webmPath={}, 错误信息: {}",
+                    alarmNo, sessionId, mergedVideoPath, e.getMessage(), e);
+            // 不抛出异常，避免影响 WebSocket 响应
+        }
     }
+
+    // 已注释：改为直接调用服务，不使用 RocketMQ
+    // @Autowired
+    // private RocketMQMessageSender rocketMQMessageSender;
 
     @Autowired
-    private RocketMQMessageSender rocketMQMessageSender;
+    private VideoProcessService videoProcessService;
 
-    // 处理webm格式的视频文件
-    private void sendWebmVideoRQMessage(String mergedVideoPathStr,
-                                  String targetVideoFormat,
-                                  String alarmNo,
-                                  String sessionId) {
-        String topic = AlarmConstants.ROCKETMQ_TOPIC_VIDEO_PROCESS;
-        String tags = AlarmConstants.ROCKETMQ_TAG_VIDEO_PROCESS;
-        String keys = alarmNo + "_" + sessionId;
-
-        rocketMQMessageSender.sendMessage(topic, tags, keys, mergedVideoPathStr);
-
-        logger.info("发送webm视频处理MQ消息, topic={}, tags={}. keys={}, body={}",
-                topic, tags, keys, mergedVideoPathStr);
-    }
+    // 已注释：改为直接调用服务，不使用 RocketMQ
+    /*
+     * // 处理webm格式的视频文件
+     * private void sendWebmVideoRQMessage(String mergedVideoPathStr,
+     * String targetVideoFormat,
+     * String alarmNo,
+     * String sessionId) {
+     * String topic = AlarmConstants.ROCKETMQ_TOPIC_VIDEO_PROCESS;
+     * String tags = AlarmConstants.ROCKETMQ_TAG_VIDEO_PROCESS;
+     * String keys = alarmNo + "_" + sessionId;
+     * 
+     * rocketMQMessageSender.sendMessage(topic, tags, keys, mergedVideoPathStr);
+     * 
+     * logger.info("发送webm视频处理MQ消息, topic={}, tags={}. keys={}, body={}",
+     * topic, tags, keys, mergedVideoPathStr);
+     * }
+     */
 }
