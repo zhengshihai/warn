@@ -31,3 +31,7 @@ build/
 
 ### VS Code ###
 .vscode/
+
+###
+src/main/resources/db/designInfo.txt
+src/main/resources/designFiles/站内消息已读和未读的优化方案.md
