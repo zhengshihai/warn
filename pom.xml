@@ -20,7 +20,7 @@
         <jakarta.servlet.jsp.version>3.1.1</jakarta.servlet.jsp.version>
         <jakarta.servlet.jsp.jstl.version>3.0.0</jakarta.servlet.jsp.jstl.version>
         <jakarta.servlet.jsp.jstl.impl.version>3.0.1</jakarta.servlet.jsp.jstl.impl.version>
-        <jakarta.mail.version>2.1.2</jakarta.mail.version>
+        <jakarta.mail-api.version>2.1.2</jakarta.mail-api.version>
         <jakarta.activation.version>2.1.2</jakarta.activation.version>
         <jackson.version>2.15.3</jackson.version>
         <lombok.version>1.18.30</lombok.version>
@@ -34,6 +34,42 @@
         <druid.version>1.2.18</druid.version>
         <lettuce.version>6.3.1.RELEASE</lettuce.version>
         <poi.version>5.2.3</poi.version>
+        <reactor-netty.version>1.1.12</reactor-netty.version>
+        <xxl-job-core.version>2.4.0</xxl-job-core.version>
+        <logback.version>1.5.18</logback.version>
+        <slf4j.version>1.7.36</slf4j.version>
+        <jakarta.mail.version>2.0.2</jakarta.mail.version>
+        <jakarta.validation-api.version>3.0.2</jakarta.validation-api.version>
+        <hibernate-validator.version>8.0.1.Final</hibernate-validator.version>
+        <redisson.version>3.23.4</redisson.version>
+        <pagehelper.version>5.3.0</pagehelper.version>
+        <junit.version>4.13.2</junit.version>
+        <hutool-all.version>5.8.23</hutool-all.version>
+        <caffeine.version>3.1.8</caffeine.version>
+        <spring-session-data-redis.version>3.2.1</spring-session-data-redis.version>
+        <rocketmq-client.version>4.9.4</rocketmq-client.version>
+        <jjwt.version>0.11.5</jjwt.version>
+        <poi.version>5.2.5</poi.version>
+        <poi-ooxml-schemas.version>4.1.2</poi-ooxml-schemas.version>
+        <xmlbeans.version>5.2.1</xmlbeans.version>
+        <commons-collections4.version>4.4</commons-collections4.version>
+        <commons-codec.version>1.15</commons-codec.version>
+        <jakarta.websocket-api.version>2.1.1</jakarta.websocket-api.version>
+        <tomcat-embed-websocket.version>11.0.0-M16</tomcat-embed-websocket.version>
+        <jackson-databind.version>2.15.3</jackson-databind.version>
+        <tencentcloud-sdk-java.version>3.1.1030</tencentcloud-sdk-java.version>
+        <junit-jupiter.version>5.9.3</junit-jupiter.version>
+        <mockito.version>5.3.1</mockito.version>
+        <spring-test.version>6.0.11</spring-test.version>
+        <json-path.version>2.9.0</json-path.version>
+        <spring-boot-test.version>3.1.0</spring-boot-test.version>
+        <jakarta.annotation-api.version>2.1.1</jakarta.annotation-api.version>
+        <easyexcel.version>3.3.2</easyexcel.version>
+        <xmlbeans.version>5.1.1</xmlbeans.version>
+        <commons-collections4.version>4.4</commons-collections4.version>
+        <javacv-platform.version>1.5.9</javacv-platform.version>
+        <elasticsearch.version>8.11.0</elasticsearch.version>
+        <spring.data.elasticsearch.version>5.1.0</spring.data.elasticsearch.version>
     </properties>
 
     <dependencies>
@@ -135,14 +171,14 @@
         <dependency>
             <groupId>io.projectreactor.netty</groupId>
             <artifactId>reactor-netty</artifactId>
-            <version>1.1.12</version>
+            <version>${reactor-netty.version}</version>
         </dependency>
 
         <!-- XXL-JOB 执行器 -->
         <dependency>
             <groupId>com.xuxueli</groupId>
             <artifactId>xxl-job-core</artifactId>
-            <version>2.4.0</version>
+            <version>${xxl-job-core.version}</version>
         </dependency>
 
         <!-- Jakarta EE -->
@@ -210,22 +246,22 @@
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
-            <version>1.5.18</version>
+            <version>${logback.version}</version>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
-            <version>1.7.36</version>
+            <version>${slf4j.version}</version>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
-            <version>1.7.36</version>
+            <version>${slf4j.version}</version>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>jcl-over-slf4j</artifactId>
-            <version>1.7.36</version>
+            <version>${slf4j.version}</version>
         </dependency>
 
         <!-- Redis -->
@@ -253,11 +289,19 @@
             </exclusions>
         </dependency>
 
+        <!-- Spring Test 依赖 -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-test</artifactId>
+            <version>${spring.version}</version>
+            <scope>test</scope>
+        </dependency>
+
         <!-- Jakarta Mail API 规范 -->
         <dependency>
             <groupId>jakarta.mail</groupId>
             <artifactId>jakarta.mail-api</artifactId>
-            <version>${jakarta.mail.version}</version>
+            <version>${jakarta.mail-api.version}</version>
         </dependency>
 
         <!-- Jakarta Activation -->
@@ -271,7 +315,7 @@
         <dependency>
             <groupId>org.eclipse.angus</groupId>
             <artifactId>jakarta.mail</artifactId>
-            <version>2.0.2</version>
+            <version>${jakarta.mail.version}</version>
         </dependency>
 
         <dependency>
@@ -284,40 +328,33 @@
         <dependency>
             <groupId>jakarta.validation</groupId>
             <artifactId>jakarta.validation-api</artifactId>
-            <version>3.0.2</version>
+            <version>${jakarta.validation-api.version}</version>
         </dependency>
         <dependency>
             <groupId>org.hibernate.validator</groupId>
             <artifactId>hibernate-validator</artifactId>
-            <version>8.0.1.Final</version>
+            <version>${hibernate-validator.version}</version>
         </dependency>
 
         <!-- redisson -->
         <dependency>
             <groupId>org.redisson</groupId>
             <artifactId>redisson</artifactId>
-            <version>3.23.4</version>
+            <version>${redisson.version}</version>
         </dependency>
 
+        <!-- PageHelper -->
         <dependency>
             <groupId>com.github.pagehelper</groupId>
             <artifactId>pagehelper</artifactId>
-            <version>5.3.0</version>
+            <version>${pagehelper.version}</version>
         </dependency>
 
-        <!-- JUnit 4 依赖 -->
+        <!-- JUnit 4 -->
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
-            <version>4.13.2</version>
-            <scope>test</scope>
-        </dependency>
-
-        <!-- Spring Test 依赖 -->
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-test</artifactId>
-            <version>${spring.version}</version>
+            <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
 
@@ -325,39 +362,39 @@
         <dependency>
             <groupId>cn.hutool</groupId>
             <artifactId>hutool-all</artifactId>
-            <version>5.8.23</version>
+            <version>${hutool-all.version}</version>
         </dependency>
 
         <!-- caffeine -->
         <dependency>
             <groupId>com.github.ben-manes.caffeine</groupId>
             <artifactId>caffeine</artifactId>
-            <version>3.1.8</version>
+            <version>${caffeine.version}</version>
         </dependency>
 
         <!-- spring session -->
         <dependency>
             <groupId>org.springframework.session</groupId>
             <artifactId>spring-session-data-redis</artifactId>
-            <version>3.2.1</version>
+            <version>${spring-session-data-redis.version}</version>
         </dependency>
 
         <!-- JWT -->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-api</artifactId>
-            <version>0.11.5</version>
+            <version>${jjwt.version}</version>
         </dependency>
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-impl</artifactId>
-            <version>0.11.5</version>
+            <version>${jjwt.version}</version>
             <scope>runtime</scope>
         </dependency>
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-jackson</artifactId>
-            <version>0.11.5</version>
+            <version>${jjwt.version}</version>
             <scope>runtime</scope>
         </dependency>
 
@@ -365,32 +402,32 @@
         <dependency>
             <groupId>org.apache.poi</groupId>
             <artifactId>poi</artifactId>
-            <version>5.2.5</version>
+            <version>${poi.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.poi</groupId>
             <artifactId>poi-ooxml</artifactId>
-            <version>5.2.5</version>
+            <version>${poi.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.poi</groupId>
             <artifactId>poi-ooxml-schemas</artifactId>
-            <version>4.1.2</version>
+            <version>${poi-ooxml-schemas.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.xmlbeans</groupId>
             <artifactId>xmlbeans</artifactId>
-            <version>5.2.1</version>
+            <version>${xmlbeans.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-collections4</artifactId>
-            <version>4.4</version>
+            <version>${commons-collections4.version}</version>
         </dependency>
         <dependency>
             <groupId>commons-codec</groupId>
             <artifactId>commons-codec</artifactId>
-            <version>1.15</version>
+            <version>${commons-codec.version}</version>
         </dependency>
 
         <dependency>
@@ -403,7 +440,7 @@
         <dependency>
             <groupId>org.apache.rocketmq</groupId>
             <artifactId>rocketmq-client</artifactId>
-            <version>4.9.4</version>
+            <version>${rocketmq-client.version}</version>
         </dependency>
 
         <!-- Spring WebSocket -->
@@ -413,33 +450,34 @@
             <version>${spring.version}</version>
         </dependency>
 
-        <!-- Jakarta WebSocket API -->
         <dependency>
             <groupId>jakarta.websocket</groupId>
             <artifactId>jakarta.websocket-api</artifactId>
-            <version>2.1.1</version>
+            <version>${jakarta.websocket-api.version}</version>
             <scope>provided</scope>
         </dependency>
-
-        <!-- Jakarta WebSocket Implementation -->
         <dependency>
             <groupId>org.apache.tomcat.embed</groupId>
             <artifactId>tomcat-embed-websocket</artifactId>
-            <version>11.0.0-M16</version>
+            <version>${tomcat-embed-websocket.version}</version>
             <scope>provided</scope>
         </dependency>
 
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>2.15.2</version>
+            <version>${jackson-databind.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jsr310</artifactId>
+            <version>${jackson-databind.version}</version>
         </dependency>
 
-        <!-- 腾讯云短信SDK -->
         <dependency>
             <groupId>com.tencentcloudapi</groupId>
             <artifactId>tencentcloud-sdk-java</artifactId>
-            <version>3.1.1030</version>
+            <version>${tencentcloud-sdk-java.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>commons-logging</groupId>
@@ -448,87 +486,103 @@
             </exclusions>
         </dependency>
 
-        <!-- 测试依赖 -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
-            <version>5.9.3</version>
+            <version>${junit-jupiter.version}</version>
             <scope>test</scope>
         </dependency>
+
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-engine</artifactId>
-            <version>5.9.3</version>
+            <version>${junit-jupiter.version}</version>
             <scope>test</scope>
         </dependency>
+
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
-            <version>5.3.1</version>
+            <version>${mockito.version}</version>
             <scope>test</scope>
         </dependency>
+
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-junit-jupiter</artifactId>
-            <version>5.3.1</version>
+            <version>${mockito.version}</version>
             <scope>test</scope>
         </dependency>
+
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-test</artifactId>
-            <version>6.0.11</version>
+            <version>${spring-test.version}</version>
             <scope>test</scope>
         </dependency>
+
         <dependency>
             <groupId>com.jayway.jsonpath</groupId>
             <artifactId>json-path</artifactId>
-            <version>2.9.0</version>
+            <version>${json-path.version}</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-test</artifactId>
-            <version>3.1.0</version>
+            <version>${spring-boot-test.version}</version>
             <scope>test</scope>
         </dependency>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-test-autoconfigure</artifactId>
-            <version>3.1.0</version>
+            <version>${spring-boot-test.version}</version>
             <scope>test</scope>
         </dependency>
+
         <dependency>
             <groupId>jakarta.annotation</groupId>
             <artifactId>jakarta.annotation-api</artifactId>
-            <version>2.1.1</version>
+            <version>${jakarta.annotation-api.version}</version>
         </dependency>
 
-        <!-- easyExcel -->
         <dependency>
             <groupId>com.alibaba</groupId>
             <artifactId>easyexcel</artifactId>
-            <version>3.3.2</version>
+            <version>${easyexcel.version}</version>
         </dependency>
 
-
-        <!-- XML相关解析 -->
         <dependency>
             <groupId>org.apache.xmlbeans</groupId>
             <artifactId>xmlbeans</artifactId>
-            <version>5.1.1</version>
+            <version>${xmlbeans.version}</version>
         </dependency>
+
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-collections4</artifactId>
-            <version>4.4</version>
+            <version>${commons-collections4.version}</version>
         </dependency>
 
-        <!-- JavaCV -->
         <dependency>
             <groupId>org.bytedeco</groupId>
             <artifactId>javacv-platform</artifactId>
-            <version>1.5.9</version>
+            <version>${javacv-platform.version}</version>
+        </dependency>
+
+        <!-- Elasticsearch 依赖 -->
+        <dependency>
+            <groupId>org.springframework.data</groupId>
+            <artifactId>spring-data-elasticsearch</artifactId>
+            <version>${spring.data.elasticsearch.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>co.elastic.clients</groupId>
+            <artifactId>elasticsearch-java</artifactId>
+            <version>${elasticsearch.version}</version>
         </dependency>
     </dependencies>
 
