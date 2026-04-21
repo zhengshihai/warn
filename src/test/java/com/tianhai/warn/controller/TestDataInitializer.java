@@ -58,7 +58,7 @@ public class TestDataInitializer {
      */
     private void initializeMapConfig() {
         AlarmConfig mapConfig = AlarmConfig.builder()
-                .apiProvider(AlarmConstants.ALARM_LBS_MAP)
+                .apiProvider(AlarmConstants.GAODE_ALARM_LBS_MAP)
                 .apiKey("test_api_key")
                 .apiSecret("test_api_secret")
                 .isActive(AlarmConstants.ALARM_CONFIG_ACTIVE)
@@ -219,7 +219,7 @@ public class TestDataInitializer {
      */
     public AlarmConfig getTestMapConfig() {
         return AlarmConfig.builder()
-                .apiProvider(AlarmConstants.ALARM_LBS_MAP)
+                .apiProvider(AlarmConstants.GAODE_ALARM_LBS_MAP)
                 .apiKey("test_api_key")
                 .apiSecret("test_api_secret")
                 .isActive(AlarmConstants.ALARM_CONFIG_ACTIVE)

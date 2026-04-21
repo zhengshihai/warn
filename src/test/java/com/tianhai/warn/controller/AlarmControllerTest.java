@@ -13,7 +13,6 @@ import com.tianhai.warn.model.AlarmConfig;
 import com.tianhai.warn.service.AlarmConfigService;
 import com.tianhai.warn.service.AlarmService;
 import com.tianhai.warn.service.LocationTrackService;
-import com.tianhai.warn.utils.Result;
 import com.tianhai.warn.vo.LatestLocationVO;
 import com.tianhai.warn.vo.StudentAlarmContactsVO;
 import org.junit.jupiter.api.BeforeEach;
@@ -260,7 +259,7 @@ class AlarmControllerTest {
                 // 准备测试数据
                 AlarmConfig mockConfig = AlarmConfig.builder()
                                 .id(1L)
-                                .apiProvider(AlarmConstants.ALARM_LBS_MAP)
+                                .apiProvider(AlarmConstants.GAODE_ALARM_LBS_MAP)
                                 .apiKey("test_api_key")
                                 .apiSecret("test_api_secret")
                                 .isActive(AlarmConstants.ALARM_CONFIG_ACTIVE)
@@ -268,7 +267,7 @@ class AlarmControllerTest {
                                 .build();
 
                 // Mock服务层方法
-                when(alarmConfigService.selectByApiProvider(AlarmConstants.ALARM_LBS_MAP))
+                when(alarmConfigService.selectByApiProvider(AlarmConstants.GAODE_ALARM_LBS_MAP))
                                 .thenReturn(mockConfig);
 
                 // 执行测试
@@ -276,19 +275,19 @@ class AlarmControllerTest {
                                 .andExpect(status().isOk())
                                 .andExpect(jsonPath("$.code").value(200))
                                 .andExpect(jsonPath("$.data.id").value(1))
-                                .andExpect(jsonPath("$.data.apiProvider").value(AlarmConstants.ALARM_LBS_MAP))
+                                .andExpect(jsonPath("$.data.apiProvider").value(AlarmConstants.GAODE_ALARM_LBS_MAP))
                                 .andExpect(jsonPath("$.data.apiKey").value("test_api_key"))
                                 .andExpect(jsonPath("$.data.isActive").value(AlarmConstants.ALARM_CONFIG_ACTIVE));
 
                 // 验证服务层方法被调用
-                verify(alarmConfigService, times(1)).selectByApiProvider(AlarmConstants.ALARM_LBS_MAP);
+                verify(alarmConfigService, times(1)).selectByApiProvider(AlarmConstants.GAODE_ALARM_LBS_MAP);
         }
 
         @Test
         @DisplayName("测试获取地图配置 - 配置不存在")
         void testGetMapConfig_ConfigNotFound() throws Exception {
                 // Mock服务层方法返回null
-                when(alarmConfigService.selectByApiProvider(AlarmConstants.ALARM_LBS_MAP))
+                when(alarmConfigService.selectByApiProvider(AlarmConstants.GAODE_ALARM_LBS_MAP))
                                 .thenReturn(null);
 
                 // 执行测试
@@ -298,7 +297,7 @@ class AlarmControllerTest {
                                 .andExpect(jsonPath("$.message").value(ResultCode.ALARM_CONFIG_NOT_FOUNT.getMessage()));
 
                 // 验证服务层方法被调用
-                verify(alarmConfigService, times(1)).selectByApiProvider(AlarmConstants.ALARM_LBS_MAP);
+                verify(alarmConfigService, times(1)).selectByApiProvider(AlarmConstants.GAODE_ALARM_LBS_MAP);
         }
 
         @Test
@@ -307,13 +306,13 @@ class AlarmControllerTest {
                 // 准备测试数据 - 配置未启用
                 AlarmConfig mockConfig = AlarmConfig.builder()
                                 .id(1L)
-                                .apiProvider(AlarmConstants.ALARM_LBS_MAP)
+                                .apiProvider(AlarmConstants.GAODE_ALARM_LBS_MAP)
                                 .apiKey("test_api_key")
                                 .isActive(AlarmConstants.ALARM_CONFIG_INACTIVE) // 未启用
                                 .build();
 
                 // Mock服务层方法
-                when(alarmConfigService.selectByApiProvider(AlarmConstants.ALARM_LBS_MAP))
+                when(alarmConfigService.selectByApiProvider(AlarmConstants.GAODE_ALARM_LBS_MAP))
                                 .thenReturn(mockConfig);
 
                 // 执行测试
@@ -323,7 +322,7 @@ class AlarmControllerTest {
                                 .andExpect(jsonPath("$.message").value(ResultCode.ALARM_CONFIG_NOT_FOUNT.getMessage()));
 
                 // 验证服务层方法被调用
-                verify(alarmConfigService, times(1)).selectByApiProvider(AlarmConstants.ALARM_LBS_MAP);
+                verify(alarmConfigService, times(1)).selectByApiProvider(AlarmConstants.GAODE_ALARM_LBS_MAP);
         }
 
         @Test

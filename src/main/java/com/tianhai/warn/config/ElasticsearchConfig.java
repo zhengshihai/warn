@@ -52,7 +52,7 @@ public class ElasticsearchConfig {
 //    private String scheme;
 
 //    private String host = "127.0.0.1";
-private String host = "8.148.184.250";
+private String host = "x.x.x.x";
     private int port = 9200;
     private String username = null; // 生产环境要使用https
     private String password = null;
